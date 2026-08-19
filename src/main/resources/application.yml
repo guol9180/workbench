@@ -1,0 +1,16 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: 0.0.0.0
+
+app:
+  docs-root: ${DOCS_ROOT:./data/docs}
+  password: ${APP_PASSWORD:workbench123}
+
+spring:
+  servlet:
+    session:
+      timeout: 30d
+
+logging:
+  level:
+    root: info
