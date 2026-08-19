@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.nio.charset.StandardCharsets;
@@ -30,6 +31,10 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler)
             throws Exception {
+        // CORS 预检请求不带 Authorization 头（浏览器规范），必须放行，否则跨域部署下预检失败
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true;
+        }
         String header = request.getHeader(TOKEN_HEADER);
         String token = null;
         if (header != null && header.startsWith("Bearer ")) {
