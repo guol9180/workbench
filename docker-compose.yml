@@ -1,9 +1,9 @@
 services:
   workbench:
-    # 方式一：在服务器上直接构建（2核2G 服务器跑 Maven 编译较吃力，建议用方式二）
-    build: ./backend
-    # 方式二：使用 GitHub Actions 推送到 GHCR 的镜像（打 tag 后自动构建）
-    # image: ghcr.io/guol9180/workbench:latest
+    # 镜像由 GitHub Actions 在打 tag 时自动构建推送（.github/workflows/build-backend.yml）
+    image: ghcr.io/guol9180/workbench:latest
+    # 备选：服务器上直接构建（2核2G 跑 Maven 编译较吃力，不推荐）
+    # build: ./backend
     container_name: workbench
     ports:
       # 仅绑定本机回环，外部流量统一走 Caddy HTTPS 反代
