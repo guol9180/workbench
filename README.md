@@ -67,11 +67,19 @@ npm run dev                                         # http://localhost:5173
 
 ### 第二步：后端 → 服务器 Docker
 
+compose 已集成 Caddy 反向代理，自动为 API 域名申请续期 HTTPS 证书（需放行 80/443 端口，域名 `api.imhgl.com` 在 `Caddyfile` 中配置）。
+
 ```bash
+# 服务器上：克隆仓库后，在仓库根目录创建 .env 写入密码与密钥（不要提交）
+cat > .env <<'EOF'
+APP_PASSWORD=改成你的密码
+APP_TOKEN_SECRET=改成一串随机长字符
+EOF
+
 # 方式一（推荐，2核2G 友好）：使用 CI 构建好的镜像
 # 1. 打标签触发 .github/workflows/build-backend.yml 构建并推送 GHCR
 git tag v1.0.0 && git push origin v1.0.0
-# 2. 服务器上编辑 docker-compose.yml，启用 image: ghcr.io/<你的用户名>/workbench:latest
+# 2. 服务器上编辑 docker-compose.yml，启用 image: ghcr.io/guol9180/workbench:latest
 docker compose pull && docker compose up -d
 
 # 方式二：服务器上直接构建
@@ -85,8 +93,10 @@ docker compose up -d --build
 | `SERVER_PORT` | `8080` | 服务端口 |
 | `APP_PASSWORD` | `workbench123` | 登录密码（**务必修改**） |
 | `APP_TOKEN_SECRET` | 临时随机 | Token 签名密钥（**务必设置**，否则每次重启需重新登录） |
-| `CORS_ALLOWED_ORIGINS` | `*` | 允许的前端来源，逗号分隔（可填你的 Pages 地址收紧） |
+| `CORS_ALLOWED_ORIGINS` | `*` | 允许的前端来源，逗号分隔（可填 `https://workbench.imhgl.com` 收紧） |
 | `DOCS_ROOT` | `/data/docs` | 文档库存储目录（持久化卷） |
+
+架构：外部流量 → Caddy（443，HTTPS）→ workbench 容器（8080，仅本机回环），compose 中后端端口只绑定 `127.0.0.1`，不直接暴露公网。
 
 ### 性能（2核2G 服务器）
 

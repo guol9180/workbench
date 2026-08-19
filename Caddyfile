@@ -1,0 +1,4 @@
+# 后端 API 域名：证书由 Caddy 自动申请续期（Let's Encrypt）
+api.imhgl.com {
+	reverse_proxy workbench:8080
+}
