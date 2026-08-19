@@ -38,3 +38,17 @@ build/
 ### 应用数据（文档库）###
 data/
 .zcode/
+
+### 前端 ###
+node_modules/
+frontend/dist/
+
+# 本地环境变量（.env.example 为模板，入库）
+.env
+.env.*
+!.env.example
+
+# npm 调试日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

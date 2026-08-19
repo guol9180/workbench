@@ -1,0 +1,27 @@
+server:
+  port: ${SERVER_PORT:8080}
+  address: 0.0.0.0
+
+spring:
+  threads:
+    virtual:
+      # Java 21 虚拟线程：文件 IO 型负载，2核小服务器友好
+      enabled: true
+
+workbench:
+  docs:
+    # 文档库存储目录，建议指向持久化路径
+    docs-root: ${DOCS_ROOT:./data/docs}
+  auth:
+    # 登录密码（部署后务必修改）
+    password: ${APP_PASSWORD:workbench123}
+    # Token 签名密钥：不配置则每次启动随机生成（重启后需重新登录）
+    token-secret: ${APP_TOKEN_SECRET:}
+    token-ttl: ${APP_TOKEN_TTL:30d}
+  cors:
+    # 允许的前端来源，逗号分隔；默认 * （认证走 Bearer 头，无 CSRF 风险）
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+logging:
+  level:
+    root: info
