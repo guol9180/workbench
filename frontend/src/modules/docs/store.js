@@ -1,14 +1,20 @@
 import { defineStore } from 'pinia'
 import { docsApi } from './api'
-import { parentOf, baseName, extAllowed } from './util'
+import { parentOf, baseName, extAllowed, todayLogPath, todayLogTemplate, readLocalFile } from './util'
+import { hasEditor, isEditorReady, getEditorValue, setEditorValue } from './editor'
 import { toast } from '../../ui/toast'
 import { showDialog, showConfirm } from '../../ui/dialog'
 
 const EXPANDED_KEY = 'wb-expanded'
 
+/** 未登录已由 http.js 统一处理（清 token 并跳登录页），其余错误以 toast 提示 */
+function notifyError(e) {
+  if (e.message !== '未登录') toast(e.message, true)
+}
+
 /**
- * 在线文档模块状态：文件树、当前文档、脏状态、搜索、本地文件预览。
- * 编辑器实例由 VditorEditor 组件挂载后注入（attachEditor）。
+ * 在线文档模块状态与业务编排：文件树、当前文档、脏状态、搜索、本地预览。
+ * 编辑器句柄见 editor.js；路径/日志模板/文件读取等纯函数见 util.js。
  */
 export const useDocsStore = defineStore('docs', {
   state: () => ({
@@ -16,8 +22,6 @@ export const useDocsStore = defineStore('docs', {
     currentPath: '',
     savedContent: '',
     dirty: false,
-    editorReady: false,
-    editor: null, // { getValue(), setValue(text) } 由 VditorEditor 注入
     expanded: loadExpanded(),
     searching: false,
     searchResults: [],
@@ -31,17 +35,13 @@ export const useDocsStore = defineStore('docs', {
   },
 
   actions: {
-    attachEditor(editor) {
-      this.editor = editor
-    },
-
     /* ---------------- 文件树 ---------------- */
 
     async loadTree() {
       try {
         this.tree = await docsApi.tree()
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
@@ -61,6 +61,15 @@ export const useDocsStore = defineStore('docs', {
       }
     },
 
+    /** 展开路径的所有祖先目录（如 新建日志后展开 日志/ 与 日志/2026-08/） */
+    expandAncestors(path) {
+      let dir = parentOf(path)
+      while (dir) {
+        this.expand(dir)
+        dir = parentOf(dir)
+      }
+    },
+
     /* ---------------- 文档操作 ---------------- */
 
     async openDoc(path) {
@@ -69,27 +78,23 @@ export const useDocsStore = defineStore('docs', {
         this.currentPath = doc.path
         this.savedContent = doc.content == null ? '' : doc.content
         this.dirty = false
-        if (this.editor) this.editor.setValue(doc.content)
+        setEditorValue(doc.content)
         this.hideLocalPreview()
         this.sidebarOpen = false
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
-    currentContent() {
-      return this.editor ? this.editor.getValue() : ''
-    },
-
     refreshDirty() {
-      if (!this.editor) return
-      this.dirty = this.editor.getValue() !== this.savedContent
+      if (!hasEditor()) return
+      this.dirty = getEditorValue() !== this.savedContent
     },
 
     async saveDoc() {
-      if (!this.editorReady || !this.editor) return
+      if (!isEditorReady()) return
       try {
-        const content = this.editor.getValue()
+        const content = getEditorValue()
         if (!this.currentPath) {
           const name = await showDialog({
             title: '保存文档',
@@ -110,7 +115,7 @@ export const useDocsStore = defineStore('docs', {
         await this.loadTree()
         toast('已保存')
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
@@ -136,7 +141,7 @@ export const useDocsStore = defineStore('docs', {
         await this.loadTree()
         this.openDoc(path)
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
@@ -157,7 +162,7 @@ export const useDocsStore = defineStore('docs', {
         await this.loadTree()
         toast('文件夹已创建')
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
@@ -179,7 +184,7 @@ export const useDocsStore = defineStore('docs', {
         await this.loadTree()
         toast('已重命名')
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
@@ -195,39 +200,31 @@ export const useDocsStore = defineStore('docs', {
           this.currentPath = ''
           this.savedContent = ''
           this.dirty = false
-          if (this.editor) this.editor.setValue('')
+          setEditorValue('')
         }
         await this.loadTree()
         toast('已删除')
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
     /* ---------------- 今日工作 ---------------- */
 
     async openToday() {
-      const now = new Date()
-      const mm = String(now.getMonth() + 1).padStart(2, '0')
-      const dd = String(now.getDate()).padStart(2, '0')
-      const month = now.getFullYear() + '-' + mm
-      const day = mm + '-' + dd
-      const path = '日志/' + month + '/' + now.getFullYear() + '-' + day + '.md'
+      const path = todayLogPath()
       try {
         await docsApi.getFile(path)
         this.openDoc(path)
       } catch (e) {
         if (e.message === '未登录') return
-        const template = '# ' + now.getFullYear() + '-' + day + ' 工作日志\n\n'
-          + '## 今日工作\n\n- \n\n## 问题与备注\n\n- \n'
         try {
-          await docsApi.createFile(path, template)
-          this.expand('日志')
-          this.expand('日志/' + month)
+          await docsApi.createFile(path, todayLogTemplate())
+          this.expandAncestors(path)
           await this.loadTree()
           this.openDoc(path)
         } catch (err) {
-          if (err.message !== '未登录') toast(err.message, true)
+          notifyError(err)
         }
       }
     },
@@ -243,7 +240,7 @@ export const useDocsStore = defineStore('docs', {
         this.searchResults = hits
         this.searchSummary = '找到 ' + hits.length + ' 条结果'
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
 
@@ -259,18 +256,17 @@ export const useDocsStore = defineStore('docs', {
 
     /* ---------------- 本地文件预览 ---------------- */
 
-    openLocalFile(file) {
+    async openLocalFile(file) {
       if (!file) return
       if (!extAllowed(file.name)) {
         toast('仅支持 .md / .markdown / .txt 文件', true)
         return
       }
-      const reader = new FileReader()
-      reader.onload = () => {
-        this.localFile = { name: file.name, content: String(reader.result || '') }
+      try {
+        this.localFile = { name: file.name, content: await readLocalFile(file) }
+      } catch (e) {
+        toast(e.message, true)
       }
-      reader.onerror = () => toast('文件读取失败', true)
-      reader.readAsText(file, 'utf-8')
     },
 
     hideLocalPreview() {
@@ -296,7 +292,7 @@ export const useDocsStore = defineStore('docs', {
         this.hideLocalPreview()
         this.openDoc(target)
       } catch (e) {
-        if (e.message !== '未登录') toast(e.message, true)
+        notifyError(e)
       }
     },
   },

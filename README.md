@@ -22,10 +22,27 @@ workbench/
 │   ├── public/vendor/vditor/     # Vditor 编辑器本地副本（无 CDN 依赖）
 │   └── src/modules/docs/         # 在线文档模块（路由 + API + 组件 + 状态）
 └── backend/                      # Maven 多模块单体（一个容器，2核2G 友好）
-    ├── workbench-common/         # 公共：统一响应 / 全局异常 / Token 认证 / CORS
+    ├── workbench-common/         # 公共基础设施：Token 认证机制 / CORS / 全局异常 / 统一响应（零端点、零业务）
     ├── workbench-module-docs/    # 在线文档模块（/api/docs/**）
-    └── workbench-server/         # 启动聚合应用（main + 配置）
+    └── workbench-server/         # 启动组装：main + 应用级端点（/api/auth/**）+ API 安全策略
 ```
+
+### 模块与包结构约定
+
+写代码前先对号入座——各模块允许 / 禁止的内容：
+
+| 模块 | 包名 | 允许 | 禁止 |
+|---|---|---|---|
+| `workbench-common` | `com.imhgl.workbench.common` | 跨模块基础设施：认证机制（TokenService / AuthInterceptor）、CORS、全局异常、统一响应 | 任何 `@RestController`；任何业务词汇（User、订单……） |
+| `workbench-module-<x>` | `com.imhgl.workbench.<x>` | 业务模块，内部模板 `config / controller / dto / model / service`，接口挂 `/api/<x>/**` | 依赖其他业务模块（只能依赖 common） |
+| `workbench-server` | `com.imhgl.workbench` | 组装：main、应用级端点（如认证 `/api/auth/**`）、API 安全策略（`ApiSecurityConfig`：哪些路径公开） | 业务逻辑 |
+
+- 依赖方向由 Maven 编译期强制：`server → 各业务模块 → common`，common 不依赖任何人，循环依赖写不出来
+- 机制与策略分离：认证「机制」（token 怎么签发校验）在 common；拦截「策略」（保护哪些路径、公开哪些端点）在 server，与它放行的 AuthController 同处一模块
+- 模块内 `dto/` 与 `model/` 分界：前者是请求入参，后者是领域与出参模型，controller 不收裸 `Map`
+- 单一职责底线：一个类超过约 400 行或出现第二种变化原因时按职责拆（参考 `DocStorage` 与 `DocSearchService` 的拆法：唯一碰文件系统的守门层 + 之上的查询功能）
+
+前端同理：`src/modules/<x>/` 自包含（routes + api + store + components + util），模块之间零引用；共享层只有 `src/api/http.js`（传输）、`src/stores/auth.js`（登录态）、`src/components` + `src/ui`（对话框 / Toast）。命令式的编辑器句柄不进 Pinia 状态，见 `modules/docs/editor.js` 的适配层写法。
 
 ### 功能（在线文档模块）
 
@@ -108,7 +125,7 @@ docker compose up -d --build
 
 ## 如何新增功能模块
 
-后端：在 `backend/` 下新建 `workbench-module-xxx` 子工程（参考 `workbench-module-docs`），父 POM 加 `<module>`，`workbench-server` 加依赖，包名以 `com.imhgl.workbench` 开头即可被自动扫描，接口挂 `/api/xxx/**` 自动纳入 Token 认证。
+后端：在 `backend/` 下新建 `workbench-module-xxx` 子工程，包名 `com.imhgl.workbench.xxx`，内部模板 `config / controller / dto / model / service`（参考 `workbench-module-docs`）；父 POM 加 `<module>`，`workbench-server` 加依赖。包名以 `com.imhgl.workbench` 开头即可被自动扫描，接口挂 `/api/xxx/**` 自动纳入 Token 认证。
 
 前端：在 `frontend/src/modules/` 下新建 `xxx/` 目录（`routes.js` + `api.js` + `components/`），在 `src/router/index.js` 中挂载路由即可。
 

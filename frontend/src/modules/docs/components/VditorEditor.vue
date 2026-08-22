@@ -4,11 +4,10 @@
  * cdn 选项指向同目录的 vendor 副本，GitHub Pages 上自包含、无外部 CDN。
  */
 import { onMounted, onBeforeUnmount, ref } from 'vue'
-import { useDocsStore } from '../store'
+import { attachEditor, markEditorReady } from '../editor'
 
 const emit = defineEmits(['input'])
 
-const store = useDocsStore()
 const el = ref(null)
 let vditor = null
 let suppressDirty = false
@@ -33,10 +32,10 @@ onMounted(() => {
       emit('input')
     },
     after: () => {
-      store.editorReady = true
+      markEditorReady()
     },
   })
-  store.attachEditor({
+  attachEditor({
     getValue: () => (vditor ? vditor.getValue() : ''),
     setValue: (text) => {
       if (!vditor) return
@@ -50,8 +49,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  store.editorReady = false
-  store.attachEditor(null)
+  attachEditor(null)
   if (vditor) {
     vditor.destroy()
     vditor = null

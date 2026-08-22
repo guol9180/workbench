@@ -1,5 +1,8 @@
-package com.imhgl.workbench.common.auth;
+package com.imhgl.workbench.auth;
 
+import com.imhgl.workbench.common.auth.AuthInterceptor;
+import com.imhgl.workbench.common.auth.AuthProperties;
+import com.imhgl.workbench.common.auth.TokenService;
 import com.imhgl.workbench.common.web.ApiResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,8 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * 密码登录：验证通过后签发无状态 token，前端保存并在请求头携带。
- * 登出由前端删除本地 token 完成（无状态 token 无需服务端注销）。
+ * 应用级认证端点（/api/auth/**）：密码登录签发无状态 token。
+ * 属于组装应用而非公共库——workbench-common 只提供认证机制（TokenService / AuthInterceptor），
+ * 不提供端点。登出由前端删除本地 token 完成（无状态 token 无需服务端注销）。
  */
 @RestController
 @RequestMapping("/api/auth")

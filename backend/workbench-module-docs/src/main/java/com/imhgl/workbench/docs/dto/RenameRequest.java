@@ -1,4 +1,4 @@
-package com.imhgl.workbench.docs.model;
+package com.imhgl.workbench.docs.dto;
 
 /** 重命名请求体 */
 public class RenameRequest {

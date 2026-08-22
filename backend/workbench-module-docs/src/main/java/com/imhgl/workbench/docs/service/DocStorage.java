@@ -3,7 +3,6 @@ package com.imhgl.workbench.docs.service;
 import com.imhgl.workbench.docs.config.DocsProperties;
 import com.imhgl.workbench.docs.model.DocContent;
 import com.imhgl.workbench.docs.model.DocNode;
-import com.imhgl.workbench.docs.model.SearchHit;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
@@ -12,24 +11,26 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Stream;
 
+/**
+ * 文档库的守门人与存取层：模块内唯一直接接触文件系统的类。
+ * 所有相对路径必须经 resolve() 做防穿越校验；树构建、读写、目录、重命名、删除都汇聚于此，
+ * 供 DocSearchService 等模块内查询功能复用。
+ */
 @Service
-public class DocService {
+public class DocStorage {
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("md", "markdown", "txt");
-    private static final int SEARCH_LIMIT = 100;
-    private static final int SNIPPET_LENGTH = 120;
 
     private final DocsProperties properties;
     private Path root;
 
-    public DocService(DocsProperties properties) {
+    public DocStorage(DocsProperties properties) {
         this.properties = properties;
     }
 
@@ -87,6 +88,16 @@ public class DocService {
         }
     }
 
+    /** 是否为扩展名白名单内的文档文件（树构建与搜索共用） */
+    boolean isDocFile(Path p) {
+        String name = p.getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        if (dot < 0) {
+            return false;
+        }
+        return ALLOWED_EXTENSIONS.contains(name.substring(dot + 1).toLowerCase(Locale.ROOT));
+    }
+
     public DocNode tree() throws IOException {
         return buildNode(root, "");
     }
@@ -115,15 +126,6 @@ public class DocService {
             }
         }
         return node;
-    }
-
-    private boolean isDocFile(Path p) {
-        String name = p.getFileName().toString();
-        int dot = name.lastIndexOf('.');
-        if (dot < 0) {
-            return false;
-        }
-        return ALLOWED_EXTENSIONS.contains(name.substring(dot + 1).toLowerCase(Locale.ROOT));
     }
 
     public DocContent read(String relPath) throws IOException {
@@ -194,52 +196,8 @@ public class DocService {
         }
     }
 
-    public List<SearchHit> search(String query) throws IOException {
-        String q = query == null ? "" : query.trim().toLowerCase(Locale.ROOT);
-        List<SearchHit> hits = new ArrayList<>();
-        if (q.isEmpty()) {
-            return hits;
-        }
-        try (Stream<Path> stream = Files.walk(root)) {
-            for (Path p : stream.filter(Files::isRegularFile).filter(this::isDocFile).sorted().toList()) {
-                String hit = matchFile(p, q);
-                if (hit != null) {
-                    hits.add(new SearchHit(toRel(p), hit));
-                    if (hits.size() >= SEARCH_LIMIT) {
-                        break;
-                    }
-                }
-            }
-        }
-        return hits;
-    }
-
-    private String matchFile(Path file, String lowerQuery) {
-        String name = file.getFileName().toString();
-        String snippet = null;
-        if (name.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
-            snippet = "【文件名匹配】" + name;
-        }
-        try {
-            String content = Files.readString(file, StandardCharsets.UTF_8);
-            String[] lines = content.split("\n", -1);
-            for (String line : lines) {
-                if (line.toLowerCase(Locale.ROOT).contains(lowerQuery)) {
-                    String trimmed = line.strip();
-                    if (trimmed.length() > SNIPPET_LENGTH) {
-                        trimmed = trimmed.substring(0, SNIPPET_LENGTH) + "…";
-                    }
-                    snippet = (snippet == null ? "" : snippet + " / ") + trimmed;
-                    break;
-                }
-            }
-        } catch (IOException ignored) {
-            // 跳过无法读取的文件
-        }
-        return snippet;
-    }
-
-    private String toRel(Path path) {
+    /** 绝对路径转根目录内相对路径（正斜杠分隔） */
+    String toRel(Path path) {
         return root.relativize(path).toString().replace('\\', '/');
     }
 }

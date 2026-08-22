@@ -1,39 +1,22 @@
 package com.imhgl.workbench.common.web;
 
-import com.imhgl.workbench.common.auth.AuthInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.List;
 
 /**
- * Web 基础配置：API 认证拦截 + CORS。
- * 新增功能模块只需使用 /api/&lt;module&gt;/** 前缀即可自动纳入认证保护。
+ * CORS 基础设施：允许的来源由 workbench.cors.allowed-origins（CORS_ALLOWED_ORIGINS）配置。
+ * 认证拦截等安全策略属于组装应用，见 workbench-server 的 ApiSecurityConfig。
  */
 @Configuration
-public class WorkbenchWebConfig implements WebMvcConfigurer {
+public class CorsConfig implements WebMvcConfigurer {
 
-    /** 无需登录即可访问的接口（认证自身 + CORS 预检） */
-    private static final List<String> PUBLIC_API_PATHS = List.of(
-            "/api/auth/login",
-            "/api/auth/status"
-    );
-
-    private final AuthInterceptor authInterceptor;
     private final CorsProperties corsProperties;
 
-    public WorkbenchWebConfig(AuthInterceptor authInterceptor, CorsProperties corsProperties) {
-        this.authInterceptor = authInterceptor;
+    public CorsConfig(CorsProperties corsProperties) {
         this.corsProperties = corsProperties;
-    }
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(authInterceptor)
-                .addPathPatterns("/api/**")
-                .excludePathPatterns(PUBLIC_API_PATHS);
     }
 
     @Override

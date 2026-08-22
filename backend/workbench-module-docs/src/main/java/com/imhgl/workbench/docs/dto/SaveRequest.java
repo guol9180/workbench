@@ -1,4 +1,4 @@
-package com.imhgl.workbench.docs.model;
+package com.imhgl.workbench.docs.dto;
 
 /** 创建 / 保存文档请求体 */
 public class SaveRequest {
