@@ -1,15 +1,13 @@
-package com.imhgl.workbench.web;
+package com.imhgl.workbench.framework.web;
 
-import com.imhgl.workbench.common.auth.AuthInterceptor;
+import com.imhgl.workbench.framework.auth.AuthInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * API 安全策略：哪些路径需要认证、哪些公开。
- * 机制（token 校验）在 workbench-common，策略随组装应用走——
- * 与本模块 AuthController 的公开端点同处一处，白名单不再散落两个模块。
- * 新增功能模块只需使用 /api/&lt;module&gt;/** 前缀即可自动纳入认证保护。
+ * API 安全策略：/api/** 默认全部需要认证，仅放行认证自身的 /api/auth/**。
+ * 新增业务模块只需使用 /api/&lt;module&gt;/** 前缀即可自动纳入认证保护。
  */
 @Configuration
 public class ApiSecurityConfig implements WebMvcConfigurer {

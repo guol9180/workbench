@@ -1,6 +1,7 @@
 package com.imhgl.workbench.docs.service;
 
 import com.imhgl.workbench.docs.model.SearchHit;
+import com.imhgl.workbench.infrastructure.storage.FileTreeStorage;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -14,7 +15,7 @@ import java.util.stream.Stream;
 
 /**
  * 文档搜索：文件名与内容关键字匹配 + 命中行摘要，结果上限 100 条。
- * 文件遍历、扩展名白名单与路径规则全部复用 DocStorage。
+ * 文件遍历与路径规则复用技术设施层的 FileTreeStorage。
  */
 @Service
 public class DocSearchService {
@@ -22,9 +23,9 @@ public class DocSearchService {
     private static final int SEARCH_LIMIT = 100;
     private static final int SNIPPET_LENGTH = 120;
 
-    private final DocStorage storage;
+    private final FileTreeStorage storage;
 
-    public DocSearchService(DocStorage storage) {
+    public DocSearchService(FileTreeStorage storage) {
         this.storage = storage;
     }
 
@@ -35,7 +36,7 @@ public class DocSearchService {
             return hits;
         }
         try (Stream<Path> stream = Files.walk(storage.getRoot())) {
-            for (Path p : stream.filter(Files::isRegularFile).filter(storage::isDocFile).sorted().toList()) {
+            for (Path p : stream.filter(Files::isRegularFile).filter(storage::isAllowedFile).sorted().toList()) {
                 String hit = matchFile(p, q);
                 if (hit != null) {
                     hits.add(new SearchHit(storage.toRel(p), hit));

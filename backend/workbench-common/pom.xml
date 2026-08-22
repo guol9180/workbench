@@ -12,12 +12,5 @@
 
     <artifactId>workbench-common</artifactId>
     <name>workbench-common</name>
-    <description>公共库：统一响应、全局异常、Token 认证、CORS</description>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-    </dependencies>
+    <description>公共能力：跨模块通用工具（禁止业务逻辑、禁止依赖任何模块）</description>
 </project>

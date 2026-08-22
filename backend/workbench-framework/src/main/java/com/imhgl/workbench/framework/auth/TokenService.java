@@ -1,4 +1,4 @@
-package com.imhgl.workbench.common.auth;
+package com.imhgl.workbench.framework.auth;
 
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;

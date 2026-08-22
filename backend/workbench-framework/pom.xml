@@ -10,20 +10,14 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>workbench-module-docs</artifactId>
-    <name>workbench-module-docs</name>
-    <description>在线文档模块（api 层为模块间唯一交互入口）</description>
+    <artifactId>workbench-framework</artifactId>
+    <name>workbench-framework</name>
+    <description>框架能力：认证（端点+拦截+Token）、统一响应、全局异常、CORS、API 安全策略（零业务）</description>
 
     <dependencies>
         <dependency>
-            <groupId>com.imhgl</groupId>
-            <artifactId>workbench-framework</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.imhgl</groupId>
-            <artifactId>workbench-infrastructure</artifactId>
-            <version>1.0.0</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
     </dependencies>
 </project>

@@ -1,7 +1,7 @@
-package com.imhgl.workbench.common.auth;
+package com.imhgl.workbench.framework.auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.imhgl.workbench.common.web.ApiResult;
+import com.imhgl.workbench.framework.web.ApiResult;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;

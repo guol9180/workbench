@@ -1,4 +1,4 @@
-package com.imhgl.workbench.common.web;
+package com.imhgl.workbench.framework.web;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

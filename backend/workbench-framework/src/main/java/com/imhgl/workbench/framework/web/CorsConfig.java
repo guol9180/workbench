@@ -1,4 +1,4 @@
-package com.imhgl.workbench.common.web;
+package com.imhgl.workbench.framework.web;
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -7,8 +7,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.util.List;
 
 /**
- * CORS 基础设施：允许的来源由 workbench.cors.allowed-origins（CORS_ALLOWED_ORIGINS）配置。
- * 认证拦截等安全策略属于组装应用，见 workbench-server 的 ApiSecurityConfig。
+ * CORS 框架配置：允许的来源由 workbench.cors.allowed-origins（CORS_ALLOWED_ORIGINS）配置。
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {

@@ -1,4 +1,4 @@
-package com.imhgl.workbench.common.web;
+package com.imhgl.workbench.framework.web;
 
 /**
  * 统一 API 响应包装：{success, message, data}
