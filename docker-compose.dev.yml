@@ -1,0 +1,38 @@
+# 本地开发用：仅启动 MySQL + Redis，后端（mvn spring-boot:run）与前端（npm run dev）在宿主机运行
+# 用法：docker compose -f docker-compose.dev.yml up -d
+services:
+  mysql:
+    image: mysql:8
+    container_name: workbench-dev-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=workbench
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3306:3306"
+    volumes:
+      - workbench-dev-mysql:/var/lib/mysql
+      # 初始化脚本入口：建表 SQL 放 backend/db/init/
+      - ./backend/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: workbench-dev-redis
+    command: ["redis-server", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  workbench-dev-mysql:

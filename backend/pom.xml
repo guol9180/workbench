@@ -22,6 +22,7 @@
         <module>workbench-common</module>
         <module>workbench-framework</module>
         <module>workbench-infrastructure</module>
+        <module>workbench-module-auth</module>
         <module>workbench-module-docs</module>
         <module>workbench-server</module>
     </modules>
@@ -29,5 +30,54 @@
     <properties>
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <mybatis-plus.version>3.5.17</mybatis-plus.version>
+        <mybatis-plus-join.version>1.5.9</mybatis-plus-join.version>
+        <springdoc.version>2.8.9</springdoc.version>
+        <hutool.version>5.8.38</hutool.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus-jsqlparser</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.yulichang</groupId>
+                <artifactId>mybatis-plus-join-boot-starter</artifactId>
+                <version>${mybatis-plus-join.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.hutool</groupId>
+                <artifactId>hutool-all</artifactId>
+                <version>${hutool.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!-- 全局基础件：所有模块可用（见 AGENTS.md 第 7 节技术选型） -->
+    <dependencies>
+        <!-- Lombok：编译期样板代码消除，不进运行时 -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Hutool：通用工具库 -->
+        <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+        </dependency>
+    </dependencies>
 </project>

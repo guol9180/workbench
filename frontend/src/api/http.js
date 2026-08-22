@@ -36,7 +36,7 @@ export async function api(url, options = {}) {
     throw new Error('未登录')
   }
   const body = await res.json()
-  if (!body.success) {
+  if (body.code !== 0) {
     throw new Error(body.message || '操作失败')
   }
   return body.data

@@ -1,7 +1,9 @@
-package com.imhgl.workbench.framework.auth;
+package com.imhgl.workbench.framework.interceptor;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.imhgl.workbench.framework.web.ApiResult;
+import com.imhgl.workbench.common.exception.ErrorCode;
+import com.imhgl.workbench.common.result.ApiResult;
+import com.imhgl.workbench.framework.token.TokenVerifier;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
@@ -20,11 +22,11 @@ public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String TOKEN_HEADER = "Authorization";
 
-    private final TokenService tokenService;
+    private final TokenVerifier tokenVerifier;
     private final ObjectMapper objectMapper;
 
-    public AuthInterceptor(TokenService tokenService, ObjectMapper objectMapper) {
-        this.tokenService = tokenService;
+    public AuthInterceptor(TokenVerifier tokenVerifier, ObjectMapper objectMapper) {
+        this.tokenVerifier = tokenVerifier;
         this.objectMapper = objectMapper;
     }
 
@@ -40,13 +42,13 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (header != null && header.startsWith("Bearer ")) {
             token = header.substring("Bearer ".length()).trim();
         }
-        if (token != null && tokenService.verify(token)) {
+        if (token != null && tokenVerifier.verify(token)) {
             return true;
         }
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        response.getWriter().write(objectMapper.writeValueAsString(ApiResult.error("未登录")));
+        response.getWriter().write(objectMapper.writeValueAsString(ApiResult.error(ErrorCode.UNAUTHORIZED, "未登录")));
         return false;
     }
 }

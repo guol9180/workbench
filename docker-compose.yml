@@ -15,9 +15,59 @@ services:
       # 允许的前端来源；默认 * 放行所有来源，可收紧为 https://workbench.imhgl.com
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
       - DOCS_ROOT=/data/docs
+      # MySQL / Redis 连接（compose 网络内服务名即主机名）
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-workbench}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - workbench-docs:/data/docs
-    mem_limit: 1g
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # 2c2g 总预算：app 768m + mysql 384m + redis 48m + caddy 128m + 系统余量
+    mem_limit: 768m
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8
+    container_name: workbench-mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-workbench}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      # 2c2g 服务器：控制 InnoDB 内存占用
+      - --innodb-buffer-pool-size=128M
+      - --performance-schema=OFF
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # 初始化脚本入口：建表 SQL 放 backend/db/init/，首次启动自动按文件名序执行
+      - ./backend/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 384m
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: workbench-redis
+    # 纯缓存用途：关闭持久化，32m 上限 + LRU 淘汰
+    command: ["redis-server", "--appendonly", "no", "--maxmemory", "32mb", "--maxmemory-policy", "allkeys-lru"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    mem_limit: 48m
     restart: unless-stopped
 
   # HTTPS 反向代理：自动申请并续期 api.imhgl.com 的证书（需放行 80/443）
@@ -35,4 +85,5 @@ services:
 
 volumes:
   workbench-docs:
+  mysql_data:
   caddy_data:

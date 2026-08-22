@@ -1,5 +1,7 @@
-package com.imhgl.workbench.framework.auth;
+package com.imhgl.workbench.auth.config;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.time.Duration;
@@ -8,6 +10,8 @@ import java.time.Duration;
  * 认证配置（workbench.auth.*）。
  * 密码与密钥通过环境变量 APP_PASSWORD / APP_TOKEN_SECRET 覆盖。
  */
+@Getter
+@Setter
 @ConfigurationProperties(prefix = "workbench.auth")
 public class AuthProperties {
 
@@ -19,28 +23,4 @@ public class AuthProperties {
 
     /** Token 有效期 */
     private Duration tokenTtl = Duration.ofDays(30);
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getTokenSecret() {
-        return tokenSecret;
-    }
-
-    public void setTokenSecret(String tokenSecret) {
-        this.tokenSecret = tokenSecret;
-    }
-
-    public Duration getTokenTtl() {
-        return tokenTtl;
-    }
-
-    public void setTokenTtl(Duration tokenTtl) {
-        this.tokenTtl = tokenTtl;
-    }
 }

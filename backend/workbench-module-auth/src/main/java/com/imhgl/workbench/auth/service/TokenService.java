@@ -1,5 +1,7 @@
-package com.imhgl.workbench.framework.auth;
+package com.imhgl.workbench.auth.service;
 
+import com.imhgl.workbench.auth.config.AuthProperties;
+import com.imhgl.workbench.framework.token.TokenVerifier;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,9 +17,10 @@ import java.time.Instant;
 /**
  * 无状态 Token：hex(过期时间) + "." + hex(HmacSHA256(密钥, 过期时间))。
  * 不占用任何服务端内存，重启不掉登录；签名为常数时间比较。
+ * 实现 framework 的 TokenVerifier 契约，供登录拦截器调用。
  */
 @Service
-public class TokenService {
+public class TokenService implements TokenVerifier {
 
     private static final Logger log = LoggerFactory.getLogger(TokenService.class);
 
@@ -48,6 +51,7 @@ public class TokenService {
     }
 
     /** 校验 token（格式、签名、有效期） */
+    @Override
     public boolean verify(String token) {
         if (token == null || token.isBlank()) {
             return false;

@@ -12,12 +12,40 @@
 
     <artifactId>workbench-infrastructure</artifactId>
     <name>workbench-infrastructure</name>
-    <description>技术设施：文件存储等外部资源适配（不依赖任何业务模块）</description>
+    <description>技术设施：MySQL / MyBatis-Plus / Redis / 文件存储等外部资源适配（不依赖任何业务模块）</description>
 
     <dependencies>
         <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-common</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <!-- ORM：MyBatis-Plus + 连表查询扩展（业务模块经本模块传递获得） -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.github.yulichang</groupId>
+            <artifactId>mybatis-plus-join-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- Redis：暂只引依赖与连接配置，出现消费场景前不写封装 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
     </dependencies>
 </project>

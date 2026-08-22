@@ -12,5 +12,5 @@
 
     <artifactId>workbench-common</artifactId>
     <name>workbench-common</name>
-    <description>公共能力：跨模块通用工具（禁止业务逻辑、禁止依赖任何模块）</description>
+    <description>公共能力：统一响应等通用基础能力（禁止业务逻辑、禁止依赖任何模块）</description>
 </project>

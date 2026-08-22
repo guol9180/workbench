@@ -7,11 +7,46 @@ spring:
     virtual:
       # Java 21 虚拟线程：文件 IO 型负载，2核小服务器友好
       enabled: true
+  datasource:
+    # MySQL：业务模块结构化数据存储（docs 模块仍为文件存储）
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:workbench}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_ROOT_PASSWORD:}
+    hikari:
+      # 2c2g 服务器：小连接池足够个人项目使用
+      maximum-pool-size: 5
+      minimum-idle: 2
+  data:
+    redis:
+      # 纯缓存用途（当前无消费场景，预留连接配置）
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 4
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+    db-config:
+      # 雪花 ID，无需数据库自增
+      id-type: assign_id
+
+springdoc:
+  api-docs:
+    # 生产环境可置 false 关闭接口文档
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+  swagger-ui:
+    path: /swagger-ui.html
 
 workbench:
-  docs:
-    # 文档库存储目录，建议指向持久化路径
-    docs-root: ${DOCS_ROOT:./data/docs}
+  storage:
+    # 文档库存储目录（基础设施层中性配置键，环境变量仍为 DOCS_ROOT），建议指向持久化路径
+    root: ${DOCS_ROOT:./data/docs}
   auth:
     # 登录密码（部署后务必修改）
     password: ${APP_PASSWORD:workbench123}

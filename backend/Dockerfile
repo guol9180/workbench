@@ -5,6 +5,9 @@ WORKDIR /build
 # 先拷贝 POM 下载依赖，利用 Docker 层缓存加速重建
 COPY pom.xml ./
 COPY workbench-common/pom.xml workbench-common/
+COPY workbench-framework/pom.xml workbench-framework/
+COPY workbench-infrastructure/pom.xml workbench-infrastructure/
+COPY workbench-module-auth/pom.xml workbench-module-auth/
 COPY workbench-module-docs/pom.xml workbench-module-docs/
 COPY workbench-server/pom.xml workbench-server/
 RUN mvn -q -B dependency:go-offline || true

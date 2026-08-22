@@ -1,6 +1,10 @@
-package com.imhgl.workbench.framework.auth;
+package com.imhgl.workbench.auth.controller;
 
-import com.imhgl.workbench.framework.web.ApiResult;
+import com.imhgl.workbench.auth.config.AuthProperties;
+import com.imhgl.workbench.auth.dto.LoginRequest;
+import com.imhgl.workbench.auth.service.TokenService;
+import com.imhgl.workbench.common.result.ApiResult;
+import com.imhgl.workbench.framework.interceptor.AuthInterceptor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -11,8 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 /**
- * 认证端点（/api/auth/**）：密码登录签发无状态 token。认证整体属于框架能力，
- * 端点与拦截器、TokenService 同处本模块，自包含、不依赖任何业务模块。
+ * 认证端点（/api/auth/**）：密码登录签发无状态 token，查询登录状态。
+ * token 的签发与校验由本模块 TokenService 承担（实现 framework 的 TokenVerifier 契约）。
  * 登出由前端删除本地 token 完成（无状态 token 无需服务端注销）。
  */
 @RestController
@@ -28,8 +32,8 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResult<Map<String, Object>> login(@RequestBody Map<String, String> body) {
-        String password = body.get("password");
+    public ApiResult<Map<String, Object>> login(@RequestBody LoginRequest request) {
+        String password = request.getPassword();
         if (password == null || !password.equals(properties.getPassword())) {
             return ApiResult.error("密码错误");
         }

@@ -1,6 +1,11 @@
 package com.imhgl.workbench.docs.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /** 文档内容 */
+@Getter
+@Setter
 public class DocContent {
 
     private String path;
@@ -13,30 +18,6 @@ public class DocContent {
     public DocContent(String path, String name, String content) {
         this.path = path;
         this.name = name;
-        this.content = content;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getContent() {
-        return content;
-    }
-
-    public void setContent(String content) {
         this.content = content;
     }
 }

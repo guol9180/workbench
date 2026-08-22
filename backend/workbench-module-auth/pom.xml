@@ -10,9 +10,9 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>workbench-framework</artifactId>
-    <name>workbench-framework</name>
-    <description>框架能力：登录拦截器、无状态 Token 机制、全局异常、CORS、API 安全策略（零业务、零端点）</description>
+    <artifactId>workbench-module-auth</artifactId>
+    <name>workbench-module-auth</name>
+    <description>认证授权业务模块（/api/auth/** 端点；Token 机制由 framework 提供）</description>
 
     <dependencies>
         <dependency>
@@ -21,13 +21,9 @@
             <version>1.0.0</version>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-        <!-- 接口文档：/v3/api-docs + Swagger UI（放行规则见 ApiSecurityConfig） -->
-        <dependency>
-            <groupId>org.springdoc</groupId>
-            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-framework</artifactId>
+            <version>1.0.0</version>
         </dependency>
     </dependencies>
 </project>

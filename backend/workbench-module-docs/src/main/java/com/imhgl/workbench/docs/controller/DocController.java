@@ -7,7 +7,7 @@ import com.imhgl.workbench.docs.dto.SaveRequest;
 import com.imhgl.workbench.docs.model.DocContent;
 import com.imhgl.workbench.docs.model.DocNode;
 import com.imhgl.workbench.docs.model.SearchHit;
-import com.imhgl.workbench.framework.web.ApiResult;
+import com.imhgl.workbench.common.result.ApiResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;

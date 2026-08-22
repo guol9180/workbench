@@ -31,7 +31,7 @@ public class FileTreeStorage {
 
     @PostConstruct
     public void init() throws IOException {
-        root = Paths.get(properties.getDocsRoot()).toAbsolutePath().normalize();
+        root = Paths.get(properties.getRoot()).toAbsolutePath().normalize();
         Files.createDirectories(root);
     }
 
