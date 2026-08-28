@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <!-- favicon 版:笔画加粗,保证 16px 下 W 可辨 -->
+  <defs>
+    <linearGradient id="wb-g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e3a8a"/>
+      <stop offset="0.6" stop-color="#2563eb"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#wb-g)"/>
+  <polyline points="144,182 208,330 256,256 304,330 368,182"
+            fill="none" stroke="#ffffff" stroke-width="78"
+            stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
