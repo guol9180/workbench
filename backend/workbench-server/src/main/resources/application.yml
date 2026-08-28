@@ -7,6 +7,11 @@ spring:
     virtual:
       # Java 21 虚拟线程：文件 IO 型负载，2核小服务器友好
       enabled: true
+  servlet:
+    multipart:
+      # devsetup 工件上传（IDEA 配置快照 zip）上限
+      max-file-size: 16MB
+      max-request-size: 17MB
   datasource:
     # MySQL：业务模块结构化数据存储（docs 模块仍为文件存储）
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DATABASE:workbench}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
@@ -47,6 +52,16 @@ workbench:
   storage:
     # 文档库存储目录（基础设施层中性配置键，环境变量仍为 DOCS_ROOT），建议指向持久化路径
     root: ${DOCS_ROOT:./data/docs}
+  oss:
+    # 阿里云 OSS（devsetup 工件等二进制内容的存储载体）；四项齐全才启用，缺省时工件功能报友好错误
+    endpoint: ${OSS_ENDPOINT:}
+    bucket: ${OSS_BUCKET:}
+    access-key: ${OSS_ACCESS_KEY:}
+    secret: ${OSS_SECRET:}
+    # 对象 key 统一前缀（隔离同桶其他数据）
+    prefix: ${OSS_PREFIX:workbench}
+    # 预签名下载 URL 有效期（分钟）
+    url-ttl-minutes: 10
   auth:
     # 登录密码（部署后务必修改）
     password: ${APP_PASSWORD:workbench123}

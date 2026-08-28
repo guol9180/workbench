@@ -20,6 +20,11 @@ services:
       - MYSQL_PORT=3306
       - MYSQL_DATABASE=${MYSQL_DATABASE:-workbench}
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}
+      # 阿里云 OSS（devsetup 工件存储；四项齐全才启用，AccessKey 建议用 RAM 子账号仅授该桶权限）
+      - OSS_ENDPOINT=${OSS_ENDPOINT:-}
+      - OSS_BUCKET=${OSS_BUCKET:-}
+      - OSS_ACCESS_KEY=${OSS_ACCESS_KEY:-}
+      - OSS_SECRET=${OSS_SECRET:-}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     volumes:

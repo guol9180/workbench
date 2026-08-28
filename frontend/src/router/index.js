@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import docsRoutes from '../modules/docs/routes'
+import devsetupRoutes from '../modules/devsetup/routes'
 
 // hash 路由：GitHub Pages 无需 404.html 兜底，深链接直接可用
 const router = createRouter({
@@ -8,6 +9,7 @@ const router = createRouter({
   routes: [
     { path: '/', redirect: '/docs' },
     ...docsRoutes,
+    ...devsetupRoutes,
   ],
 })
 

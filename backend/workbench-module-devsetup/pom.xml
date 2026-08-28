@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.imhgl</groupId>
+        <artifactId>workbench-backend</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>workbench-module-devsetup</artifactId>
+    <name>workbench-module-devsetup</name>
+    <description>开发环境管家模块：工具清单 / 配置下发 / 引导脚本（api 层为模块间唯一交互入口）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-common</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-framework</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-infrastructure</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+    </dependencies>
+</project>

@@ -2,7 +2,7 @@
 
 个人工作台系统：**前端部署在 GitHub Pages，后端跑在自己的服务器 Docker 容器里**，按功能模块组织，方便后续扩展更多服务。
 
-首个功能模块：**在线 Markdown 文档系统**；另有**认证授权模块**（密码登录 + 无状态 Token）。
+首个功能模块：**在线 Markdown 文档系统**；另有**认证授权模块**（密码登录 + 无状态 Token）与**开发环境管家模块**（开发工具清单 / 配置下发 / 新机一键引导，IDEA 插件与设置恢复全程不依赖 JetBrains 账号）。
 
 ## 架构
 
@@ -26,14 +26,16 @@
 workbench/
 ├── frontend/                     # Vue 3 + Vite + Pinia，发布到 GitHub Pages
 │   ├── public/vendor/vditor/     # Vditor 编辑器本地副本（无 CDN 依赖）
-│   └── src/modules/docs/         # 在线文档模块（路由 + API + 组件 + 状态）
-└── backend/                      # Maven 模块化单体（一个容器，2核2G 友好）
-    ├── workbench-common/         # 公共能力：统一响应 / 错误码 / 业务异常 / 分页对象（零依赖，禁止业务）
-    ├── workbench-framework/      # 框架能力：登录拦截器 + Token 校验契约 + 全局异常 + CORS（零端点）
-    ├── workbench-infrastructure/ # 技术设施：MySQL / MyBatis-Plus / Redis 依赖与配置、文件树存储（防穿越 / 白名单，中性模型）
-    ├── workbench-module-auth/    # 认证授权业务模块（/api/auth/**，Token 机制由 framework 提供）
-    ├── workbench-module-docs/    # 在线文档业务模块（api 层为模块间唯一交互入口）
-    └── workbench-server/         # 聚合启动（仅 main + 配置，禁止业务、禁止被依赖）
+    │   └── src/modules/docs/         # 在线文档模块（路由 + API + 组件 + 状态）
+    │   └── src/modules/devsetup/     # 开发环境管家模块（工具清单 + 配置 + 引导）
+    └── backend/                      # Maven 模块化单体（一个容器，2核2G 友好）
+        ├── workbench-common/         # 公共能力：统一响应 / 错误码 / 业务异常 / 分页对象（零依赖，禁止业务）
+        ├── workbench-framework/      # 框架能力：登录拦截器 + Token 校验契约 + 全局异常 + CORS（零端点）
+        ├── workbench-infrastructure/ # 技术设施：MySQL / MyBatis-Plus / Redis 依赖与配置、文件树存储（防穿越 / 白名单，中性模型）、阿里云 OSS 封装（预签名 URL）
+        ├── workbench-module-auth/    # 认证授权业务模块（/api/auth/**，Token 机制由 framework 提供）
+        ├── workbench-module-docs/    # 在线文档业务模块（api 层为模块间唯一交互入口）
+        ├── workbench-module-devsetup/# 开发环境管家业务模块（/api/devsetup/**，工件存 OSS，MySQL 存元数据）
+        └── workbench-server/         # 聚合启动（仅 main + 配置，禁止业务、禁止被依赖）
 ```
 
 ### 模块与包结构约定
@@ -128,6 +130,10 @@ docker compose up -d --build
 | `MYSQL_ROOT_PASSWORD` | `please-change-mysql-password` | MySQL root 密码（**务必修改**） |
 | `MYSQL_DATABASE` | `workbench` | 数据库名 |
 | `REDIS_PASSWORD` | 空 | Redis 密码（未设密码留空） |
+| `OSS_ENDPOINT` | 空 | 阿里云 OSS 地址（如 `https://oss-cn-hangzhou.aliyuncs.com`） |
+| `OSS_BUCKET` | 空 | OSS 桶名（四项齐全才启用工件功能） |
+| `OSS_ACCESS_KEY` | 空 | OSS AccessKey ID（建议 RAM 子账号，仅授该桶权限） |
+| `OSS_SECRET` | 空 | OSS AccessKey Secret |
 | `SPRINGDOC_API_DOCS_ENABLED` | `true` | 接口文档开关（生产可关） |
 
 架构：外部流量 → Caddy（443，HTTPS）→ workbench 容器（8080，仅本机回环），compose 中后端端口只绑定 `127.0.0.1`，不直接暴露公网。
@@ -152,4 +158,5 @@ docker compose up -d --build
 
 - 文档：`.md` 纯文本保存在 `DOCS_ROOT`（Docker 卷 `workbench-docs`），拷贝该目录即完成备份，可用任何 Markdown 软件打开
 - MySQL：`docker exec workbench-mysql mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" workbench > backup.sql`
+- devsetup 工件（IDEA 配置快照等）存阿里云 OSS（MySQL 只有元数据），桶内数据即备份对象；下载走预签名 URL，不占服务器带宽
 - Redis 为纯缓存（无持久化数据），无需备份

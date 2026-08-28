@@ -35,6 +35,7 @@ function logout() {
       <button class="top-btn primary" title="Ctrl+S" @click="store.saveDoc()">保存</button>
       <button class="top-btn" title="打开/创建今日工作日志" @click="store.openToday()">今日工作</button>
       <button class="top-btn" title="选择本地 .md 文件在浏览器中预览" @click="openLocalPicker">打开本地文件</button>
+      <button class="top-btn" title="开发环境管家：新机一键安装与配置" @click="router.push('/setup')">环境管家</button>
       <button class="top-btn" title="退出登录" @click="logout">登出</button>
     </div>
     <input ref="fileInput" type="file" accept=".md,.markdown,.txt" class="file-hidden" @change="onFileChange">

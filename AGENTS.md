@@ -46,6 +46,7 @@ workbench
 ├── workbench-infrastructure     # 技术设施（中间件与外部资源封装，中性模型）
 ├── workbench-module-auth        # 认证授权业务模块（/api/auth/**）
 ├── workbench-module-docs        # 在线文档业务模块（/api/docs/**）
+├── workbench-module-devsetup    # 开发环境管家业务模块（/api/devsetup/**）
 ├── workbench-module-XXX业务功能  # 未来扩展的业务模块
 └── workbench-server             # 聚合启动（main + 配置，禁止业务）
 ```
@@ -88,7 +89,7 @@ workbench
 
 附加规则：只产出中性模型与中性配置（如 `StorageNode`、`workbench.storage.*`），禁止业务色彩命名。
 
-当前内容：`storage/`（FileTreeStorage、StorageNode、FileStorageProperties）、`mybatis/`（MybatisPlusConfig 分页插件、Pages 分页结果适配）；已引入 MySQL 驱动、MyBatis-Plus、MyBatis-Plus-Join、Redis 依赖（见第 7 节技术选型）。
+当前内容：`storage/`（FileTreeStorage、StorageNode、FileStorageProperties；`storage/oss/` OssProperties、OssStorage——阿里云 OSS 中性封装，预签名 URL 下载）、`mybatis/`（MybatisPlusConfig 分页插件、Pages 分页结果适配）；已引入 MySQL 驱动、MyBatis-Plus、MyBatis-Plus-Join、Redis、阿里云 OSS SDK 依赖（见第 7 节技术选型）。
 
 ### 3.4 workbench-module-auth（com.imhgl.workbench.auth）
 
@@ -100,7 +101,11 @@ workbench
 
 职责：在线文档功能相关业务代码（文档/文件夹 CRUD、全文搜索）。
 
-### 3.6 workbench-server（com.imhgl.workbench）
+### 3.6 workbench-module-devsetup（com.imhgl.workbench.devsetup）
+
+职责：开发环境管家业务，对外提供 `/api/devsetup/**`。维护开发工具清单（winget / ZIP / IDEA 插件三类）、配置文件下发内容与二进制工件（IDEA 配置快照），并生成 PowerShell 引导/采集脚本供新旧电脑一键恢复环境（IDEA 插件与设置恢复全程不依赖 JetBrains 账号）。内部结构齐全（api/controller/dto/model/entity/mapper/service）；工件的二进制内容存阿里云 OSS（经 infrastructure 的 OssStorage），MySQL 只存元数据；下载走 OSS 预签名 URL 302 跳转，不占服务器带宽。建表脚本见 `backend/db/init/V1__devsetup_schema.sql`。
+
+### 3.7 workbench-server（com.imhgl.workbench）
 
 职责：启动模块、聚合模块、部署模块。
 
@@ -167,6 +172,7 @@ com.imhgl.workbench.<x>/
 | ORM | MyBatis-Plus（`mybatis-plus-spring-boot3-starter` + `mybatis-plus-jsqlparser`） | 3.5.17 | infrastructure |
 | 连表查询 | MyBatis-Plus-Join（`mybatis-plus-join-boot-starter`） | 1.5.9 | infrastructure |
 | 缓存 | Redis（`spring-boot-starter-data-redis`） | parent 管理 | infrastructure |
+| 对象存储 | 阿里云 OSS（`com.aliyun.oss:aliyun-sdk-oss`） | 3.18.3 | infrastructure |
 | 接口文档 | SpringDoc OpenAPI（`springdoc-openapi-starter-webmvc-ui`） | 2.8.9 | framework |
 | 样板代码 | Lombok | parent 管理（provided） | 父 POM 全局 |
 | 通用工具 | Hutool（`hutool-all`） | 5.8.38 | 父 POM 全局 |
@@ -177,7 +183,7 @@ com.imhgl.workbench.<x>/
 2. 版本统一由父 POM `dependencyManagement` 管理；`mysql-connector-j`、redis starter、lombok 由 Spring Boot parent 管理。
 3. 依赖归属：DB / ORM / 缓存等中间件封装 → infrastructure；接口文档等 Web 框架能力 → framework；lombok / hutool 全局基础件 → 父 POM。
 4. 业务模块经 infrastructure 传递获得 MyBatis-Plus / MPJ；mapper 接口用 `@Mapper` 注解即被自动扫描，无需集中 `@MapperScan`。
-5. docs 模块的文档存储仍为文件系统（.md 即数据）；MySQL 服务承载后续业务模块（博客等）的结构化数据。
+5. docs 模块的文档存储仍为文件系统（.md 即数据）；MySQL 服务承载业务模块（devsetup 等）的结构化数据；devsetup 的二进制工件（IDEA 配置快照等）存阿里云 OSS，MySQL 只存元数据，下载走预签名 URL 302 跳转。
 6. Redis 当前仅引入依赖与连接配置，出现真实消费场景前不写封装类。
-7. 相关环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USERNAME` / `MYSQL_ROOT_PASSWORD`、`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`；接口文档开关 `SPRINGDOC_API_DOCS_ENABLED`（默认开启，生产可关）。
+7. 相关环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USERNAME` / `MYSQL_ROOT_PASSWORD`、`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`、`OSS_ENDPOINT` / `OSS_BUCKET` / `OSS_ACCESS_KEY` / `OSS_SECRET`（可选 `OSS_PREFIX`，默认 `workbench`；四项必填齐才启用 OSS，缺省时工件功能报友好错误）；接口文档开关 `SPRINGDOC_API_DOCS_ENABLED`（默认开启，生产可关）。
 8. 分页约定：查询入参用 common 的 `PageQuery`，MP 查询用 `Page`，返回经 infrastructure 的 `Pages.toResult()` 转为 common 的 `PageResult`。
