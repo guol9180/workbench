@@ -22,6 +22,9 @@ export const useDocsStore = defineStore('docs', {
     currentPath: '',
     savedContent: '',
     dirty: false,
+    saving: false,
+    saveStatus: '', // '' | 'saving' | 'ok' | 'error'
+    savedAt: '',
     expanded: loadExpanded(),
     searching: false,
     searchResults: [],
@@ -78,6 +81,8 @@ export const useDocsStore = defineStore('docs', {
         this.currentPath = doc.path
         this.savedContent = doc.content == null ? '' : doc.content
         this.dirty = false
+        this.saveStatus = ''
+        this.savedAt = ''
         setEditorValue(doc.content)
         this.hideLocalPreview()
         this.sidebarOpen = false
@@ -112,10 +117,38 @@ export const useDocsStore = defineStore('docs', {
         }
         this.savedContent = content
         this.dirty = false
+        this.saveStatus = 'ok'
+        this.savedAt = clockNow()
         await this.loadTree()
         toast('已保存')
       } catch (e) {
         notifyError(e)
+      }
+    },
+
+    /**
+     * 静默自动保存：仅限已命名文档（未命名仍走手动保存弹命名框）。
+     * 失败不弹 toast（顶栏状态字提示），避免断网时连续输入刷屏。
+     * 保存期间若又有输入，落定后 1 秒串行补存，不并发。
+     */
+    async autosave() {
+      if (!isEditorReady() || this.saving || !this.currentPath || !this.dirty) return
+      this.saving = true
+      this.saveStatus = 'saving'
+      try {
+        const content = getEditorValue()
+        await docsApi.saveFile(this.currentPath, content)
+        this.savedContent = content
+        this.refreshDirty() // 保存期间有输入则保持脏标记，供补存判断
+        this.saveStatus = 'ok'
+        this.savedAt = clockNow()
+        if (this.dirty) {
+          setTimeout(() => this.autosave(), 1000)
+        }
+      } catch (e) {
+        this.saveStatus = 'error'
+      } finally {
+        this.saving = false
       }
     },
 
@@ -308,4 +341,9 @@ function loadExpanded() {
 
 function saveExpanded(set) {
   localStorage.setItem(EXPANDED_KEY, JSON.stringify([...set]))
+}
+
+function clockNow() {
+  const d = new Date()
+  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
 }

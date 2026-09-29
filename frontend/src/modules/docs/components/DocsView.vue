@@ -10,10 +10,13 @@ const store = useDocsStore()
 const dropActive = ref(false)
 
 let dirtyTimer = null
+let autosaveTimer = null
 
 function onEditorInput() {
   clearTimeout(dirtyTimer)
   dirtyTimer = setTimeout(() => store.refreshDirty(), 250)
+  clearTimeout(autosaveTimer)
+  autosaveTimer = setTimeout(() => store.autosave(), 2000)
 }
 
 /* 全局键盘：Ctrl+S 保存，Esc 关闭本地预览 */
@@ -82,6 +85,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('dragover', onDragOver)
   window.removeEventListener('drop', onDrop)
   clearTimeout(dirtyTimer)
+  clearTimeout(autosaveTimer)
 })
 </script>
 

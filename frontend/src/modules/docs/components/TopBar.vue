@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../../../stores/auth'
 import { useDocsStore } from '../store'
@@ -22,6 +22,14 @@ function logout() {
   auth.logout()
   router.push('/login')
 }
+
+/** 自动保存的安静状态字：saving/ok/error，空串时不渲染 */
+const saveStatusText = computed(() => {
+  if (store.saveStatus === 'saving') return '保存中…'
+  if (store.saveStatus === 'ok') return store.savedAt ? '已自动保存 ' + store.savedAt : '已保存'
+  if (store.saveStatus === 'error') return '自动保存失败'
+  return ''
+})
 </script>
 
 <template>
@@ -30,6 +38,7 @@ function logout() {
     <div class="title-wrap">
       <span class="app-name">工作台</span>
       <span class="doc-title" :class="{ dirty: store.dirty }">{{ store.docTitle }}</span>
+      <span v-if="saveStatusText" class="save-status" :class="store.saveStatus">{{ saveStatusText }}</span>
     </div>
     <div class="topbar-actions">
       <button class="top-btn primary" title="Ctrl+S" @click="store.saveDoc()">保存</button>

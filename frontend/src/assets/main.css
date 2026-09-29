@@ -72,6 +72,15 @@ button { font-family: inherit; cursor: pointer; }
 
 .doc-title.dirty::after { content: " ●"; color: #f59e0b; }
 
+.save-status {
+    flex: none;
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.save-status.error { color: var(--danger); }
+
 .topbar-actions {
     display: flex;
     gap: 8px;
