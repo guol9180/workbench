@@ -1,5 +1,5 @@
 /*!
- * Vditor v3.11.3 - A markdown editor written in TypeScript.
+ * Vditor v4.0.0 - A markdown editor written in TypeScript.
  *
  * MIT License
  *
@@ -45,7 +45,7 @@ return /******/ (() => { // webpackBootstrap
 /* harmony export */   "g": () => (/* binding */ Constants)
 /* harmony export */ });
 /* unused harmony export VDITOR_VERSION */
-var _VDITOR_VERSION = (/* unused pure expression or super */ null && ("3.11.3"));
+var _VDITOR_VERSION = (/* unused pure expression or super */ null && ("4.0.0"));
 
 var Constants = /** @class */ (function () {
     function Constants() {
@@ -93,7 +93,7 @@ var Constants = /** @class */ (function () {
         // 别名
         "js", "ts", "html", "toml", "c#", "bat"
     ];
-    Constants.CDN = "https://unpkg.com/vditor@".concat("3.11.3");
+    Constants.CDN = "https://unpkg.com/vditor@".concat("4.0.0");
     Constants.MARKDOWN_OPTIONS = {
         autoSpace: false,
         callout: true,
@@ -2102,6 +2102,9 @@ var merge = function () {
 
 
 var getEditorRange = function (vditor) {
+    if (vditor.currentMode === "sv") {
+        throw new Error("SV mode uses textarea selection");
+    }
     var range;
     var element = vditor[vditor.currentMode].element;
     if (getSelection().rangeCount > 0) {
@@ -2110,8 +2113,9 @@ var getEditorRange = function (vditor) {
             return range;
         }
     }
-    if (vditor[vditor.currentMode].range) {
-        return vditor[vditor.currentMode].range;
+    var lastRange = vditor.currentMode === "ir" ? vditor.ir.range : vditor.wysiwyg.range;
+    if (lastRange) {
+        return lastRange;
     }
     element.focus();
     range = element.ownerDocument.createRange();
@@ -2350,7 +2354,12 @@ var insertHTML = function (html, vditor) {
     pasteElement.innerHTML = html;
     var range = getEditorRange(vditor);
     if (range.toString() !== "") {
-        vditor[vditor.currentMode].preventInput = true;
+        if (vditor.currentMode === "ir") {
+            vditor.ir.preventInput = true;
+        }
+        else if (vditor.currentMode === "wysiwyg") {
+            vditor.wysiwyg.preventInput = true;
+        }
         document.execCommand("delete", false, "");
     }
     if (pasteElement.firstElementChild &&

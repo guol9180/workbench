@@ -17,7 +17,7 @@
 ### 技术栈
 
 - **后端**：Java 21（虚拟线程）· Spring Boot 3.5.4 · MySQL 8 · MyBatis-Plus 3.5.17（含 MyBatis-Plus-Join 连表查询）· Redis（预留）· SpringDoc OpenAPI（Swagger UI）· Lombok · Hutool
-- **前端**：Vue 3 · Vite · Pinia · vue-router 4（hash）· Vditor（本地副本，无 CDN）
+- **前端**：Vue 3 · Vite · Pinia · vue-router 4（hash）· Vditor 4.0.0（本地副本，无 CDN）
 - **部署**：Docker Compose（app + MySQL + Redis + Caddy HTTPS 反代）· GitHub Actions（前端 Pages / 后端 GHCR 镜像）
 
 ### 仓库结构（Monorepo）
@@ -25,7 +25,7 @@
 ```
 workbench/
 ├── frontend/                     # Vue 3 + Vite + Pinia，发布到 GitHub Pages
-│   ├── public/vendor/vditor/     # Vditor 编辑器本地副本（无 CDN 依赖）
+│   ├── public/vendor/vditor/     # Vditor 产物本地副本 + VERSION（无 CDN 依赖，npm run sync:vditor 生成）
     │   └── src/modules/docs/         # 在线文档模块（路由 + API + 组件 + 状态）
     │   └── src/modules/devsetup/     # 开发环境管家模块（工具清单 + 配置 + 引导）
     └── backend/                      # Maven 模块化单体（一个容器，2核2G 友好）
@@ -88,6 +88,19 @@ npm run dev                                         # http://localhost:5173
 ```
 
 本地开发时前端请求由 Vite 代理转发到 `localhost:8080`，无需任何跨域配置。Windows 下可直接双击根目录 `start.bat`。
+
+### 升级 Vditor
+
+Vditor 不用打包器引入：`index.html` 以 `<script>` 加载本地副本，编辑器懒加载的 i18n / 图标 / katex / mermaid / highlight.js 也按 `cdn` 选项指向同一目录，因此 `frontend/public/vendor/vditor/dist` 全量入库，保证构建产物自包含、无 CDN 依赖。升级步骤：
+
+```bash
+cd frontend
+# 1. 改 package.json 中 devDependencies.vditor 的精确版本（不带 ^）
+npm install          # 2. 安装新版依赖
+npm run sync:vditor  # 3. 整份同步到 public/vendor/vditor/dist 并写入 VERSION
+```
+
+同步后按冒烟清单回归编辑器：即时渲染模式编辑与保存、`Ctrl+S` 与自动保存、切换文档、源码模式输入、预览 / 大纲 / 全屏、拖入本地 `.md` 预览、公式与流程图渲染。脚本整目录 verbatim 复制、不做裁剪，因此 vendor 的 git diff 与上游发布增量一一对应。
 
 ## 部署
 

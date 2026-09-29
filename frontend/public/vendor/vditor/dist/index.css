@@ -1,5 +1,5 @@
 /*!
- * Vditor v3.11.3 - A markdown editor written in TypeScript.
+ * Vditor v4.0.0 - A markdown editor written in TypeScript.
  *
  * MIT License
  *
@@ -25,7 +25,7 @@
  *
  */
 /*!
- * Vditor v3.11.3 - A markdown editor written in TypeScript.
+ * Vditor v4.0.0 - A markdown editor written in TypeScript.
  *
  * MIT License
  *
@@ -1606,7 +1606,32 @@
 .vditor-wysiwyg div[data-type="link-ref-defs-block"] {
   color: var(--blockquote-color);
 }
+.vditor-wysiwyg__mobile-toolbar {
+  display: none;
+}
 @media screen and (max-width: 520px) {
+  .vditor-wysiwyg__mobile-toolbar {
+    display: block;
+    float: left;
+    height: 21px;
+    position: relative;
+    width: 23px;
+  }
+  .vditor-wysiwyg__mobile-actions {
+    box-sizing: border-box;
+    flex-wrap: wrap;
+    left: 0;
+    padding: 5px;
+    top: 26px;
+    white-space: normal;
+  }
+  .vditor-wysiwyg__mobile-actions.vditor-panel--left {
+    left: auto;
+    right: 0;
+  }
+  .vditor-wysiwyg__mobile-actions--open {
+    display: flex;
+  }
   .vditor-wysiwyg h1:before,
   .vditor-wysiwyg h2:before,
   .vditor-wysiwyg h3:before,
@@ -1864,89 +1889,17 @@
   word-break: break-word;
   word-wrap: break-word;
 }
-.vditor-sv[contenteditable="false"] {
+.vditor-sv:disabled {
   opacity: 0.3;
   cursor: not-allowed;
 }
-.vditor-sv:empty::before {
-  content: attr(placeholder);
+.vditor-sv::-moz-placeholder {
+  color: var(--second-color);
+}
+.vditor-sv::placeholder {
   color: var(--second-color);
 }
 .vditor-sv:focus {
   background-color: var(--textarea-background-color);
-}
-.vditor-sv:after {
-  content: "";
-  height: var(--editor-bottom);
-  display: block;
-}
-.vditor-sv span[data-type="newline"] + span[data-type="text"]:empty {
-  display: inherit;
-}
-.vditor-sv .sup {
-  vertical-align: super;
-  font-size: smaller;
-}
-.vditor-sv .strong {
-  font-weight: bold;
-}
-.vditor-sv .em {
-  font-style: italic;
-}
-.vditor-sv .s {
-  text-decoration: line-through;
-}
-.vditor-sv .mark:not(.vditor-sv__marker) {
-  background-color: yellow;
-  color: black;
-}
-.vditor-sv .h1 {
-  font-size: 1.75em;
-  line-height: 44px;
-}
-.vditor-sv .h2 {
-  font-size: 1.55em;
-  line-height: 38px;
-}
-.vditor-sv .h3 {
-  font-size: 1.38em;
-  line-height: 27px;
-}
-.vditor-sv .h4 {
-  font-size: 1.25em;
-  line-height: 25px;
-}
-.vditor-sv .h5 {
-  font-size: 1.13em;
-}
-.vditor-sv .h6 {
-  font-size: 1em;
-}
-.vditor-sv__marker {
-  color: var(--second-color);
-}
-.vditor-sv__marker--heading {
-  color: var(--ir-heading-color);
-}
-.vditor-sv__marker--bi {
-  color: var(--ir-bi-color);
-}
-.vditor-sv__marker--link {
-  color: var(--ir-link-color);
-}
-.vditor-sv__marker--title {
-  color: var(--ir-title-color);
-}
-.vditor-sv__marker--bracket {
-  color: var(--ir-bracket-color);
-}
-.vditor-sv__marker--paren {
-  color: var(--ir-paren-color);
-}
-.vditor-sv__marker--info {
-  color: var(--ir-heading-color);
-}
-.vditor-sv__marker--strong {
-  font-weight: bold;
 }
 
