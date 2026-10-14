@@ -13,6 +13,18 @@ let vditor = null
 let suppressDirty = false
 
 onMounted(() => {
+  // 句柄先建好，after 回调要带上它——就绪前的 setValue 会挂起在适配层，就绪后由句柄补写
+  const handle = {
+    getValue: () => (vditor ? vditor.getValue() : ''),
+    setValue: (text) => {
+      if (!vditor) return
+      suppressDirty = true
+      vditor.setValue(text == null ? '' : text)
+      setTimeout(() => {
+        suppressDirty = false
+      }, 0)
+    },
+  }
   vditor = new window.Vditor(el.value, {
     cdn: import.meta.env.BASE_URL + 'vendor/vditor',
     lang: 'zh_CN',
@@ -32,20 +44,10 @@ onMounted(() => {
       emit('input')
     },
     after: () => {
-      markEditorReady()
+      markEditorReady(handle)
     },
   })
-  attachEditor({
-    getValue: () => (vditor ? vditor.getValue() : ''),
-    setValue: (text) => {
-      if (!vditor) return
-      suppressDirty = true
-      vditor.setValue(text == null ? '' : text)
-      setTimeout(() => {
-        suppressDirty = false
-      }, 0)
-    },
-  })
+  attachEditor(handle)
 })
 
 onBeforeUnmount(() => {
