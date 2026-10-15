@@ -35,6 +35,7 @@
 - [ ] `SPRINGDOC_API_DOCS_ENABLED=true` 时 Swagger UI 可打开
 - [ ] 搜索语义符合 AGENTS.md 第 8 节（大小写不敏感、100 上限、懒遍历短路、结构化命中）
 
-文档：
+文档与注释：
 
 - [ ] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
+- [ ] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」、无过时注释

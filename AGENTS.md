@@ -16,6 +16,20 @@
 2. **复用优先，不过度设计**：同一逻辑或结构出现第二份副本时，立即抽取为公共函数 / 公共样式 / 公共组件；前端页面表现优先组件化；保证代码质量，不为假想的未来需求预先抽象。
 3. **文档同步**：每次开发结束或提交之前，同步更新 README.md、AGENTS.md、DEVELOP_PLAN.md；文档与代码不同步视为任务未完成。
 4. **代码质量优先（项目追加）**：对代码质量要求高——凡能通过合理的设计模式或算法优化提升清晰度、健壮性与性能处，积极实践；但必须服务于当下真实需求，拒绝炫技式、无收益的抽象。每处抽象都要能回答「它解决了什么已发生的问题」。
+5. **注释质量（学习项目追加）**：注释要规范且易懂，以「帮助下一次阅读的人真正理解代码」为标准；具体要求见下节「注释规范」，与代码同等对待——注释缺失或过时视为未完成。
+
+---
+
+## 注释规范（学习项目）
+
+本项目是学习项目，注释是写给「下一次阅读的人（含未来的自己）」的教材，与代码同等重要：
+
+1. **公共契约必写 Javadoc**：类、接口、公共方法说明职责、参数语义、返回与抛错约定（如 `FileTreeStorage.read` 须写明「文件不存在抛 StorageException(NOT_FOUND)」）。
+2. **解释「为什么」，不复述「做什么」**：`i++` 不需要注释；「为什么上限是 100」「为什么先物化路径清单再懒读内容」必须注释。
+3. **记录设计取舍**：值对象、守卫、算法短路这类决策点，注明动机与代价（如 `DocPath` 拒绝空段而非折叠——把理由写出来）。
+4. **与代码同步**：改行为必须改注释；过时的注释比没有更糟，删除优于留错。
+5. **语言与文风**：中文、简练、直给；一行说得清的不写三行；不复读代码字面。
+6. **package-info 承载架构说明**：每个模块根包的 package-info 与 AGENTS.md 3.x 对应小节是同一规范的两个载体，修改时必须同步。
 
 ---
 
@@ -58,7 +72,7 @@ workbench-backend
 
 - 允许存放：统一返回结果 `ApiResult`、错误码枚举 `ErrorCode`、业务异常 `BusinessException`、通用常量与基础工具。
 - 禁止存放：任何业务逻辑、Spring 依赖、HTTP 端点、技术设施封装。
-- 当前内容：`record ApiResult<T>(message, code, data)`（code=0 成功）、`ErrorCode`（PARAM_INVALID / NOT_FOUND / CONFLICT / INTERNAL_ERROR）、`BusinessException`。
+- 当前内容：`record ApiResult<T>(message, code, data)`（code=0 成功）、`ErrorCode`（PARAM_INVALID / NOT_FOUND / CONFLICT / METHOD_NOT_ALLOWED / INTERNAL_ERROR）、`BusinessException`。
 
 ### 3.2 workbench-framework（com.imhgl.workbench.framework）
 
@@ -176,7 +190,9 @@ com.imhgl.workbench.<x>/
 | DELETE | `/api/docs/resource?path=` | query | - |
 | GET | `/api/docs/search?q=` | query | `List<SearchHit{path, name, fileNameMatch, line, snippet}>` |
 
-错误映射：领域冲突（不存在 / 已存在 / 非法名 / 路径越界）→ HTTP 400 + 语义错误码 + 具体中文消息；校验失败 / 缺参 / 体不可读 → HTTP 400 + `PARAM_INVALID("请求参数错误")`；未知异常 → HTTP 500 + `INTERNAL_ERROR("服务器内部错误")`，不泄漏堆栈与类名。
+错误映射：领域冲突 → HTTP 400 + 语义错误码 + 具体中文消息——不存在 = `NOT_FOUND(40400)`、已存在/状态冲突 = `CONFLICT(40900)`；非法输入（路径穿越、非法名、扩展名不在白名单）→ HTTP 400 + `PARAM_INVALID(40000)`；未知路径 → HTTP 404 + `NOT_FOUND`；方法不支持 → HTTP 405 + `METHOD_NOT_ALLOWED(40500)`；校验失败 / 缺参 / 体不可读 → HTTP 400 + `PARAM_INVALID("请求参数错误")`；未知异常 → HTTP 500 + `INTERNAL_ERROR("服务器内部错误")`，不泄漏堆栈与类名。
+
+> 语义化机制：infrastructure 的文件操作抛中性的 `StorageException`（Reason = NOT_FOUND / CONFLICT），docs 模块 api 实现层负责翻译为 `BusinessException`——中性异常不出技术设施语义，业务错误码不出现在 infrastructure。
 
 搜索行为：q trim 后空返回 `[]`；大小写不敏感；文件名命中 `fileNameMatch=true` 且 `snippet` 为文件名；内容命中给 `line`（1 起）与 `snippet`（命中行 strip，超 120 字符截断加 `…`）；双命中都给、`snippet` 取内容命中；上限 100；相对路径字典序；单文件 IO 失败静默跳过；懒遍历短路。
 
