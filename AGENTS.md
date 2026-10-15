@@ -2,64 +2,49 @@
 
 ## 0. 总则
 
-本项目为 **Spring Boot 单体架构 + Maven 多模块** 项目。
+本项目为**个人学习练手项目**：一个以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，当前唯一业务模块为**在线 Markdown 文档（docs）**。
 
-所有参与本项目开发的人员、AI Agent、代码生成工具，都必须严格遵守本文件中的架构规范、模块规范、命名规范和依赖规则。
+所有参与本项目开发的人员、AI Agent、代码生成工具，都必须严格遵守本文件中的架构规范、模块规范、命名规范、依赖规则与 API 约定。
 
-如果口头需求、临时讨论、历史代码与本文件冲突，原则上以本文件为准。
-
-如果确实需要调整架构，必须先修改本文件，再修改代码。
+如果口头需求、临时讨论、历史代码与本文件冲突，原则上以本文件为准。如果确实需要调整架构，必须先修改本文件，再修改代码。
 
 ---
 
-## 通用规范（必建三条）
+## 通用规范（必建三条 + 项目追加）
 
 1. **终端统一 PowerShell 7**：所有终端命令使用 PowerShell 7（pwsh）执行；本机未安装时提示用户安装后再继续，不以旧版 PowerShell 替代。
 2. **复用优先，不过度设计**：同一逻辑或结构出现第二份副本时，立即抽取为公共函数 / 公共样式 / 公共组件；前端页面表现优先组件化；保证代码质量，不为假想的未来需求预先抽象。
 3. **文档同步**：每次开发结束或提交之前，同步更新 README.md、AGENTS.md、DEVELOP_PLAN.md；文档与代码不同步视为任务未完成。
+4. **代码质量优先（项目追加）**：对代码质量要求高——凡能通过合理的设计模式或算法优化提升清晰度、健壮性与性能处，积极实践；但必须服务于当下真实需求，拒绝炫技式、无收益的抽象。每处抽象都要能回答「它解决了什么已发生的问题」。
 
 ---
 
 ## 1. 架构定位
 
-本项目采用：
-
-> **模块化单体架构**
-
-当前阶段不拆微服务，但通过 Maven 模块和业务模块内部 `api` 层，保证后续可扩展、可拆分。
-
-核心原则：
+> **模块化单体**（学习向：用最小的业务面留住完整的架构分层）
 
 1. 单体部署，统一由 `workbench-server` 启动。
-2. 业务代码按模块隔离。
-3. 公共能力下沉到 `workbench-common`。
-4. 框架能力沉淀到 `workbench-framework`。
-5. 技术设施沉淀到 `workbench-infrastructure`。
-6. 业务模块之间必须通过 `api` 层交互。
-7. 禁止跨模块直接访问 `DO`、`mapper`、`service.impl`、`controller`。
-8. 禁止在公共模块中写业务逻辑。
-9. 禁止在启动模块中写业务逻辑。
-10. 架构演进采用渐进式，不允许未经确认随意新增 Maven 模块。
+2. 业务代码按模块隔离；模块之间只通过 `api` 层交互，禁止跨模块访问 `model`、`service.impl`、`controller`。
+3. 公共能力下沉 `workbench-common`，框架能力沉淀 `workbench-framework`，技术设施沉淀 `workbench-infrastructure`。
+4. 禁止在公共模块、框架模块、技术设施模块中写业务逻辑；禁止在启动模块中写业务逻辑。
+5. **纯文件存储，无数据库**：文档即文件（`.md`），不引入 MySQL / Redis / OSS 等外部服务。
+6. 本期后端不与前端联调：API 按本文件约定设计，不为旧前端兼容妥协；前端在 UI 重做期对齐 v2 API。
+7. 架构演进渐进式，未经确认不新增 Maven 模块。
 
 ---
 
 ## 2. Maven 模块结构
 
-当前项目固定为以下模块：
-
 ```text
-workbench
-├── workbench-common             # 公共基础能力（零依赖）
-├── workbench-framework          # 框架能力（Web 运行通用机制，零端点）
-├── workbench-infrastructure     # 技术设施（中间件与外部资源封装，中性模型）
-├── workbench-module-auth        # 认证授权业务模块（/api/auth/**）
+workbench-backend
+├── workbench-common             # 响应与异常契约（零业务、零 Spring 依赖）
+├── workbench-framework          # Web 框架能力（异常映射 / 校验 / CORS / OpenAPI，零端点）
+├── workbench-infrastructure     # 技术设施（中性文件树存储，防穿越 + 白名单）
 ├── workbench-module-docs        # 在线文档业务模块（/api/docs/**）
-├── workbench-module-devsetup    # 开发环境管家业务模块（/api/devsetup/**）
-├── workbench-module-XXX业务功能  # 未来扩展的业务模块
-└── workbench-server             # 聚合启动（main + 配置，禁止业务）
+└── workbench-server             # 聚合启动（main + 配置，禁止业务、禁止被依赖）
 ```
 
-模块命名约定：`workbench-module-<x>` 对应包名 `com.imhgl.workbench.<x>`，HTTP 接口统一挂 `/api/<x>/**`（自动纳入 Token 认证拦截）。
+模块命名约定：`workbench-module-<x>` 对应包名 `com.imhgl.workbench.<x>`，HTTP 接口统一挂 `/api/<x>/**`。
 
 ---
 
@@ -69,73 +54,60 @@ workbench
 
 ### 3.1 workbench-common（com.imhgl.workbench.common）
 
-职责：存放通用、无业务含义的基础能力。
+职责：统一响应与异常契约，全局最小公约数。
 
-允许存放：统一返回结果、分页对象、通用异常、错误码枚举、通用常量、通用枚举、基础工具类、基础注解、基础实体。
-
-禁止存放：业务逻辑、Controller、Service、Mapper、Entity、Redis 封装、短信封装、文件存储封装、第三方调用。
-
-当前内容：`result/ApiResult`（统一响应 {message, code, data}，code=0 成功）、`exception/`（ErrorCode 错误码枚举、BusinessException 业务异常）、`page/`（PageQuery 分页入参归一化、PageResult 分页返回）。
+- 允许存放：统一返回结果 `ApiResult`、错误码枚举 `ErrorCode`、业务异常 `BusinessException`、通用常量与基础工具。
+- 禁止存放：任何业务逻辑、Spring 依赖、HTTP 端点、技术设施封装。
+- 当前内容：`record ApiResult<T>(message, code, data)`（code=0 成功）、`ErrorCode`（PARAM_INVALID / NOT_FOUND / CONFLICT / INTERNAL_ERROR）、`BusinessException`。
 
 ### 3.2 workbench-framework（com.imhgl.workbench.framework）
 
-职责：存放应用框架层能力，即 Web 应用运行所需的通用框架能力。
+职责：Web 应用运行所需的通用框架能力。
 
-允许存放：全局异常处理、统一日志切面、操作日志切面、权限拦截器、登录拦截器、Token 校验契约（TokenVerifier）、接口文档配置、Web MVC 配置、Jackson 配置、CORS 配置、参数解析器、过滤器、请求上下文、当前登录用户解析。
-
-禁止存放：HTTP 端点（Controller，一律放业务模块）、具体业务逻辑、业务 Mapper、业务 Entity、业务 DTO、业务 VO、第三方业务调用。
-
-当前内容：`interceptor/`（AuthInterceptor）、`token/`（TokenVerifier 契约）、`config/`（CORS、API 安全策略、SpringDoc 接口文档）、`handler/`（全局异常处理），`aspect/`、`filter/`、`resolver/` 为预留占位。
+- 允许存放：全局异常处理（业务异常→400 语义错误码；校验失败→400 `PARAM_INVALID`；未知→500 不泄漏细节）、参数校验、CORS 配置、SpringDoc/OpenAPI 配置、请求上下文等 Web 通用机制。
+- 禁止存放：HTTP 端点（一律放业务模块）、业务逻辑、业务 DTO。
+- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig）。
 
 ### 3.3 workbench-infrastructure（com.imhgl.workbench.infrastructure）
 
-职责：存放基础设施层能力，即外部技术组件、第三方服务、中间件封装。
+职责：外部技术组件与资源的中性封装。
 
-允许存放：Redis、缓存、文件存储、本地存储、OSS、短信、邮件、消息队列、支付网关、微信、支付宝、第三方 HTTP 客户端、定时任务基础组件。
+- 允许存放：文件树存储（防路径穿越、扩展名白名单、受控读写）、未来可能的缓存 / 对象存储等中性封装。
+- 禁止存放：业务规则、业务 Controller / Service / DTO；禁止业务色彩命名。
+- 当前内容：`storage/`——`FileTreeStorage`（受控文件系统入口）、`record StorageNode`（中性树模型）、`FileStorageProperties`（`workbench.storage.*`）。
+- 附加规则：只产出中性模型与中性配置；业务语义由业务模块的 api 实现层适配。
 
-禁止存放：用户业务规则、业务 Controller、业务 Service、业务 Mapper、业务 DO。
+### 3.4 workbench-module-docs（com.imhgl.workbench.docs）
 
-附加规则：只产出中性模型与中性配置（如 `StorageNode`、`workbench.storage.*`），禁止业务色彩命名。
+职责：在线 Markdown 文档业务——文件树、在线读写保存、新建文档/文件夹、重命名、删除、全文搜索。
 
-当前内容：`storage/`（FileTreeStorage、StorageNode、FileStorageProperties；`storage/oss/` OssProperties、OssStorage——阿里云 OSS 中性封装，预签名 URL 下载）、`mybatis/`（MybatisPlusConfig 分页插件、Pages 分页结果适配）；已引入 MySQL 驱动、MyBatis-Plus、MyBatis-Plus-Join、Redis、阿里云 OSS SDK 依赖（见第 7 节技术选型）。
+- 内部结构：`api/`（`DocsApi` 对外唯一契约 + `impl/` 适配实现）、`controller/`（八端点，只注入 `DocsApi`）、`dto/`（请求入参 record + jakarta validation）、`model/`（领域与出参 record，含 `DocPath` 值对象）、`service/`（模块内业务服务，如 `DocSearchService`）。
+- **`DocPath` 值对象约定**：相对路径的归一化与安全校验收拢在 `model/DocPath`，service 层一律以 `DocPath` 流转；api/controller 边界收 `String`，跨模块友好。
+- 搜索：文件名与内容双匹配、大小写不敏感、上限 100、懒遍历短路（命中即停，不整树物化）、结构化 `SearchHit{path, name, fileNameMatch, line, snippet}`。
 
-### 3.4 workbench-module-auth（com.imhgl.workbench.auth）
-
-职责：认证授权业务，对外提供 `/api/auth/**`（密码登录、登录状态查询）。
-
-内部结构：`controller/`（端点）、`service/`（TokenService：token 签发与校验，实现 framework 的 `TokenVerifier` 契约，供登录拦截器调用）、`config/`（AuthProperties：`workbench.auth.*`）、`dto/`（LoginRequest）。登出由前端删除本地 token 完成（无状态 token 无需服务端注销）。当前无跨模块调用方，暂无 api 层；一旦被跨模块调用，必须先补 api 接口。
-
-### 3.5 workbench-module-docs（com.imhgl.workbench.docs）
-
-职责：在线文档功能相关业务代码（文档/文件夹 CRUD、全文搜索）。
-
-### 3.6 workbench-module-devsetup（com.imhgl.workbench.devsetup）
-
-职责：开发环境管家业务，对外提供 `/api/devsetup/**`。维护开发工具清单（winget / ZIP / IDEA 插件三类）、配置文件下发内容与二进制工件（IDEA 配置快照），并生成 PowerShell 引导/采集脚本供新旧电脑一键恢复环境（IDEA 插件与设置恢复全程不依赖 JetBrains 账号）。内部结构齐全（api/controller/dto/model/entity/mapper/service）；工件的二进制内容存阿里云 OSS（经 infrastructure 的 OssStorage），MySQL 只存元数据；下载走 OSS 预签名 URL 302 跳转，不占服务器带宽。建表脚本见 `backend/db/init/V1__devsetup_schema.sql`。
-
-### 3.7 workbench-server（com.imhgl.workbench）
+### 3.5 workbench-server（com.imhgl.workbench）
 
 职责：启动模块、聚合模块、部署模块。
 
-允许存放：Spring Boot 启动类、应用级配置、数据源配置、MyBatis 配置、Redis 配置、Security 配置、线程池配置、多环境配置文件、日志配置、数据库脚本。配置统一放在 `backend/workbench-server/src/main/resources` 下。
-
-禁止存放：业务 Controller、业务 Service、业务 Mapper、业务 DO、业务 DTO、业务 VO、具体业务逻辑；禁止被任何模块依赖。
+- 允许存放：Spring Boot 启动类（`@ConfigurationPropertiesScan`）、`application.yml`、日志配置。
+- 禁止存放：业务 Controller / Service / DTO / 业务逻辑；禁止被任何模块依赖。
 
 ---
 
 ## 4. 依赖规则
 
 ```text
-workbench-server        → 业务模块（module-*）、workbench-framework
-业务模块（module-*）     → workbench-framework、workbench-infrastructure、workbench-common
+workbench-server        → workbench-module-docs（含传递 framework / infrastructure / common）
+workbench-module-docs   → workbench-framework、workbench-infrastructure、workbench-common
 workbench-framework     → workbench-common
-workbench-infrastructure → workbench-common（允许，当前未使用）
-workbench-common        → 零依赖（禁止依赖任何模块）
+workbench-infrastructure → workbench-common
+workbench-common        → 零依赖
 ```
 
 1. 依赖方向由各模块 pom 强制保证，写不出违规依赖。
 2. 禁止循环依赖；任何模块禁止依赖 `workbench-server`。
-3. `common`、`framework`、`infrastructure` 禁止依赖任何业务模块。
+3. common / framework / infrastructure 禁止依赖业务模块。
+4. 业务模块经 framework 获得 Web 与校验能力，经 infrastructure 获得受控文件访问，经 common 获得响应契约。
 
 ---
 
@@ -144,29 +116,24 @@ workbench-common        → 零依赖（禁止依赖任何模块）
 ```text
 com.imhgl.workbench.<x>/
 ├── api/          # 对外唯一契约（接口），跨模块交互只允许注入此接口
-│   └── impl/     # api 实现
-├── controller/   # HTTP 端点（/api/<x>/**），不收裸 Map，入参用 dto
-├── dto/          # 请求入参
-├── model/        # 领域与出参模型
-├── entity/       # 数据库 DO（MyBatis-Plus @TableName，仅模块内可见）
-├── mapper/       # MyBatis-Plus mapper 接口（@Mapper，经 infrastructure 传递获得 MP）
+│   └── impl/     # api 实现（适配 infrastructure 中性模型为业务语义）
+├── controller/   # HTTP 端点（/api/<x>/**），入参用 dto + @Valid，不收裸 Map
+├── dto/          # 请求入参（record + jakarta validation）
+├── model/        # 领域与出参模型（record；含 DocPath 这类值对象）
 └── service/      # 模块内业务服务
 ```
 
-不涉及数据库的模块可省略 entity/、mapper/（如 docs、auth）。建表 SQL 放 `backend/db/init/`（见该目录 README）。
-
-1. 跨模块交互只走对方 `api` 接口，禁止访问对方的 DO、mapper、service.impl、controller、storage。
-2. infrastructure 产出的中性模型（如 `StorageNode`）由业务模块的 api 实现层适配为业务语义。
-3. 新增业务模块：在 `backend/` 下建 `workbench-module-xxx` 子工程，父 POM 加 `<module>`，`workbench-server` 加依赖；包名以 `com.imhgl.workbench` 开头即被自动扫描。
+1. controller 不写业务规则，薄到「接参 → 调 api → 包 ApiResult」。
+2. 值对象优先：有不变量约束的概念（如相对路径）做成值对象，不让裸字符串穿透 service 层。
+3. 新增业务模块：`backend/` 下建 `workbench-module-xxx`，父 POM 加 `<module>`，server 加依赖；包名以 `com.imhgl.workbench` 开头即被自动扫描；先在本文件登记职责再动代码。
 
 ---
 
 ## 6. 配置命名约定
 
 1. 业务模块配置：`workbench.<module>.*`（如 `workbench.docs.*`）。
-2. 认证配置 `workbench.auth.*` 由 auth 模块的 `AuthProperties` 绑定（密码、密钥、有效期），framework 的登录拦截器只依赖 `TokenVerifier` 契约，不绑定业务配置。
-3. infrastructure 配置：按技术组件中性命名（如 `workbench.storage.*`），禁止业务前缀。
-4. 环境变量映射保持部署稳定：改配置键不改环境变量（如 `DOCS_ROOT` → `workbench.storage.root`）。
+2. infrastructure 配置：技术组件中性命名（如 `workbench.storage.*`），禁止业务前缀。
+3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`）。
 
 ---
 
@@ -174,27 +141,44 @@ com.imhgl.workbench.<x>/
 
 | 组件 | 选型 | 版本 | 归属 |
 |---|---|---|---|
-| 语言 / 运行时 | Java 21（虚拟线程） | - | 全局 |
-| 应用框架 | Spring Boot | 3.5.4（parent 管理） | 全局 |
-| 数据库 | MySQL 8 | - | compose 容器；驱动在 infrastructure |
-| ORM | MyBatis-Plus（`mybatis-plus-spring-boot3-starter` + `mybatis-plus-jsqlparser`） | 3.5.17 | infrastructure |
-| 连表查询 | MyBatis-Plus-Join（`mybatis-plus-join-boot-starter`） | 1.5.9 | infrastructure |
-| 缓存 | Redis（`spring-boot-starter-data-redis`） | parent 管理 | infrastructure |
-| 对象存储 | 阿里云 OSS（`com.aliyun.oss:aliyun-sdk-oss`） | 3.18.3 | infrastructure |
-| 接口文档 | SpringDoc OpenAPI（`springdoc-openapi-starter-webmvc-ui`） | 2.8.9 | framework |
-| 样板代码 | Lombok | parent 管理（provided） | 父 POM 全局 |
-| 通用工具 | Hutool（`hutool-all`） | 5.8.38 | 父 POM 全局 |
+| 语言 / 运行时 | Java（Temurin JDK） | 25 LTS（25.0.4.1+1，`D:\dev\environment\jdk-25.0.4.1+1`） | 全局 |
+| 应用框架 | Spring Boot（parent） | 4.1.1 | 全局 |
+| Web | `spring-boot-starter-webmvc`（Boot 4 新坐标） | parent 管理 | framework |
+| 参数校验 | `spring-boot-starter-validation` | parent 管理 | framework |
+| 接口文档 | SpringDoc OpenAPI（`springdoc-openapi-starter-webmvc-ui`） | 3.1.1 | framework |
+| 测试 | JUnit 5（`spring-boot-starter-test` / `junit-jupiter`） | parent 管理 | 各模块 test |
+| 样板代码 | Lombok | parent 管理（provided） | 父 POM 全局，按需 |
+| 通用工具 | Hutool（`hutool-all`） | 父 POM 管理 | 父 POM 全局，按需 |
 
 规则：
 
-1. 新增第三方依赖必须先登记到本表，再写代码（先改规范再改代码）。
-2. 版本统一由父 POM `dependencyManagement` 管理；`mysql-connector-j`、redis starter、lombok 由 Spring Boot parent 管理。
-3. 依赖归属：DB / ORM / 缓存等中间件封装 → infrastructure；接口文档等 Web 框架能力 → framework；lombok / hutool 全局基础件 → 父 POM。
-4. 业务模块经 infrastructure 传递获得 MyBatis-Plus / MPJ；mapper 接口用 `@Mapper` 注解即被自动扫描，无需集中 `@MapperScan`。
-5. docs 模块的文档存储仍为文件系统（.md 即数据）；MySQL 服务承载业务模块（devsetup 等）的结构化数据；devsetup 的二进制工件（IDEA 配置快照等）存阿里云 OSS，MySQL 只存元数据，下载走预签名 URL 302 跳转。
-6. Redis 当前仅引入依赖与连接配置，出现真实消费场景前不写封装类。
-7. 相关环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USERNAME` / `MYSQL_ROOT_PASSWORD`、`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`、`OSS_ENDPOINT` / `OSS_BUCKET` / `OSS_ACCESS_KEY` / `OSS_SECRET`（可选 `OSS_PREFIX`，默认 `workbench`；四项必填齐才启用 OSS，缺省时工件功能报友好错误）；接口文档开关 `SPRINGDOC_API_DOCS_ENABLED`（默认开启，生产可关）。
-8. 分页约定：查询入参用 common 的 `PageQuery`，MP 查询用 `Page`，返回经 infrastructure 的 `Pages.toResult()` 转为 common 的 `PageResult`。
+1. **新增第三方依赖必须先登记到本表，再写代码**（先改规范再改代码）。
+2. 版本统一由父 POM / Spring Boot parent `dependencyManagement` 管理。
+3. **数据库零依赖**：不引入 ORM / JDBC / NoSQL 驱动；docs 模块持久化即文件系统。
+4. Lombok / Hutool 按需使用、不为用而用；record 能覆盖的场景优先 record。
+5. JDK 25 仅以局部 `JAVA_HOME`（命令内或 start.bat 内）引用，**禁止写入系统/用户环境变量**——其他项目继续使用 JDK 21。
+6. Web starter 若 `spring-boot-starter-webmvc` 不可解析，回退 `spring-boot-starter-web` 并在提交信息注明。
+
+---
+
+## 8. API 设计约定（/api/docs）
+
+统一包装：`ApiResult{message, code, data}`，`code=0` 成功；错误码见 3.1。
+
+| 方法 | 路径 | 入参 | 出参 data |
+|---|---|---|---|
+| GET | `/api/docs/tree` | - | `DocNode{name, path, type:"dir"\|"file", children[]}` |
+| GET | `/api/docs/file?path=` | query | `DocContent{path, name, content}` |
+| POST | `/api/docs/file` | `{path, content}` | - |
+| PUT | `/api/docs/file` | `{path, content}` | - |
+| POST | `/api/docs/dir` | `{path}` | - |
+| POST | `/api/docs/rename` | `{from, to}` | - |
+| DELETE | `/api/docs/resource?path=` | query | - |
+| GET | `/api/docs/search?q=` | query | `List<SearchHit{path, name, fileNameMatch, line, snippet}>` |
+
+错误映射：领域冲突（不存在 / 已存在 / 非法名 / 路径越界）→ HTTP 400 + 语义错误码 + 具体中文消息；校验失败 / 缺参 / 体不可读 → HTTP 400 + `PARAM_INVALID("请求参数错误")`；未知异常 → HTTP 500 + `INTERNAL_ERROR("服务器内部错误")`，不泄漏堆栈与类名。
+
+搜索行为：q trim 后空返回 `[]`；大小写不敏感；文件名命中 `fileNameMatch=true` 且 `snippet` 为文件名；内容命中给 `line`（1 起）与 `snippet`（命中行 strip，超 120 字符截断加 `…`）；双命中都给、`snippet` 取内容命中；上限 100；相对路径字典序；单文件 IO 失败静默跳过；懒遍历短路。
 
 ---
 

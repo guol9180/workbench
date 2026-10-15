@@ -1,56 +1,40 @@
 # 开发计划与验收
 
-> 项目背景与技术栈见 [README.md](./README.md)，改码规则见 [AGENTS.md](./AGENTS.md)。本文件只回答「做什么、做到哪、怎么算完成」，不重复技术细节。任务完成即勾选，交付前以「验收清单」为统一出口。
-
-## 任务清单
-
-### 已完成
-
-- [x] P0: 模块化单体骨架——common / framework / infrastructure / 业务模块 / server 五层就位，业务模块带 api 层（验收：依赖方向由各模块 pom 强制保证，后端可打包）
-- [x] P0: 认证授权模块 auth——密码登录 + 无状态 Token（30 天）+ 登录拦截器（验收：未登录访问 `/api/**` 返回 401，登录后放行）
-- [x] P0: 在线文档模块 docs——文档/文件夹 CRUD、全文搜索、Vditor 编辑（`Ctrl+S` 保存）、今日工作、本地 `.md` 预览导入、移动端适配（验收：见「验收清单」前端条目）
-- [x] P1: 部署链路——Docker Compose（app + MySQL + Redis + Caddy HTTPS 反代）、后端 GHCR 镜像 CI、前端 GitHub Pages CI（验收：单机 `docker compose up -d` 可起）
-- [x] P1: 开发环境管家模块 devsetup——工具清单（winget / ZIP / IDEA 插件）、配置下发、IDEA 设置免 JetBrains 账号快照恢复；工件存 OSS、MySQL 只存元数据（验收：OSS 四项环境变量齐备时，下载走预签名 URL 302 跳转）
-- [x] P1: 登录页重设计——深夜蓝极光玻璃 + 零依赖 3D 视差，尊重 `prefers-reduced-motion`（验收：三档分辨率截图目检通过，登录流程不受影响）
-- [x] P1: 编辑器体验收尾——Vditor 4.0.0 本地副本升级、停止输入 2s 自动保存、文档打开竞态修复（验收：README 冒烟清单回归通过）
-
-### 待办
-
-- [ ] P2: Redis 接入真实消费场景（当前仅依赖与连接配置；出现场景后按 [AGENTS.md · 技术选型](./AGENTS.md#7-技术选型) 规则 6 评估，封装放 infrastructure）（验收标准：有明确消费方，封装为中性模型）
-- [ ] P2: 新业务模块立项 `workbench-module-xxx`——需求未定，TODO；确认后按 [AGENTS.md · 业务模块内部结构](./AGENTS.md#5-业务模块内部结构) 流程新增（验收标准：父 POM `<module>`、server 依赖、api 层齐备，接口挂 `/api/xxx/**`）
-- [ ] TODO: 待规划项在此追加；未确认的需求不预填
+> 项目背景与技术栈见 [README.md](./README.md)，改码规则见 [AGENTS.md](./AGENTS.md)。本文件只回答「做什么、做到哪、怎么算完成」。任务完成即勾选，交付前以「验收清单」为统一出口。
 
 ## 里程碑
 
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
-| M1 | 骨架 + 认证 + 在线文档可用（本地可跑通自用） | ✅ 完成 |
-| M2 | 部署链路 + 开发环境管家（公网可访问、新机可恢复） | ✅ 完成 |
-| M3 | 模块扩展期：Redis 真实场景接入、新业务模块立项 | ⏸ 待启动（需求确认后拆解任务） |
+| M1（已归档） | 模块化单体骨架 + 认证 + 在线文档 v1 | ✅ 已完成，随重构移除（auth 模块删除） |
+| M2（已归档） | 部署链（Docker/Caddy/CI）+ 开发环境管家 devsetup | ✅ 已完成，随重构移除（devsetup 模块与部署链暂缓；历史见 git 主干） |
+| M3 | **后端重构：Java 25 + Spring Boot 4.1 + docs-only** | 🚩 进行中 |
 
-## 验收清单
+## 当前任务（M3 · 后端重构）
 
-每次交付前逐条核对；终端要求见 [AGENTS.md · 通用规范（必建三条）](./AGENTS.md#通用规范必建三条)。
+实施计划（唯一权威）：[docs/superpowers/plans/2026-10-15-backend-refactor-docs-only.md](./docs/superpowers/plans/2026-10-15-backend-refactor-docs-only.md)——契约细节、测试矩阵、Review Focus 以计划文件为准，此处只跟踪状态。
 
-后端：
+- [x] Task 0: 前置环境——JDK 25（Temurin 25.0.4.1+1）安装至 `D:\dev\environment\jdk-25.0.4.1+1`，系统环境零侵入；分支 `refactor/docs-only`
+- [ ] Task 1: 规范先行——AGENTS / DEVELOP_PLAN 全新撰写，README 横幅化
+- [ ] Task 2: 骨架切换——Boot 4.1.1 + Java 25，删 auth/devsetup/db-init，五模块空壳可启动
+- [ ] Task 3: common 重写——`ApiResult` / `ErrorCode`（语义错误码）/ `BusinessException`
+- [ ] Task 4: infrastructure 重写——`FileTreeStorage` / `StorageNode` / `FileStorageProperties`（防穿越 + 白名单 + rename 守卫）
+- [ ] Task 5: framework 重写——全局异常（四分支映射）/ CORS / SpringDoc
+- [ ] Task 6: module-docs 重写——`DocPath` 值对象 / record 契约 / 结构化搜索 + 懒遍历短路
+- [ ] Task 7: server 配置定型——瘦身 `application.yml` + 集成冒烟（JSON 形状 / 防穿越 / 校验 / CORS / Swagger）
+- [ ] Task 8: 全量验证——`mvn clean package` 全绿，README 按最终现实重写，start.bat 局部 `JAVA_HOME`
 
-- [ ] `backend/` 下 `mvn -DskipTests package` 构建成功
-- [ ] 未登录访问 `/api/docs/**` 返回 401；密码错误返回统一错误结构（`ApiResult.code != 0`）
+## 验收清单（M3 · 每次交付前逐条核对）
+
+后端（本期验收只看后端，前端联调留待 UI 重做期）：
+
+- [ ] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令以 pwsh 7 + 局部 `JAVA_HOME=JDK25` 执行）
+- [ ] 五模块骨架完整：common 零 Spring 依赖；framework 零端点；infrastructure 中性模型；docs 带 api 层；server 零业务
+- [ ] 全仓无 MySQL / Redis / OSS / MyBatis 依赖；Lombok / Hutool 仅按需出现在父 POM
+- [ ] `GET /api/docs/tree` 无需认证返回 `{"code":0,...}`；`?path=../secret.md` 返回 400 + `code=40000`
 - [ ] `SPRINGDOC_API_DOCS_ENABLED=true` 时 Swagger UI 可打开
-
-前端：
-
-- [ ] `frontend/` 下 `npm run build` 成功，产物无 CDN 依赖（Vditor 为本地副本）
-- [ ] 未登录访问任意路由落在登录页，登录成功跳 `/docs`
-- [ ] 文档新建 / 编辑 / `Ctrl+S` 与自动保存 / 全文搜索 / 今日工作可用
-- [ ] devsetup 工具清单、配置下发、引导脚本生成可用
-- [ ] 移动端（≤768px）侧边栏收为抽屉、触屏可用
-
-部署：
-
-- [ ] `docker compose up -d` 四容器健康，后端端口仅绑定 `127.0.0.1`
-- [ ] GitHub Actions：前端 Pages 发布与后端镜像构建均通过
+- [ ] 搜索语义符合 AGENTS.md 第 8 节（大小写不敏感、100 上限、懒遍历短路、结构化命中）
 
 文档：
 
-- [ ] README.md / AGENTS.md / DEVELOP_PLAN.md 已与本次改动同步（不同步视为任务未完成）
+- [ ] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
