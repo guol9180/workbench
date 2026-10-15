@@ -12,7 +12,7 @@
 
     <artifactId>workbench-module-docs</artifactId>
     <name>workbench-module-docs</name>
-    <description>在线文档模块（api 层为模块间唯一交互入口）</description>
+    <description>在线文档业务模块（api 层为模块间唯一交互入口）</description>
 
     <dependencies>
         <dependency>
@@ -29,6 +29,11 @@
             <groupId>com.imhgl</groupId>
             <artifactId>workbench-infrastructure</artifactId>
             <version>1.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

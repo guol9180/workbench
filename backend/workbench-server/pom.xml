@@ -12,27 +12,12 @@
 
     <artifactId>workbench-server</artifactId>
     <name>workbench-server</name>
-    <description>工作台启动应用：聚合各功能模块</description>
+    <description>工作台启动应用：聚合各功能模块（禁止业务、禁止被依赖）</description>
 
     <dependencies>
         <dependency>
             <groupId>com.imhgl</groupId>
-            <artifactId>workbench-module-auth</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.imhgl</groupId>
             <artifactId>workbench-module-docs</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.imhgl</groupId>
-            <artifactId>workbench-module-devsetup</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.imhgl</groupId>
-            <artifactId>workbench-framework</artifactId>
             <version>1.0.0</version>
         </dependency>
         <dependency>

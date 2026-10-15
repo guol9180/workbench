@@ -12,7 +12,7 @@
 
     <artifactId>workbench-framework</artifactId>
     <name>workbench-framework</name>
-    <description>框架能力：登录拦截器、无状态 Token 机制、全局异常、CORS、API 安全策略（零业务、零端点）</description>
+    <description>Web 框架能力：全局异常 / 参数校验 / CORS / OpenAPI（零业务、零端点）</description>
 
     <dependencies>
         <dependency>
@@ -20,14 +20,25 @@
             <artifactId>workbench-common</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <!-- Web MVC（Boot 4 新坐标 starter-webmvc；不可解析时回退 starter-web 并在提交信息注明） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
-        <!-- 接口文档：/v3/api-docs + Swagger UI（放行规则见 ApiSecurityConfig） -->
+        <!-- 参数校验：jakarta validation（业务模块经本模块传递获得） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <!-- 接口文档：/v3/api-docs + Swagger UI -->
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>

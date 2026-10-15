@@ -7,7 +7,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.4</version>
+        <version>4.1.1</version>
         <relativePath/>
     </parent>
 
@@ -16,45 +16,25 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
     <name>workbench-backend</name>
-    <description>工作台后端（模块化单体）</description>
+    <description>工作台后端（模块化单体 · 学习版，纯文件存储）</description>
 
     <modules>
         <module>workbench-common</module>
         <module>workbench-framework</module>
         <module>workbench-infrastructure</module>
-        <module>workbench-module-auth</module>
         <module>workbench-module-docs</module>
-        <module>workbench-module-devsetup</module>
         <module>workbench-server</module>
     </modules>
 
     <properties>
-        <java.version>21</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <mybatis-plus.version>3.5.17</mybatis-plus.version>
-        <mybatis-plus-join.version>1.5.9</mybatis-plus-join.version>
-        <springdoc.version>2.8.9</springdoc.version>
+        <springdoc.version>3.1.1</springdoc.version>
         <hutool.version>5.8.38</hutool.version>
-        <aliyun-oss.version>3.18.3</aliyun-oss.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
-                <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.baomidou</groupId>
-                <artifactId>mybatis-plus-jsqlparser</artifactId>
-                <version>${mybatis-plus.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.yulichang</groupId>
-                <artifactId>mybatis-plus-join-boot-starter</artifactId>
-                <version>${mybatis-plus-join.version}</version>
-            </dependency>
             <dependency>
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
@@ -65,15 +45,10 @@
                 <artifactId>hutool-all</artifactId>
                 <version>${hutool.version}</version>
             </dependency>
-            <dependency>
-                <groupId>com.aliyun.oss</groupId>
-                <artifactId>aliyun-sdk-oss</artifactId>
-                <version>${aliyun-oss.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
-    <!-- 全局基础件：所有模块可用（见 AGENTS.md 第 7 节技术选型） -->
+    <!-- 全局基础件：所有模块可用，按需使用（见 AGENTS.md 第 7 节技术选型） -->
     <dependencies>
         <!-- Lombok：编译期样板代码消除，不进运行时 -->
         <dependency>

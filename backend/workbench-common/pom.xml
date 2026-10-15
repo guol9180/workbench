@@ -12,5 +12,13 @@
 
     <artifactId>workbench-common</artifactId>
     <name>workbench-common</name>
-    <description>公共能力：统一响应等通用基础能力（禁止业务逻辑、禁止依赖任何模块）</description>
+    <description>响应与异常契约（零业务、零 Spring 依赖、禁止依赖任何模块）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>
