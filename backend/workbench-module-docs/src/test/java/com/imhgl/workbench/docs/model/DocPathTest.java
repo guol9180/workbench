@@ -30,9 +30,9 @@ class DocPathTest {
     }
 
     @Test
-    @DisplayName("非法路径拒绝：穿越、盘符、空段、点段、空字节")
+    @DisplayName("非法路径拒绝：穿越、盘符、空段、点段、空字节、内嵌冒号")
     void rejectsIllegalPaths() {
-        for (String bad : new String[]{"../x", "a/../../x", "C:/x", "c:\\x", "a//b", "a/./b", "a/..", "a\0b"}) {
+        for (String bad : new String[]{"../x", "a/../../x", "C:/x", "c:\\x", "a//b", "a/./b", "a/..", "a\0b", "a/b:c.md"}) {
             assertThrows(IllegalArgumentException.class, () -> DocPath.of(bad), "应拒绝：" + bad);
         }
     }

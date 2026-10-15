@@ -43,7 +43,7 @@ class FileTreeStorageTest {
         assertEquals(root, storage.resolve("."));
         Path p = storage.resolve("a/b.md");
         assertTrue(p.startsWith(root));
-        assertFalse(storage.getRoot().relativize(p).toString().contains(".."));
+        assertFalse(root.relativize(p).toString().contains(".."));
     }
 
     @Test
@@ -72,8 +72,8 @@ class FileTreeStorageTest {
         storage.create("笔记/中文.md", "# hi");
         assertEquals("# hi", storage.read("笔记/中文.md"));
 
-        assertThrows(IllegalArgumentException.class, () -> storage.create("笔记/中文.md", "dup"));
-        assertThrows(IllegalArgumentException.class, () -> storage.save("不存在.md", "x"));
+        assertThrows(StorageException.class, () -> storage.create("笔记/中文.md", "dup"), "重复创建属状态冲突");
+        assertThrows(StorageException.class, () -> storage.save("不存在.md", "x"), "保存不存在的文件属资源缺失");
         assertThrows(IllegalArgumentException.class, () -> storage.create("evil.exe", "x"));
 
         storage.create("empty.md", null);
@@ -89,16 +89,16 @@ class FileTreeStorageTest {
         FileTreeStorage storage = new FileTreeStorage(props(root));
 
         storage.createDir("d1");
-        assertThrows(IllegalArgumentException.class, () -> storage.createDir("d1"));
+        assertThrows(StorageException.class, () -> storage.createDir("d1"), "目录已存在属状态冲突");
 
         storage.create("d1/f.md", "content");
         storage.rename("d1", "d2");
         assertEquals("content", storage.read("d2/f.md"));
-        assertThrows(IllegalArgumentException.class, () -> storage.read("d1/f.md"));
+        assertThrows(StorageException.class, () -> storage.read("d1/f.md"));
 
         storage.create("a.md", "a");
         storage.create("b.md", "b");
-        assertThrows(IllegalArgumentException.class, () -> storage.rename("a.md", "b.md"));
+        assertThrows(StorageException.class, () -> storage.rename("a.md", "b.md"), "目标已存在属状态冲突");
 
         // 重命名/删除根目录拒绝；目标落在源子树内拒绝
         assertThrows(IllegalArgumentException.class, () -> storage.rename("", "x"));
@@ -110,7 +110,19 @@ class FileTreeStorageTest {
 
         storage.delete("d2");
         assertFalse(Files.exists(root.resolve("d2")));
-        assertThrows(IllegalArgumentException.class, () -> storage.delete("不存在.md"));
+        assertThrows(StorageException.class, () -> storage.delete("不存在.md"), "删除不存在的路径属资源缺失");
+    }
+
+    @Test
+    @DisplayName("listAllowedFiles：多级目录、白名单过滤、字典序——搜索列举的受控入口")
+    void listAllowedFilesMultiLevelSorted(@TempDir Path root) throws IOException {
+        FileTreeStorage storage = new FileTreeStorage(props(root));
+        storage.createDir("b-dir");
+        storage.create("b-dir/inner.md", "x");
+        storage.create("a.md", "x");
+        storage.create("c.txt", "x");
+        Files.writeString(root.resolve("skip.exe"), "x");
+        assertEquals(List.of("a.md", "b-dir/inner.md", "c.txt"), storage.listAllowedFiles());
     }
 
     @Test

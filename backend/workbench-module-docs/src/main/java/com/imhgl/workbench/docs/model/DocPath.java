@@ -20,7 +20,9 @@ public record DocPath(String value) {
             v = v.substring(0, v.length() - 1);
         }
         if (!v.isEmpty()) {
-            if (v.contains("\0") || v.matches("(?i)^[a-z]:.*")) {
+            // 冒号在 Windows 文件名中非法且会连带覆盖盘符写法（C:/x）——在值对象统一拒绝，
+            // 而不是落到文件系统层抛出英文的 InvalidPathException，保证错误消息语言一致
+            if (v.contains("\0") || v.indexOf(':') >= 0) {
                 throw new IllegalArgumentException("非法路径：" + value);
             }
             for (String seg : v.split("/")) {

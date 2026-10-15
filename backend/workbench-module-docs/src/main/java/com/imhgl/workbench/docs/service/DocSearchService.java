@@ -6,17 +6,15 @@ import com.imhgl.workbench.infrastructure.storage.FileTreeStorage;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Stream;
 
 /**
  * 文档搜索：文件名与内容双匹配、大小写不敏感、命中上限 100、相对路径字典序。
- * <p>算法要点：路径清单一次性物化（仅元数据，开销小），内容读取按序懒加载并在命中满时短路，
- * 不做整树内容物化。内容读取统一走受控入口 {@link FileTreeStorage#read(String)}。
+ * <p>算法取舍：路径清单经受控入口 {@link FileTreeStorage#listAllowedFiles()} 一次性物化
+ * （仅文件名元数据，开销小且保证排序稳定），内容读取按序懒加载并在命中满时短路——
+ * 这样 worst case 只读 100 个文件的内容，而不是整库。内容读取统一走 {@link FileTreeStorage#read(String)}。
  */
 @Service
 public class DocSearchService {
@@ -35,17 +33,8 @@ public class DocSearchService {
         if (q.isEmpty()) {
             return List.of();
         }
-        List<String> relPaths;
-        try (Stream<Path> stream = Files.walk(storage.getRoot())) {
-            relPaths = stream
-                    .filter(Files::isRegularFile)
-                    .filter(storage::isAllowedFile)
-                    .map(storage::toRel)
-                    .sorted()
-                    .toList();
-        }
         List<SearchHit> hits = new ArrayList<>();
-        for (String rel : relPaths) {
+        for (String rel : storage.listAllowedFiles()) {
             SearchHit hit = matchFile(rel, q);
             if (hit != null) {
                 hits.add(hit);

@@ -7,14 +7,17 @@ import jakarta.validation.constraints.NotBlank;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -76,6 +79,24 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("未知路径资源缺失（Spring 6.1+ NoResourceFoundException）→ 404 + NOT_FOUND")
+    void missingResourceMapsTo404() throws Exception {
+        mvc.perform(get("/probe/noresource"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value(40400))
+                .andExpect(jsonPath("$.message").value("资源不存在"));
+    }
+
+    @Test
+    @DisplayName("方法不支持 → 405 + METHOD_NOT_ALLOWED")
+    void methodNotSupportedMapsTo405() throws Exception {
+        mvc.perform(post("/probe/param").param("q", "x"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.code").value(40500))
+                .andExpect(jsonPath("$.message").value("请求方法不支持"));
+    }
+
+    @Test
     @DisplayName("未知异常 → 500 + 固定消息，不泄漏原始异常信息")
     void unknownExceptionMapsTo500WithoutLeak() throws Exception {
         mvc.perform(get("/probe/boom"))
@@ -111,6 +132,12 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/probe/boom")
         public String boom() {
             throw new RuntimeException("boom");
+        }
+
+        /** 模拟真实链路：未匹配路径由静态资源处理抛 NoResourceFoundException（Spring 6.1+） */
+        @GetMapping("/probe/noresource")
+        public String noResource() throws NoResourceFoundException {
+            throw new NoResourceFoundException(HttpMethod.GET, "/probe/noresource", "");
         }
     }
 

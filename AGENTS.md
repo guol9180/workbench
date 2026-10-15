@@ -88,7 +88,7 @@ workbench-backend
 
 - 允许存放：文件树存储（防路径穿越、扩展名白名单、受控读写）、未来可能的缓存 / 对象存储等中性封装。
 - 禁止存放：业务规则、业务 Controller / Service / DTO；禁止业务色彩命名。
-- 当前内容：`storage/`——`FileTreeStorage`（受控文件系统入口）、`record StorageNode`（中性树模型）、`FileStorageProperties`（`workbench.storage.*`）。
+- 当前内容：`storage/`——`FileTreeStorage`（受控文件系统入口：resolve / validateName / validateExtension / isAllowedFile / tree / listAllowedFiles / read / create / save / createDir / rename / delete / toRel）、`record StorageNode`（中性树模型）、`StorageException`（中性状态异常，NOT_FOUND / CONFLICT，由业务模块翻译）、`FileStorageProperties`（`workbench.storage.*`）。
 - 附加规则：只产出中性模型与中性配置；业务语义由业务模块的 api 实现层适配。
 
 ### 3.4 workbench-module-docs（com.imhgl.workbench.docs）

@@ -134,7 +134,9 @@ class DocsApiIntegrationTest {
     void missingParamRejected() throws Exception {
         HttpResponse<String> r = get("/api/docs/file");
         assertEquals(400, r.statusCode());
-        assertTrue(r.body().contains("请求参数错误"), r.body());
+        String body = r.body();
+        assertTrue(body.contains("请求参数错误"), body);
+        assertTrue(body.contains("\"data\":null"), body);
     }
 
     @Test
@@ -174,6 +176,17 @@ class DocsApiIntegrationTest {
 
     @Test
     @Order(10)
+    @DisplayName("未知路径 → 真实 404 + code=40400（而非兜底 500）")
+    void unknownPathMapsToReal404() throws Exception {
+        HttpResponse<String> r = get("/no-such-path");
+        assertEquals(404, r.statusCode());
+        String body = r.body();
+        assertTrue(body.contains("\"code\":40400"), body);
+        assertTrue(body.contains("资源不存在"), body);
+    }
+
+    @Test
+    @Order(11)
     @DisplayName("Swagger UI 可打开（默认开启，302 指向 /swagger-ui/index.html）")
     void swaggerUiAvailable() throws Exception {
         HttpResponse<String> r = get("/swagger-ui.html");

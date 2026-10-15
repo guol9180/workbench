@@ -5,7 +5,7 @@ import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * 全局 CORS：/api/** 按配置放行来源；无 Cookie 会话（Token 走请求头），allowCredentials 恒为 false。
+ * 全局 CORS：/api/** 按配置放行来源；接口无会话状态（无 Cookie），allowCredentials 恒为 false。
  */
 @Configuration
 public class CorsConfig implements WebMvcConfigurer {

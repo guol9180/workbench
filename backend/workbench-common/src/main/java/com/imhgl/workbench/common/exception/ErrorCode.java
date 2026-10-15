@@ -12,6 +12,8 @@ public enum ErrorCode {
 
     CONFLICT(40900, "资源冲突"),
 
+    METHOD_NOT_ALLOWED(40500, "请求方法不支持"),
+
     INTERNAL_ERROR(50000, "服务器内部错误");
 
     private final int code;

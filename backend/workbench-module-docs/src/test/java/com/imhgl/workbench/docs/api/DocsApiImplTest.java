@@ -1,5 +1,7 @@
 package com.imhgl.workbench.docs.api;
 
+import com.imhgl.workbench.common.exception.BusinessException;
+import com.imhgl.workbench.common.exception.ErrorCode;
 import com.imhgl.workbench.docs.model.DocContent;
 import com.imhgl.workbench.docs.model.DocNode;
 import com.imhgl.workbench.infrastructure.storage.FileStorageProperties;
@@ -49,14 +51,15 @@ class DocsApiImplTest {
     }
 
     @Test
-    @DisplayName("save 后再读生效；delete 后读抛异常")
+    @DisplayName("save 后再读生效；delete 后读抛业务异常（NOT_FOUND）")
     void saveAndDeleteLifecycle(@TempDir Path root) throws IOException {
         DocsApi docs = api(root);
         docs.create("a.md", "v1");
         docs.save("a.md", "v2");
         assertEquals("v2", docs.read("a.md").content());
         docs.delete("a.md");
-        assertThrows(IllegalArgumentException.class, () -> docs.read("a.md"));
+        BusinessException e = assertThrows(BusinessException.class, () -> docs.read("a.md"));
+        assertEquals(ErrorCode.NOT_FOUND, e.getErrorCode());
     }
 
     @Test
