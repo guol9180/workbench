@@ -48,18 +48,5 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- 全局基础件：所有模块可用，按需使用（见 AGENTS.md 第 7 节技术选型） -->
-    <dependencies>
-        <!-- Lombok：编译期样板代码消除，不进运行时 -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        <!-- Hutool：通用工具库 -->
-        <dependency>
-            <groupId>cn.hutool</groupId>
-            <artifactId>hutool-all</artifactId>
-        </dependency>
-    </dependencies>
+    <!-- 全局基础件（Lombok / Hutool）只管版本不默认注入：谁用谁在模块里声明（AGENTS.md 第 4 节规则 5） -->
 </project>

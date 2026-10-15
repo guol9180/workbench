@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.imhgl</groupId>
             <artifactId>workbench-common</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
         <!-- Web MVC（Boot 4 新坐标 starter-webmvc；不可解析时回退 starter-web 并在提交信息注明） -->
         <dependency>

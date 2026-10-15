@@ -122,6 +122,7 @@ workbench-common        → 零依赖
 2. 禁止循环依赖；任何模块禁止依赖 `workbench-server`。
 3. common / framework / infrastructure 禁止依赖业务模块。
 4. 业务模块经 framework 获得 Web 与校验能力，经 infrastructure 获得受控文件访问，经 common 获得响应契约。
+5. 全局基础件（Lombok / Hutool）只在父 POM dependencyManagement 管版本，**不默认注入**——谁用谁在模块里声明，保证「common 零依赖」名实相符。
 
 ---
 
@@ -161,8 +162,8 @@ com.imhgl.workbench.<x>/
 | 参数校验 | `spring-boot-starter-validation` | parent 管理 | framework |
 | 接口文档 | SpringDoc OpenAPI（`springdoc-openapi-starter-webmvc-ui`） | 3.1.1 | framework |
 | 测试 | JUnit 5（`spring-boot-starter-test` / `junit-jupiter`） | parent 管理 | 各模块 test |
-| 样板代码 | Lombok | parent 管理（provided） | 父 POM 全局，按需 |
-| 通用工具 | Hutool（`hutool-all`） | 父 POM 管理 | 父 POM 全局，按需 |
+| 样板代码 | Lombok | parent 管理（provided） | 父 POM dependencyManagement，按需在模块声明 |
+| 通用工具 | Hutool（`hutool-all`） | 父 POM dependencyManagement | 父 POM dependencyManagement，按需在模块声明 |
 
 规则：
 

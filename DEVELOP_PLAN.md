@@ -28,14 +28,14 @@
 
 后端（本期验收只看后端，前端联调留待 UI 重做期）：
 
-- [ ] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令以 pwsh 7 + 局部 `JAVA_HOME=JDK25` 执行）
-- [ ] 五模块骨架完整：common 零 Spring 依赖；framework 零端点；infrastructure 中性模型；docs 带 api 层；server 零业务
-- [ ] 全仓无 MySQL / Redis / OSS / MyBatis 依赖；Lombok / Hutool 仅按需出现在父 POM
-- [ ] `GET /api/docs/tree` 无需认证返回 `{"code":0,...}`；`?path=../secret.md` 返回 400 + `code=40000`
-- [ ] `SPRINGDOC_API_DOCS_ENABLED=true` 时 Swagger UI 可打开
-- [ ] 搜索语义符合 AGENTS.md 第 8 节（大小写不敏感、100 上限、懒遍历短路、结构化命中）
+- [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令以 pwsh 7 + 局部 `JAVA_HOME=JDK25` 执行）
+- [x] 五模块骨架完整：common 零 Spring 依赖；framework 零端点；infrastructure 中性模型；docs 带 api 层；server 零业务
+- [x] 全仓无 MySQL / Redis / OSS / MyBatis 依赖；Lombok / Hutool 仅在父 POM dependencyManagement 管版本，按需声明
+- [x] `GET /api/docs/tree` 无需认证返回 `{"code":0,...}`；`?path=../secret.md` 返回 400 + `code=40000`
+- [x] `SPRINGDOC_API_DOCS_ENABLED=true` 时 Swagger UI 可打开
+- [x] 搜索语义符合 AGENTS.md 第 8 节（大小写不敏感、100 上限、懒遍历短路、结构化命中）
 
 文档与注释：
 
-- [ ] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
-- [ ] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」、无过时注释
+- [x] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
+- [x] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」、无过时注释

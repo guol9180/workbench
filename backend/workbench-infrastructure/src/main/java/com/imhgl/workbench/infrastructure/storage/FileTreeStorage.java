@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -155,7 +156,12 @@ public class FileTreeStorage {
         if (Files.exists(path)) {
             throw new StorageException(StorageException.Reason.CONFLICT, "文件已存在：" + relPath);
         }
-        Files.createDirectories(path.getParent());
+        try {
+            Files.createDirectories(path.getParent());
+        } catch (FileAlreadyExistsException e) {
+            // 父路径被普通文件占用（如 a.md 已存在时建 a.md/x.md）——属用户输入错误，映射为参数错误而非 500
+            throw new IllegalArgumentException("父路径不是目录：" + relPath);
+        }
         Files.writeString(path, content == null ? "" : content, StandardCharsets.UTF_8);
     }
 
@@ -215,7 +221,12 @@ public class FileTreeStorage {
         if (Files.isRegularFile(src)) {
             validateExtension(dst);
         }
-        Files.createDirectories(dst.getParent());
+        try {
+            Files.createDirectories(dst.getParent());
+        } catch (FileAlreadyExistsException e) {
+            // 同 create：父路径被普通文件占用属用户输入错误
+            throw new IllegalArgumentException("父路径不是目录：" + to);
+        }
         Files.move(src, dst);
     }
 

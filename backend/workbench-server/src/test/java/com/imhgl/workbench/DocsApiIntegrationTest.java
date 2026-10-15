@@ -1,5 +1,6 @@
 package com.imhgl.workbench;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -29,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 集成冒烟：v2 契约形状 / 防穿越 / 参数校验 / CORS / Swagger，全部走真实 HTTP（RANDOM_PORT）。
  * 传输层用 JDK HttpClient（Boot 4 已移除 TestRestTemplate），不跟随重定向以便断言 Swagger 的 3xx。
+ * <p>设计取舍：用例按 @Order 串行共享同一存储根，后步用例自建自清（第 8 步删净），
+ * 使套件结束时可整目录清理——冒烟套件追求链路完整性而非用例间零耦合。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -41,6 +44,16 @@ class DocsApiIntegrationTest {
     static void storageProps(DynamicPropertyRegistry registry) throws IOException {
         storageRoot = Files.createTempDirectory("workbench-docs-test");
         registry.add("workbench.storage.root", () -> storageRoot.toString());
+    }
+
+    @AfterAll
+    static void cleanStorageRoot() throws IOException {
+        if (storageRoot != null && Files.exists(storageRoot)) {
+            // 逆序删除保证先删子项再删父项
+            try (java.util.stream.Stream<Path> walk = Files.walk(storageRoot)) {
+                walk.sorted(java.util.Comparator.reverseOrder()).forEach(p -> p.toFile().delete());
+            }
+        }
     }
 
     @LocalServerPort

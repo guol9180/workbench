@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.imhgl</groupId>
             <artifactId>workbench-common</artifactId>
-            <version>1.0.0</version>
+            <version>${project.version}</version>
         </dependency>
         <!-- Spring 基座：@ConfigurationProperties / @Service 等注册与配置绑定 -->
         <dependency>

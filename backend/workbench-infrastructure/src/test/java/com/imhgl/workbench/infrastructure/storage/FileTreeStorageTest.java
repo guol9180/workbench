@@ -126,6 +126,16 @@ class FileTreeStorageTest {
     }
 
     @Test
+    @DisplayName("create/rename：父路径是普通文件时按输入错误拒绝（400 语义），而非落成 500")
+    void operationsUnderFileParentRejected(@TempDir Path root) throws IOException {
+        FileTreeStorage storage = new FileTreeStorage(props(root));
+        storage.create("a.md", "占位");
+        assertThrows(IllegalArgumentException.class, () -> storage.create("a.md/x.md", "x"));
+        storage.create("c.md", "x");
+        assertThrows(IllegalArgumentException.class, () -> storage.rename("c.md", "a.md/inner.md"));
+    }
+
+    @Test
     @DisplayName("tree：目录优先 + 不分大小写排序，白名单外过滤")
     void treeSortsDirsFirstAndFilters(@TempDir Path root) throws IOException {
         FileTreeStorage storage = new FileTreeStorage(props(root));

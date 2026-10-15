@@ -97,6 +97,26 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    @DisplayName("请求体不可读 → 400 + 请求参数错误")
+    void unreadableBodyMapsToBadRequest() throws Exception {
+        mvc.perform(post("/probe/valid")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("not-json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40000))
+                .andExpect(jsonPath("$.message").value("请求参数错误"));
+    }
+
+    @Test
+    @DisplayName("参数类型不符 → 400 + 请求参数错误")
+    void typeMismatchMapsToBadRequest() throws Exception {
+        mvc.perform(get("/probe/num").param("n", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40000))
+                .andExpect(jsonPath("$.message").value("请求参数错误"));
+    }
+
+    @Test
     @DisplayName("未知异常 → 500 + 固定消息，不泄漏原始异常信息")
     void unknownExceptionMapsTo500WithoutLeak() throws Exception {
         mvc.perform(get("/probe/boom"))
@@ -122,6 +142,12 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/probe/param")
         public String param(@RequestParam("q") String q) {
             return q;
+        }
+
+        /** 类型不符探针：传非数字触发 MethodArgumentTypeMismatchException */
+        @GetMapping("/probe/num")
+        public String num(@RequestParam("n") int n) {
+            return String.valueOf(n);
         }
 
         @PostMapping("/probe/valid")

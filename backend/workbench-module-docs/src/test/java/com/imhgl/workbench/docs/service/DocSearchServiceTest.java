@@ -103,6 +103,32 @@ class DocSearchServiceTest {
         assertEquals("f099.md", hits.get(99).path());
     }
 
+    /** 毒文件存储：对指定文件抛 IO 异常，验证搜索的失败跳过路径 */
+    static class PoisonStorage extends FileTreeStorage {
+        PoisonStorage(Path root) {
+            super(new FileStorageProperties(root.toString(), Set.of("md", "markdown", "txt")));
+        }
+
+        @Override
+        public String read(String relPath) throws IOException {
+            if (relPath.equals("poison.md")) {
+                throw new IOException("模拟读取失败");
+            }
+            return super.read(relPath);
+        }
+    }
+
+    @Test
+    @DisplayName("单文件 IO 失败静默跳过：毒文件不中断也不污染整体结果")
+    void ioFailureSkipped(@TempDir Path root) throws IOException {
+        PoisonStorage storage = new PoisonStorage(root);
+        storage.create("good.md", "hit");
+        storage.create("poison.md", "hit");
+        List<SearchHit> hits = new DocSearchService(storage).search("hit");
+        assertEquals(1, hits.size());
+        assertEquals("good.md", hits.get(0).path());
+    }
+
     /** 统计内容读取次数的探针存储：验证懒遍历短路 */
     static class CountingStorage extends FileTreeStorage {
         int reads = 0;
