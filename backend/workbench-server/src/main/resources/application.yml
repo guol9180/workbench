@@ -1,2 +1,27 @@
 server:
   port: ${SERVER_PORT:8080}
+
+spring:
+  threads:
+    virtual:
+      # 文件 IO 型负载，虚拟线程低开销
+      enabled: true
+
+springdoc:
+  api-docs:
+    # 生产环境可置 false 关闭接口文档
+    enabled: ${SPRINGDOC_API_DOCS_ENABLED:true}
+  swagger-ui:
+    path: /swagger-ui.html
+
+workbench:
+  storage:
+    # 文档库存储目录（中性配置键，环境变量仍为 DOCS_ROOT），建议指向持久化路径
+    root: ${DOCS_ROOT:./data/docs}
+  cors:
+    # 允许的前端来源，逗号分隔
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
+logging:
+  level:
+    root: info
