@@ -15,14 +15,14 @@
 实施计划（唯一权威）：[docs/superpowers/plans/2026-10-15-backend-refactor-docs-only.md](./docs/superpowers/plans/2026-10-15-backend-refactor-docs-only.md)——契约细节、测试矩阵、Review Focus 以计划文件为准，此处只跟踪状态。
 
 - [x] Task 0: 前置环境——JDK 25（Temurin 25.0.4.1+1）安装至 `D:\dev\environment\jdk-25.0.4.1+1`，系统环境零侵入；分支 `refactor/docs-only`
-- [ ] Task 1: 规范先行——AGENTS / DEVELOP_PLAN 全新撰写，README 横幅化
-- [ ] Task 2: 骨架切换——Boot 4.1.1 + Java 25，删 auth/devsetup/db-init，五模块空壳可启动
-- [ ] Task 3: common 重写——`ApiResult` / `ErrorCode`（语义错误码）/ `BusinessException`
-- [ ] Task 4: infrastructure 重写——`FileTreeStorage` / `StorageNode` / `FileStorageProperties`（防穿越 + 白名单 + rename 守卫）
-- [ ] Task 5: framework 重写——全局异常（四分支映射）/ CORS / SpringDoc
-- [ ] Task 6: module-docs 重写——`DocPath` 值对象 / record 契约 / 结构化搜索 + 懒遍历短路
-- [ ] Task 7: server 配置定型——瘦身 `application.yml` + 集成冒烟（JSON 形状 / 防穿越 / 校验 / CORS / Swagger）
-- [ ] Task 8: 全量验证——`mvn clean package` 全绿，README 按最终现实重写，start.bat 局部 `JAVA_HOME`
+- [x] Task 1: 规范先行——AGENTS / DEVELOP_PLAN 全新撰写，README 横幅化
+- [x] Task 2: 骨架切换——Boot 4.1.1 + Java 25，删 auth/devsetup/db-init，五模块空壳可启动
+- [x] Task 3: common 重写——`ApiResult` / `ErrorCode`（语义错误码）/ `BusinessException`
+- [x] Task 4: infrastructure 重写——`FileTreeStorage` / `StorageNode` / `FileStorageProperties`（防穿越 + 白名单 + rename 守卫）
+- [x] Task 5: framework 重写——全局异常（四分支映射）/ CORS / SpringDoc
+- [x] Task 6: module-docs 重写——`DocPath` 值对象 / record 契约 / 结构化搜索 + 懒遍历短路
+- [x] Task 7: server 配置定型——瘦身 `application.yml` + 集成冒烟（JSON 形状 / 防穿越 / 校验 / CORS / Swagger）
+- [x] Task 8: 全量验证——`mvn clean package` 全绿，README 按最终现实重写，start.bat 局部 `JAVA_HOME`
 
 ## 验收清单（M3 · 每次交付前逐条核对）
 
