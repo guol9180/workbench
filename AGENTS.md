@@ -12,6 +12,14 @@
 
 ---
 
+## 通用规范（必建三条）
+
+1. **终端统一 PowerShell 7**：所有终端命令使用 PowerShell 7（pwsh）执行；本机未安装时提示用户安装后再继续，不以旧版 PowerShell 替代。
+2. **复用优先，不过度设计**：同一逻辑或结构出现第二份副本时，立即抽取为公共函数 / 公共样式 / 公共组件；前端页面表现优先组件化；保证代码质量，不为假想的未来需求预先抽象。
+3. **文档同步**：每次开发结束或提交之前，同步更新 README.md、AGENTS.md、DEVELOP_PLAN.md；文档与代码不同步视为任务未完成。
+
+---
+
 ## 1. 架构定位
 
 本项目采用：
@@ -187,3 +195,7 @@ com.imhgl.workbench.<x>/
 6. Redis 当前仅引入依赖与连接配置，出现真实消费场景前不写封装类。
 7. 相关环境变量：`MYSQL_HOST` / `MYSQL_PORT` / `MYSQL_DATABASE` / `MYSQL_USERNAME` / `MYSQL_ROOT_PASSWORD`、`REDIS_HOST` / `REDIS_PORT` / `REDIS_PASSWORD`、`OSS_ENDPOINT` / `OSS_BUCKET` / `OSS_ACCESS_KEY` / `OSS_SECRET`（可选 `OSS_PREFIX`，默认 `workbench`；四项必填齐才启用 OSS，缺省时工件功能报友好错误）；接口文档开关 `SPRINGDOC_API_DOCS_ENABLED`（默认开启，生产可关）。
 8. 分页约定：查询入参用 common 的 `PageQuery`，MP 查询用 `Page`，返回经 infrastructure 的 `Pages.toResult()` 转为 common 的 `PageResult`。
+
+---
+
+> 项目背景、技术栈与启动方式见 [README.md](./README.md)，当前计划与验收清单见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。三文档职责互斥：同一信息只写在归属文件，其余位置引用而不复制；修订时只改归属文件，引用处自动生效。

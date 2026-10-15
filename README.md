@@ -40,7 +40,7 @@ workbench/
 
 ### 模块与包结构约定
 
-依赖方向为强制规则（由各模块 pom 保证，写不出违规依赖）：`server → 业务模块 → framework → common`，`业务模块 → infrastructure`；common 零依赖；common / framework / infrastructure 不依赖业务模块；禁止循环依赖；业务模块禁止依赖 server；未经确认不新增 Maven 模块。完整架构规范（模块职责细则、依赖规则、配置命名约定）见 [AGENTS.md](AGENTS.md)。
+依赖方向为强制规则（由各模块 pom 保证，写不出违规依赖）：`server → 业务模块 → framework → common`，`业务模块 → infrastructure`；common 零依赖；common / framework / infrastructure 不依赖业务模块；禁止循环依赖；业务模块禁止依赖 server；未经确认不新增 Maven 模块。完整架构规范（模块职责细则、依赖规则、配置命名约定）见 [AGENTS.md](AGENTS.md)；当前任务进度与验收清单见 [DEVELOP_PLAN.md](DEVELOP_PLAN.md)。
 
 | 模块 | 包名 | 定位 | 禁止 |
 |---|---|---|---|
