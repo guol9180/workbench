@@ -31,12 +31,12 @@ workbench/
 
 要求：JDK 25（本机 `D:\dev\environment\jdk-25.0.4.1+1`）、Maven 3.9+。纯文件存储，**无需 Docker / MySQL / Redis**，开箱即跑。
 
-PowerShell 7 下（命令内局部设置 `JAVA_HOME`，不影响其他项目）：
+在任意终端（PowerShell / CMD 均可）中局部设置 `JAVA_HOME`（不影响其他项目）：
 
 ```powershell
 $env:JAVA_HOME = 'D:\dev\environment\jdk-25.0.4.1+1'
 cd backend
-mvn package                     # 全量构建 + 测试（46 个用例）
+mvn package                     # 全量构建 + 测试（54 个用例）
 mvn -pl workbench-server spring-boot:run
 ```
 

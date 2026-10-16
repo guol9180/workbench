@@ -28,7 +28,7 @@
 
 后端（本期验收只看后端，前端联调留待 UI 重做期）：
 
-- [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令以 pwsh 7 + 局部 `JAVA_HOME=JDK25` 执行）
+- [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）
 - [x] 五模块骨架完整：common 零 Spring 依赖；framework 零端点；infrastructure 中性模型；docs 带 api 层；server 零业务
 - [x] 全仓无 MySQL / Redis / OSS / MyBatis 依赖；Lombok / Hutool 仅在父 POM dependencyManagement 管版本，按需声明
 - [x] `GET /api/docs/tree` 无需认证返回 `{"code":0,...}`；`?path=../secret.md` 返回 400 + `code=40000`
