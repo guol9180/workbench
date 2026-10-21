@@ -2,7 +2,7 @@
 
 ## 0. 总则
 
-本项目为**个人学习练手项目**：一个以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，当前唯一业务模块为**在线 Markdown 文档（docs）**。
+本项目为**个人后台管理系统（学习向）**：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**——当前含流量监测域（monitor）与第一个工具模块**在线 Markdown 文档（docs）**，后续工具以业务模块形式渐进扩展。
 
 所有参与本项目开发的人员、AI Agent、代码生成工具，都必须严格遵守本文件中的架构规范、模块规范、命名规范、依赖规则与 API 约定。
 
@@ -40,9 +40,10 @@
 2. 业务代码按模块隔离；模块之间只通过 `api` 层交互，禁止跨模块访问 `model`、`service.impl`、`controller`。
 3. 公共能力下沉 `workbench-common`，框架能力沉淀 `workbench-framework`，技术设施沉淀 `workbench-infrastructure`。
 4. 禁止在公共模块、框架模块、技术设施模块中写业务逻辑；禁止在启动模块中写业务逻辑。
-5. **纯文件存储，无数据库**：文档即文件（`.md`），不引入 MySQL / Redis / OSS 等外部服务。
-6. 本期后端不与前端联调：API 按本文件约定设计，不为旧前端兼容妥协；前端在 UI 重做期对齐 v2 API。
-7. 架构演进渐进式，未经确认不新增 Maven 模块。
+5. **纯文件存储，无数据库**：文档即文件（`.md`），不引入 MySQL / Redis / OSS 等外部服务；监测时序数据同样零依赖——用 infrastructure 的中性 JSONL 时序存储（接口抽象，将来可无感替换实现）。
+6. **轻量 Token 认证**：`workbench.auth.token` 非空时 `/api/**` 校验请求头 `X-API-Token`（失败 401 + `UNAUTHORIZED(40100)`）；空值 = 认证关闭（本地开发与既有测试零回归）。单 Token、无用户体系。
+7. 本期后端不与前端联调：API 按本文件约定设计，不为旧前端兼容妥协；前端在 UI 重做期对齐 v2 API。
+8. 架构演进渐进式，未经确认不新增 Maven 模块。
 
 ---
 
@@ -51,9 +52,10 @@
 ```text
 workbench-backend
 ├── workbench-common             # 响应与异常契约（零业务、零 Spring 依赖）
-├── workbench-framework          # Web 框架能力（异常映射 / 校验 / CORS / OpenAPI，零端点）
-├── workbench-infrastructure     # 技术设施（中性文件树存储，防穿越 + 白名单）
-├── workbench-module-docs        # 在线文档业务模块（/api/docs/**）
+├── workbench-framework          # Web 框架能力（异常映射 / 校验 / CORS / OpenAPI / Token 认证，零端点）
+├── workbench-infrastructure     # 技术设施（中性文件树存储 + 中性 JSONL 时序存储）
+├── workbench-module-docs        # 工具：在线 Markdown 文档（/api/docs/**）
+├── workbench-module-monitor     # 流量监测域：自监测 + 上报枢纽 + 查询（/api/monitor/**）
 └── workbench-server             # 聚合启动（main + 配置，禁止业务、禁止被依赖）
 ```
 
@@ -71,23 +73,23 @@ workbench-backend
 
 - 允许存放：统一返回结果 `ApiResult`、错误码枚举 `ErrorCode`、业务异常 `BusinessException`、通用常量与基础工具。
 - 禁止存放：任何业务逻辑、Spring 依赖、HTTP 端点、技术设施封装。
-- 当前内容：`record ApiResult<T>(message, code, data)`（code=0 成功）、`ErrorCode`（PARAM_INVALID / NOT_FOUND / CONFLICT / METHOD_NOT_ALLOWED / INTERNAL_ERROR）、`BusinessException`。
+- 当前内容：`record ApiResult<T>(message, code, data)`（code=0 成功）、`ErrorCode`（PARAM_INVALID / UNAUTHORIZED / NOT_FOUND / CONFLICT / METHOD_NOT_ALLOWED / INTERNAL_ERROR）、`BusinessException`。
 
 ### 3.2 workbench-framework（com.imhgl.workbench.framework）
 
 职责：Web 应用运行所需的通用框架能力。
 
-- 允许存放：全局异常处理（业务异常→400 语义错误码；校验失败→400 `PARAM_INVALID`；未知→500 不泄漏细节）、参数校验、CORS 配置、SpringDoc/OpenAPI 配置、请求上下文等 Web 通用机制。
+- 允许存放：全局异常处理（业务异常→400 语义错误码；校验失败→400 `PARAM_INVALID`；未知→500 不泄漏细节）、参数校验、CORS 配置、SpringDoc/OpenAPI 配置、轻量 Token 认证过滤器、请求上下文等 Web 通用机制。
 - 禁止存放：HTTP 端点（一律放业务模块）、业务逻辑、业务 DTO。
-- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig）。
+- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig、ApiTokenProperties）、`filter/ApiTokenFilter`。
 
 ### 3.3 workbench-infrastructure（com.imhgl.workbench.infrastructure）
 
 职责：外部技术组件与资源的中性封装。
 
-- 允许存放：文件树存储（防路径穿越、扩展名白名单、受控读写）、未来可能的缓存 / 对象存储等中性封装。
+- 允许存放：文件树存储（防路径穿越、扩展名白名单、受控读写）、监测时序存储（JSONL 聚合桶、重放、保留策略）、未来可能的缓存 / 对象存储等中性封装。
 - 禁止存放：业务规则、业务 Controller / Service / DTO；禁止业务色彩命名。
-- 当前内容：`storage/`——`FileTreeStorage`（受控文件系统入口：resolve / validateName / validateExtension / isAllowedFile / tree / listAllowedFiles / read / create / save / createDir / rename / delete / toRel）、`record StorageNode`（中性树模型）、`StorageException`（中性状态异常，NOT_FOUND / CONFLICT，由业务模块翻译）、`FileStorageProperties`（`workbench.storage.*`）。
+- 当前内容：`storage/`——`FileTreeStorage`（受控文件系统入口：resolve / validateName / validateExtension / isAllowedFile / tree / listAllowedFiles / read / create / save / createDir / rename / delete / toRel）、`record StorageNode`（中性树模型）、`StorageException`（中性状态异常，NOT_FOUND / CONFLICT，由业务模块翻译）、`FileStorageProperties`（`workbench.storage.*`）；`metrics/`——`TimeSeriesStore`（中性时序存储契约：append / sources / overview / series / topEndpoints / flush / close）、`JsonlTimeSeriesStore`（零依赖实现：内存分钟聚合桶 + 蓄水池延迟采样 + 按天 JSONL 刷盘 + 启动重放 + 保留清理）、`TrafficRecord`（中性流量记录）与查询模型（SourceStat / Overview / SeriesPoint / EndpointRank）、`MetricsProperties`（`workbench.metrics.*`）。
 - 附加规则：只产出中性模型与中性配置；业务语义由业务模块的 api 实现层适配。
 
 ### 3.4 workbench-module-docs（com.imhgl.workbench.docs）
@@ -98,7 +100,16 @@ workbench-backend
 - **`DocPath` 值对象约定**：相对路径的归一化与安全校验收拢在 `model/DocPath`，service 层一律以 `DocPath` 流转；api/controller 边界收 `String`，跨模块友好。
 - 搜索：文件名与内容双匹配、大小写不敏感、上限 100、懒遍历短路（命中即停，不整树物化）、结构化 `SearchHit{path, name, fileNameMatch, line, snippet}`。
 
-### 3.5 workbench-server（com.imhgl.workbench）
+### 3.5 workbench-module-monitor（com.imhgl.workbench.monitor）
+
+职责：流量监测域——本系统 API 自监测（Filter 采集）、外部系统通用上报（ingest 枢纽）、面向管理台的查询（sources / overview / series / top-endpoints / status）。
+
+- 内部结构：`api/`（`MonitorApi` 对外唯一契约 + `impl/` 适配 infrastructure 中性查询模型）、`controller/`（六端点，只注入 `MonitorApi`）、`dto/`（`IngestRequest`/`Point`，record + jakarta validation）、`model/`（`TimeRange` 值对象与业务查询模型）、`service/`（`MonitorService` 查询编排与采集入口、`TrafficRecordFilter` 自监测过滤器）。无 entity / mapper。
+- **`TimeRange` 值对象约定**：查询区间 `5m|1h|6h|24h|7d` 的解析与校验收拢在 model，非法值抛 `IllegalArgumentException` → 400。
+- **自监测约定**：`TrafficRecordFilter` 拦 `/api/**`（order 先于 Token 过滤器，未认证请求也计入流量），`source="workbench"`；路径归一化（纯数字段→`{n}`、UUID 段→`{u}`）；异步投递有界队列，队列满丢弃并计数、绝不阻塞业务请求。
+- **上报枢纽**：外部系统按 `IngestRequest` 结构 POST 到 `/api/monitor/ingest`，`source` 自带标识（如 `nginx`、`server-a`），数据进同一时序存储。
+
+### 3.6 workbench-server（com.imhgl.workbench）
 
 职责：启动模块、聚合模块、部署模块。
 
@@ -110,11 +121,12 @@ workbench-backend
 ## 4. 依赖规则
 
 ```text
-workbench-server        → workbench-module-docs（含传递 framework / infrastructure / common）
-workbench-module-docs   → workbench-framework、workbench-infrastructure、workbench-common
-workbench-framework     → workbench-common
+workbench-server         → workbench-module-docs、workbench-module-monitor（含传递 framework / infrastructure / common）
+workbench-module-docs    → workbench-framework、workbench-infrastructure、workbench-common
+workbench-module-monitor → workbench-framework、workbench-infrastructure、workbench-common
+workbench-framework      → workbench-common
 workbench-infrastructure → workbench-common
-workbench-common        → 零依赖
+workbench-common         → 零依赖
 ```
 
 1. 依赖方向由各模块 pom 强制保证，写不出违规依赖。
@@ -147,7 +159,8 @@ com.imhgl.workbench.<x>/
 
 1. 业务模块配置：`workbench.<module>.*`（如 `workbench.docs.*`）。
 2. infrastructure 配置：技术组件中性命名（如 `workbench.storage.*`），禁止业务前缀。
-3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`）。
+3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`、`workbench.auth.token` ↔ `API_TOKEN`、`workbench.metrics.data-dir` ↔ `METRICS_DATA`）。
+4. framework 认证配置 `workbench.auth.token` 归 framework 中性管理（Web 通用机制）；infrastructure 时序配置 `workbench.metrics.*`（data-dir / retention-days / flush-interval-seconds）中性命名。
 
 ---
 
@@ -175,9 +188,13 @@ com.imhgl.workbench.<x>/
 
 ---
 
-## 8. API 设计约定（/api/docs）
+## 8. API 设计约定（/api/docs 与 /api/monitor）
 
 统一包装：`ApiResult{message, code, data}`，`code=0` 成功；错误码见 3.1。
+
+**认证（全局）**：`workbench.auth.token` 非空时，全部 `/api/**` 请求须携带请求头 `X-API-Token`（含 docs 与 monitor；Swagger 路径不在 `/api/**` 内天然放行），失败 → HTTP 401 + `UNAUTHORIZED(40100, "未认证")`；token 为空 = 认证关闭。
+
+**docs 域（八端点，工具）**：
 
 | 方法 | 路径 | 入参 | 出参 data |
 |---|---|---|---|
@@ -189,6 +206,19 @@ com.imhgl.workbench.<x>/
 | POST | `/api/docs/rename` | `{from, to}` | - |
 | DELETE | `/api/docs/resource?path=` | query | - |
 | GET | `/api/docs/search?q=` | query | `List<SearchHit{path, name, fileNameMatch, line, snippet}>` |
+
+**monitor 域（六端点，监测）**：
+
+| 方法 | 路径 | 入参 | 出参 data |
+|---|---|---|---|
+| POST | `/api/monitor/ingest` | `{source, points:[{endpoint, method, status, count, totalMs, maxMs, ts}]}` | - |
+| GET | `/api/monitor/sources` | - | `List<SourceStat{name, lastSeenMinute}>`（含自身 `workbench`） |
+| GET | `/api/monitor/overview?source=&range=5m\|1h\|6h\|24h\|7d` | query | `Overview{count, errCount, errRate, avgMs, p95Ms, rps}` |
+| GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h` | query | `List<SeriesPoint{bucketEpoch, value}>` |
+| GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=count\|err\|avgMs` | query | `List<EndpointRank{endpoint, count, errCount, avgMs, p95Ms}>` |
+| GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关，不回显 token 值） |
+
+监测约定：`range` / `metric` / `step` / `by` 非法值 → 400（`TimeRange` 值对象校验）；`ts` 为分钟级 epoch 毫秒；错误判定 = HTTP status ≥ 400；`rps` = count / 区间秒数。
 
 错误映射：领域冲突 → HTTP 400 + 语义错误码 + 具体中文消息——不存在 = `NOT_FOUND(40400)`、已存在/状态冲突 = `CONFLICT(40900)`；非法输入（路径穿越、非法名、扩展名不在白名单）→ HTTP 400 + `PARAM_INVALID(40000)`；未知路径 → HTTP 404 + `NOT_FOUND`；方法不支持 → HTTP 405 + `METHOD_NOT_ALLOWED(40500)`；校验失败 / 缺参 / 体不可读 → HTTP 400 + `PARAM_INVALID("请求参数错误")`；未知异常 → HTTP 500 + `INTERNAL_ERROR("服务器内部错误")`，不泄漏堆栈与类名。
 

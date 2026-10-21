@@ -8,23 +8,39 @@
 |---|---|---|
 | M1（已归档） | 模块化单体骨架 + 认证 + 在线文档 v1 | ✅ 已完成，随重构移除（auth 模块删除） |
 | M2（已归档） | 部署链（Docker/Caddy/CI）+ 开发环境管家 devsetup | ✅ 已完成，随重构移除（devsetup 模块与部署链暂缓；历史见 git 主干） |
-| M3 | **后端重构：Java 25 + Spring Boot 4.1 + docs-only** | 🚩 进行中 |
+| M3（已归档） | 后端重构：Java 25 + Spring Boot 4.1 + docs-only | ✅ 已完成并合入 main（54 测试，审查 Important 全修） |
+| M4 | **后台管理系统一期：流量监测域 + 轻量 Token 认证（仅后端）** | 🚩 进行中 |
 
-## 当前任务（M3 · 后端重构）
+## 当前任务（M4 · 流量监测一期）
 
-实施计划（唯一权威）：[docs/superpowers/plans/2026-10-15-backend-refactor-docs-only.md](./docs/superpowers/plans/2026-10-15-backend-refactor-docs-only.md)——契约细节、测试矩阵、Review Focus 以计划文件为准，此处只跟踪状态。
+实施计划（唯一权威）：[docs/superpowers/plans/2026-10-21-admin-monitor-phase1.md](./docs/superpowers/plans/2026-10-21-admin-monitor-phase1.md)——契约细节、测试矩阵、Review Focus 以计划文件为准，此处只跟踪状态。
 
-- [x] Task 0: 前置环境——JDK 25（Temurin 25.0.4.1+1）安装至 `D:\dev\environment\jdk-25.0.4.1+1`，系统环境零侵入；分支 `refactor/docs-only`
-- [x] Task 1: 规范先行——AGENTS / DEVELOP_PLAN 全新撰写，README 横幅化
-- [x] Task 2: 骨架切换——Boot 4.1.1 + Java 25，删 auth/devsetup/db-init，五模块空壳可启动
-- [x] Task 3: common 重写——`ApiResult` / `ErrorCode`（语义错误码）/ `BusinessException`
-- [x] Task 4: infrastructure 重写——`FileTreeStorage` / `StorageNode` / `FileStorageProperties`（防穿越 + 白名单 + rename 守卫）
-- [x] Task 5: framework 重写——全局异常（四分支映射）/ CORS / SpringDoc
-- [x] Task 6: module-docs 重写——`DocPath` 值对象 / record 契约 / 结构化搜索 + 懒遍历短路
-- [x] Task 7: server 配置定型——瘦身 `application.yml` + 集成冒烟（JSON 形状 / 防穿越 / 校验 / CORS / Swagger）
-- [x] Task 8: 全量验证——`mvn clean package` 全绿，README 按最终现实重写，start.bat 局部 `JAVA_HOME`
+- [ ] Task 0: 规范先行——AGENTS / README / DEVELOP_PLAN 升级为「后台管理系统（监测 + 工具集）」定位，登记 monitor 模块与 Token 认证约定
+- [ ] Task 1: infrastructure 时序存储——`TimeSeriesStore` / `JsonlTimeSeriesStore`（分钟聚合桶 / 蓄水池采样 / JSONL 刷盘 / 重放 / 保留）
+- [ ] Task 2: framework Token 认证——`ApiTokenFilter`（X-API-Token，空 = 关闭）+ `UNAUTHORIZED(40100)`
+- [ ] Task 3: monitor 域模型与服务——`TimeRange` 值对象 / `MonitorService` / `TrafficRecordFilter` 自监测
+- [ ] Task 4: monitor 六端点——ingest / sources / overview / series / top-endpoints / status
+- [ ] Task 5: server 集成——配置 + `MonitorIntegrationTest`（自监测链路 / 上报 / Token 三态）
+- [ ] Task 6: 全量验证——`mvn clean package` 全绿（54 存量零回归 + 新增用例），文档定稿，推送 main
 
-## 验收清单（M3 · 每次交付前逐条核对）
+## 验收清单（M4 · 每次交付前逐条核对）
+
+后端（本期验收只看后端，前端联调留待 UI 重做期）：
+
+- [ ] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）；**存量 54 用例零回归**
+- [ ] 零新增第三方依赖；无 MySQL / Redis / OSS / MyBatis 依赖
+- [ ] token 未配置：现有行为不变；配置后：无头 / 错值 401 + `40100`，正确值放行；Swagger 不受影响
+- [ ] 自监测：调任意 docs API 后 `overview?source=workbench` 计数增长，路径已归一化（数字段 `{n}` / UUID `{u}`）
+- [ ] 上报枢纽：模拟外部系统 `ingest` 后 `series` / `top-endpoints` / `sources` 正确反映；非法 payload 400
+- [ ] 时序存储：同 data-dir 重实例化后数据不丢（重放）；过期文件被清理（保留策略）；并发 append 计数精确
+- [ ] 查询参数校验：`range` / `metric` / `step` / `by` 非法值 400
+
+文档与注释：
+
+- [ ] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
+- [ ] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」（聚合桶 / 蓄水池 / 单写线程等取舍）、无过时注释
+
+## 验收清单（M3 · 已归档，随 M4 重跑仍须全绿）
 
 后端（本期验收只看后端，前端联调留待 UI 重做期）：
 
