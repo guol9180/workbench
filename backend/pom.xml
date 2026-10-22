@@ -23,6 +23,7 @@
         <module>workbench-framework</module>
         <module>workbench-infrastructure</module>
         <module>workbench-module-docs</module>
+        <module>workbench-module-monitor</module>
         <module>workbench-server</module>
     </modules>
 

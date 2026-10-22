@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.imhgl</groupId>
+        <artifactId>workbench-backend</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>workbench-module-monitor</artifactId>
+    <name>workbench-module-monitor</name>
+    <description>流量监测业务模块：自监测 + 上报枢纽 + 查询（api 层为模块间唯一交互入口）</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-framework</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.imhgl</groupId>
+            <artifactId>workbench-infrastructure</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

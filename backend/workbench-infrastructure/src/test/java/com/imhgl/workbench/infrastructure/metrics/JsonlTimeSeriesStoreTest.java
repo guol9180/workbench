@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class JsonlTimeSeriesStoreTest {
 
-    /** 动态时间基（分钟 epoch）：一小时前——必须落在保留期内（静态常量曾错算成 1975 年而被保留策略正确清掉） */
-    private static final long M0 = System.currentTimeMillis() / 60_000L - 60;
+    /** 动态时间基（分钟 epoch）：一小时前并对齐到整点——避免 M0+1 撞上小时边界导致偶发翻转（须落在保留期内） */
+    private static final long M0 = System.currentTimeMillis() / 60_000L / 60 * 60 - 60;
 
     private static MetricsProperties props(Path dir) {
         return new MetricsProperties(dir.toString(), 14, 5);
