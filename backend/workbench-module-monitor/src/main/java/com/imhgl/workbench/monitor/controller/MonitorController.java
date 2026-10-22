@@ -7,21 +7,29 @@ import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
+import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
+import com.imhgl.workbench.monitor.model.SourceCollectResult;
+import com.imhgl.workbench.monitor.model.SourceConfigView;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 流量监测模块接口（/api/monitor/**）：只依赖本模块 api 层（MonitorApi），
  * 薄到「接参 → 调 api → 包 ApiResult」；range/step/by 的合法性由 api 层的
  * 值对象校验（非法 → IAE → 全局异常处理器 400）。
+ * 源配置端点（M6）：配置页的管理面，写操作经 @Valid 校验与 api 层语义校验。
  */
 @RestController
 @RequestMapping("/api/monitor")
@@ -75,5 +83,40 @@ public class MonitorController {
     @GetMapping("/status")
     public ApiResult<MonitorStatus> status() {
         return ApiResult.ok(monitorApi.status());
+    }
+
+    /* ---------------- 数据源配置（M6，配置页） ---------------- */
+
+    /** 已接入数据源列表（含运行状态，不含 token） */
+    @GetMapping("/source-configs")
+    public ApiResult<List<SourceConfigView>> sourceConfigs() {
+        return ApiResult.ok(monitorApi.sourceConfigs());
+    }
+
+    /** 接入数据源，返回生成的配置 id */
+    @PostMapping("/source-configs")
+    public ApiResult<Map<String, String>> createSourceConfig(@Valid @RequestBody SourceConfigRequest request) {
+        return ApiResult.ok(Map.of("id", monitorApi.createSourceConfig(request)));
+    }
+
+    /** 修改接入（启停 / 指标 / repo） */
+    @PutMapping("/source-configs/{id}")
+    public ApiResult<Void> updateSourceConfig(@PathVariable String id,
+                                              @Valid @RequestBody SourceConfigRequest request) {
+        monitorApi.updateSourceConfig(id, request);
+        return ApiResult.ok();
+    }
+
+    /** 删除接入（停采集，历史数据按保留策略自然过期） */
+    @DeleteMapping("/source-configs/{id}")
+    public ApiResult<Void> deleteSourceConfig(@PathVariable String id) {
+        monitorApi.deleteSourceConfig(id);
+        return ApiResult.ok();
+    }
+
+    /** 手动立即采集一次 */
+    @PostMapping("/source-configs/{id}/collect")
+    public ApiResult<SourceCollectResult> collectSourceConfig(@PathVariable String id) {
+        return ApiResult.ok(monitorApi.collectSourceConfig(id));
     }
 }

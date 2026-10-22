@@ -170,5 +170,30 @@ class MonitorControllerTest {
         public MonitorStatus status() {
             return new MonitorStatus(3, 1, false, 0);
         }
+
+        /* ---------------- 数据源配置（M6）：契约测试见 MonitorSourceConfigApiTest ---------------- */
+
+        @Override
+        public List<com.imhgl.workbench.monitor.model.SourceConfigView> sourceConfigs() {
+            return List.of();
+        }
+
+        @Override
+        public String createSourceConfig(com.imhgl.workbench.monitor.dto.SourceConfigRequest request) {
+            return "gh-x-y";
+        }
+
+        @Override
+        public void updateSourceConfig(String id, com.imhgl.workbench.monitor.dto.SourceConfigRequest request) {
+        }
+
+        @Override
+        public void deleteSourceConfig(String id) {
+        }
+
+        @Override
+        public com.imhgl.workbench.monitor.model.SourceCollectResult collectSourceConfig(String id) {
+            return new com.imhgl.workbench.monitor.model.SourceCollectResult(true, null);
+        }
     }
 }

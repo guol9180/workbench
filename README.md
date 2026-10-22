@@ -77,6 +77,18 @@ npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=` | 端点排行（by：count/err/avgMs） |
 | GET | `/api/monitor/status` | 监测域自检（桶数 / 文件数 / 认证开关） |
 
+**源配置 · monitor 域（M6，配置页驱动）**：
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/monitor/source-configs` | 已接入数据源（含采集状态；token 永不回显） |
+| POST | `/api/monitor/source-configs` | 接入（body：`{type:"github", repo:"owner/name", enabled, metrics:["pages"\|"downloads"]}`） |
+| PUT | `/api/monitor/source-configs/{id}` | 修改（启停 / 指标 / repo） |
+| DELETE | `/api/monitor/source-configs/{id}` | 删除（停采集；历史数据按保留策略自然过期） |
+| POST | `/api/monitor/source-configs/{id}/collect` | 手动立即采集（ok=false 时 error 给可行动原因） |
+
+GitHub 采集：环境变量 `GITHUB_TOKEN`（只读 PAT）非空时生效；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
+
 **认证**：环境变量 `API_TOKEN` 非空时，全部 `/api/**` 须携带请求头 `X-API-Token`，失败 401 + `40100`；为空 = 关闭。
 
 错误映射：文件/目录不存在 → 400 + `40400`；已存在/冲突 → 400 + `40900`；非法输入（穿越、非法名、扩展名白名单外）→ 400 + `40000`；未知路径 → 404 + `40400`；方法不支持 → 405 + `40500`；未认证 → 401 + `40100`；未知异常 → 500 + `50000`「服务器内部错误」。完整行为约定见 [AGENTS.md · API 设计约定](./AGENTS.md#8-api-设计约定apidocs-与-apimonitor)。

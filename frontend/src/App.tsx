@@ -7,6 +7,7 @@ import AppShell from './components/AppShell'
 import { AppDialog, AppToast } from './components/AppOverlay'
 import MonitorView from './modules/monitor/MonitorView'
 import DocsView from './modules/docs/DocsView'
+import SourcesView from './modules/sources/SourcesView'
 import AccessView from './modules/access/AccessView'
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/monitor" replace />} />
           <Route path="/monitor" element={<MonitorView />} />
           <Route path="/docs" element={<DocsView />} />
+          <Route path="/sources" element={<SourcesView />} />
         </Route>
         <Route path="/login" element={<AccessView />} />
         <Route path="*" element={<Navigate to="/monitor" replace />} />

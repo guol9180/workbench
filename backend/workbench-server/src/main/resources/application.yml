@@ -29,6 +29,12 @@ workbench:
     data-dir: ${METRICS_DATA:./data/metrics}
     retention-days: 14
     flush-interval-seconds: 5
+  sources:
+    # 数据源配置页（M6）：接入清单持久化文件 + GitHub token（只读 PAT，环境变量注入，不落盘）
+    # cron 默认每天 08:05/20:05 各拉一次（GitHub 流量本身是日粒度），配 "-" 可关闭定时只留手动采集
+    file: ${SOURCES_FILE:./data/sources.json}
+    github-token: ${GITHUB_TOKEN:}
+    cron: ${SOURCES_CRON:0 5 8,20 * * *}
 
 logging:
   level:

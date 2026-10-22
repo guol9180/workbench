@@ -42,6 +42,13 @@ export default function AppShell() {
               <path d="M10 12.5h5M10 16h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </NavLink>
+          <NavLink to="/sources" title="数据源" className={({ isActive }) => 'rail-btn' + (isActive ? ' active' : '')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <ellipse cx="12" cy="5.5" rx="8" ry="2.8" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M4 5.5V12c0 1.55 3.58 2.8 8 2.8s8-1.25 8-2.8V5.5" stroke="currentColor" strokeWidth="1.6" />
+              <path d="M4 12v6.5c0 1.55 3.58 2.8 8 2.8s8-1.25 8-2.8V12" stroke="currentColor" strokeWidth="1.6" />
+            </svg>
+          </NavLink>
         </nav>
 
         <div className="rail-foot">

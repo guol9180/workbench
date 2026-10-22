@@ -11,7 +11,32 @@
 | M3（已归档） | 后端重构：Java 25 + Spring Boot 4.1 + docs-only | ✅ 已完成并合入 main（54 测试，审查 Important 全修） |
 | M4（已归档） | **后台管理系统一期：流量监测域 + 轻量 Token 认证（仅后端）** | ✅ 已完成并推送 main（00447e6，94/94，审查 Important 3 项全修） |
 | M5 | **前端重做：React「观测站」设计语言 + v2 API 全面对齐** | 🚩 进行中 |
-| M6（已立项未开工） | **GitHub 数据源接入：Pages 流量 / Release 下载量等，经后端采集器入时序存储** | 📋 需求已登记，方案待与用户确认（仓库范围 / token 提供方式 / 指标粒度） |
+| M6 | **GitHub 数据源接入：Pages 流量 / Release 下载量 + 数据源配置页** | 🚩 进行中 |
+
+## 当前任务（M6 · GitHub 数据源 + 配置页）
+
+需求已与用户确认：可配置多仓库列表；`GITHUB_TOKEN` 环境变量提供 PAT（repo 读权限）；指标 = Pages 流量（views/uniques）+ Release 下载量；**配置页**让用户自行控制接入哪些数据（运行期 CRUD，非 yml）。后端采集器入库映射与源配置约定见 [AGENTS.md §3.5 / §8](./AGENTS.md)。
+
+- [x] Task 1: 源配置存储与 API——`SourceConfigStore`（JSON 文件原子读写）+ source-configs 五端点 + 校验（TDD：store 往返 / 重复 repo 冲突 / 非法 repo / 不存在 id）
+- [x] Task 2: GitHub 采集器——`GithubClient`（HttpClient + Jackson 窄解析，fixture 单测）+ `GithubCollector`（cron + 手动触发，lastDay 游标保幂等 / 下载量增量入库，token 缺失诚实报错）
+- [x] Task 3: server 集成——`@EnableScheduling` + `workbench.sources.*` 配置 + `mvn package` 全绿（105 用例：存量 94 零回归 + 新增 11）
+- [x] Task 4: 前端数据源页——`/sources` 路由 + 图标轨第三项：接入表单（repo + 指标勾选）、源列表（状态灯/最后成功/立即采集/启停/删除）
+- [x] Task 5: 联调验证（CRUD + 重复 409 + 无 token 采集诚实报错 + 状态回写）+ 文档同步 + 提交推送
+
+## 验收清单（M6 · 每次交付前逐条核对）
+
+后端：
+
+- [x] `mvn clean package` 全绿，存量 94 用例零回归；新增 store/解析/API 用例（105/105）
+- [x] source-configs CRUD + 校验：非法 repo/metrics 400 `PARAM_INVALID`；重复 repo 409；不存在 404；token 不回显
+- [x] 采集器：token 缺失 → 手动采集 ok=false + 明确提示；views 以 lastDay 游标保幂等（聚合桶叠加语义下的防重）；下载量累计→增量（负差清零）；写入映射符合 §3.5 约定
+- [x] 调度：cron 可配（默认每天 08:05/20:05），配 `-` 关闭定时只留手动；单仓失败不拖累其他仓
+
+前端：
+
+- [x] `/sources` 页 CRUD 走通；配置页一切写操作均由用户点击触发（符合通用第 5 条）
+- [x] 概览页自动出现 `github/{repo}` 源（源 chips 动态）
+- [x] 构建零错；三文档同步；提交推送
 
 ## 当前任务（M5 · 前端重做）
 

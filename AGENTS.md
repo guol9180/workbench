@@ -103,12 +103,14 @@ workbench-backend
 
 ### 3.5 workbench-module-monitor（com.imhgl.workbench.monitor）
 
-职责：流量监测域——本系统 API 自监测（Filter 采集）、外部系统通用上报（ingest 枢纽）、面向管理台的查询（sources / overview / series / top-endpoints / status）。
+职责：流量监测域——本系统 API 自监测（Filter 采集）、外部系统通用上报（ingest 枢纽）、**外部数据源拉取采集（collector，M6 起）**、面向管理台的查询（sources / overview / series / top-endpoints / status）与**数据源配置管理（source-configs，M6 起）**。
 
-- 内部结构：`api/`（`MonitorApi` 对外唯一契约 + `impl/` 适配 infrastructure 中性查询模型）、`controller/`（六端点，只注入 `MonitorApi`）、`dto/`（`IngestRequest`/`Point`，record + jakarta validation）、`model/`（`TimeRange` 值对象与业务查询模型）、`service/`（`MonitorService` 查询编排与采集入口、`TrafficRecordFilter` 自监测过滤器）。无 entity / mapper。
+- 内部结构：`api/`（`MonitorApi` 对外唯一契约 + `impl/` 适配 infrastructure 中性查询模型）、`controller/`（监测与源配置端点，只注入 `MonitorApi`）、`dto/`（`IngestRequest`/`Point` 与 `SourceConfigRequest`，record + jakarta validation）、`model/`（`TimeRange` 值对象与业务查询模型）、`service/`（`MonitorService` 查询编排与采集入口、`TrafficRecordFilter` 自监测过滤器）、`collector/`（源配置文件存储、GitHub 采集客户端与调度，M6 起）。无 entity / mapper。
 - **`TimeRange` 值对象约定**：查询区间 `5m|1h|6h|24h|7d` 的解析与校验收拢在 model，非法值抛 `IllegalArgumentException` → 400。
 - **自监测约定**：`TrafficRecordFilter` 拦 `/api/**`（order 先于 Token 过滤器，未认证请求也计入流量），`source="workbench"`；路径归一化（纯数字段→`{n}`、UUID 段→`{u}`）；异步投递有界队列，队列满丢弃并计数、绝不阻塞业务请求。
 - **上报枢纽**：外部系统按 `IngestRequest` 结构 POST 到 `/api/monitor/ingest`，`source` 自带标识（如 `nginx`、`server-a`），数据进同一时序存储。
+- **源配置约定（M6）**：配置持久化为 JSON 文件（`workbench.sources.file`，默认 `data/sources.json`），由 `SourceConfigStore` 独占读写；仓库范围由用户在配置页管理，**运行期配置而非 yml**。同 repo 重复接入 → `CONFLICT(40900)`；删除源只停采集，历史数据按保留策略自然过期。
+- **拉取采集约定（M6）**：`GithubCollector` 按 cron 定时 + 支持手动触发，用 JDK `HttpClient` 调 GitHub REST API（`GITHUB_TOKEN` 环境变量，只读权限），解析零新增依赖（Jackson 为 web starter 既有传递依赖）；**非 HTTP 指标的入库映射**：`source = github/{owner}/{repo}`、`endpoint = 指标名`（views / downloads）、`status = 200`、`totalMs/maxMs = 0`、`count = 增量`（相对上次采集；重启后重新起算基线，首次记 0）、`ts = 数据所属日（UTC 日零点对齐分钟）`——GitHub 侧只提供日粒度、14 天窗口，此为上限而非实现选择。
 
 ### 3.6 workbench-server（com.imhgl.workbench）
 
@@ -160,8 +162,8 @@ com.imhgl.workbench.<x>/
 
 1. 业务模块配置：`workbench.<module>.*`（如 `workbench.docs.*`）。
 2. infrastructure 配置：技术组件中性命名（如 `workbench.storage.*`），禁止业务前缀。
-3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`、`workbench.auth.token` ↔ `API_TOKEN`、`workbench.metrics.data-dir` ↔ `METRICS_DATA`）。
-4. framework 认证配置 `workbench.auth.token` 归 framework 中性管理（Web 通用机制）；infrastructure 时序配置 `workbench.metrics.*`（data-dir / retention-days / flush-interval-seconds）中性命名。
+3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`、`workbench.auth.token` ↔ `API_TOKEN`、`workbench.metrics.data-dir` ↔ `METRICS_DATA`、`workbench.sources.github-token` ↔ `GITHUB_TOKEN`）。
+4. framework 认证配置 `workbench.auth.token` 归 framework 中性管理（Web 通用机制）；infrastructure 时序配置 `workbench.metrics.*`（data-dir / retention-days / flush-interval-seconds）中性命名；monitor 源采集配置 `workbench.sources.*`（file / github-token / cron）归 monitor 模块。
 
 ---
 
@@ -213,7 +215,7 @@ com.imhgl.workbench.<x>/
 | DELETE | `/api/docs/resource?path=` | query | - |
 | GET | `/api/docs/search?q=` | query | `List<SearchHit{path, name, fileNameMatch, line, snippet}>` |
 
-**monitor 域（六端点，监测）**：
+**monitor 域（监测六端点 + 源配置五端点）**：
 
 | 方法 | 路径 | 入参 | 出参 data |
 |---|---|---|---|
@@ -223,6 +225,13 @@ com.imhgl.workbench.<x>/
 | GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h` | query | `List<SeriesPoint{bucketEpoch, value}>` |
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=count\|err\|avgMs` | query | `List<EndpointRank{endpoint, count, errCount, avgMs, p95Ms}>` |
 | GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关，不回显 token 值） |
+| GET | `/api/monitor/source-configs` | - | `List<SourceConfigView{id, type, repo, enabled, metrics[], createdAt, lastOkAt, lastError}>`（token 永不回显） |
+| POST | `/api/monitor/source-configs` | `{type:"github", repo:"owner/name", enabled, metrics:["pages"\|"downloads"]}` | `{id}` |
+| PUT | `/api/monitor/source-configs/{id}` | 同 POST body | - |
+| DELETE | `/api/monitor/source-configs/{id}` | - | -（停采集；历史数据按保留策略自然过期） |
+| POST | `/api/monitor/source-configs/{id}/collect` | - | `{ok, error}`（手动立即采集；token 未配置时 ok=false 并给提示） |
+
+源配置约定：`type` 当前仅 `github`；`repo` 须为 `owner/name`；`metrics` ⊆ {pages, downloads}；同 repo 重复接入 → 400 + `CONFLICT(40900)`；不存在 id → 404 + `NOT_FOUND(40400)`；校验失败 → 400 + `PARAM_INVALID`。
 
 监测约定：`range` / `metric` / `step` / `by` 非法值 → 400（`TimeRange` 值对象校验）；`ts` 为分钟级 epoch 毫秒；错误判定 = HTTP status ≥ 400；`rps` = count / 区间秒数。
 
@@ -238,7 +247,7 @@ com.imhgl.workbench.<x>/
 
 React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端（历史见 git 主干）。与后端同守「架构清晰、代码质量优先」，本节是前端的对应规范。
 
-1. **目录结构（按域分模块）**：`src/modules/<域>/`（monitor / docs / access）内聚各自的 `api.ts`（唯一出域请求封装）、视图组件与样式；跨域公共件放 `src/components/`（AppShell / PulseChart / 浮层），全局样式只有 `src/styles/tokens.css`（设计令牌唯一来源）与 `base.css`。
+1. **目录结构（按域分模块）**：`src/modules/<域>/`（monitor / docs / sources / access）内聚各自的 `api.ts`（唯一出域请求封装）、视图组件与样式；跨域公共件放 `src/components/`（AppShell / PulseChart / 浮层），全局样式只有 `src/styles/tokens.css`（设计令牌唯一来源）与 `base.css`。
 2. **设计语言「观测站」**：蓝墨底 + 琥珀强调 + mono 读数；层次靠表面明度阶与发丝线，不用投影堆卡片；动效预算 = 非触发的只许一次进场（描迹绘线），其余全部应答式；`prefers-reduced-motion` 全局熄灭动效。
 3. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
 4. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。

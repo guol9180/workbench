@@ -1,0 +1,256 @@
+/* 数据源配置页：接入表单 + 已接入列表（观测站语言：发丝线分层、mono 读数、语义状态灯） */
+
+.src {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 18px 22px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.src-head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.src-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.src-sub { font-size: 12.5px; color: var(--text-3); }
+
+.panel {
+    background: var(--ink-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+/* ---------- 接入表单 ---------- */
+
+.src-form {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.src-form-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.src-form-label {
+    flex: none;
+    width: 48px;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.src-type {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    padding: 5px 12px;
+    background: var(--ink-2);
+}
+
+.src-input {
+    flex: 1;
+    padding: 8px 11px;
+    background: var(--ink-0);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.src-input::placeholder { color: var(--text-3); }
+.src-input:focus { border-color: var(--amber); }
+
+.src-checks { display: flex; gap: 8px; }
+
+.src-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-3);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 13px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.src-check input { accent-color: var(--amber); }
+
+.src-check.on {
+    color: var(--amber);
+    border-color: rgba(232, 163, 61, 0.4);
+    background: var(--amber-dim);
+}
+
+/* 启用开关（文字开关）：状态一目了然 */
+.src-switch {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    padding: 6px 12px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.src-switch:hover { border-color: var(--line-strong); }
+.src-switch.on { color: var(--ok); border-color: rgba(78, 203, 143, 0.4); }
+
+.src-switch-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-3);
+}
+
+.src-switch.on .src-switch-dot {
+    background: var(--ok);
+    box-shadow: 0 0 5px rgba(78, 203, 143, 0.7);
+}
+
+.src-btn {
+    margin-left: auto;
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text-2);
+    border-radius: var(--r-ctl);
+    padding: 7px 18px;
+    font-size: 13px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.src-btn:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+.src-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.src-btn.primary {
+    background: var(--amber-dim);
+    border-color: rgba(232, 163, 61, 0.4);
+    color: var(--amber);
+}
+
+.src-btn.primary:hover:not(:disabled) { color: var(--amber-hi); border-color: var(--amber); }
+
+.src-note {
+    font-size: 11.5px;
+    color: var(--text-3);
+    border-top: 1px solid var(--line);
+    padding-top: 10px;
+}
+
+/* ---------- 已接入列表 ---------- */
+
+.src-list { overflow: hidden; }
+
+.src-list-head {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.src-list-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-2);
+}
+
+.src-item {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(30, 40, 57, 0.55);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: background 0.12s;
+}
+
+.src-item:last-child { border-bottom: none; }
+.src-item:hover { background: var(--ink-2); }
+
+.src-item-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.src-state {
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.src-state.ok { background: var(--ok); box-shadow: 0 0 6px rgba(78, 203, 143, 0.7); }
+.src-state.err { background: var(--danger); box-shadow: 0 0 6px rgba(232, 96, 84, 0.7); }
+.src-state.idle { background: var(--text-3); }
+
+.src-repo {
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+}
+
+.src-tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ice);
+    border: 1px solid rgba(127, 180, 232, 0.35);
+    border-radius: 3px;
+    padding: 1px 6px;
+}
+
+.src-tag.off {
+    color: var(--text-3);
+    border-color: var(--line);
+}
+
+.src-item-status {
+    font-size: 12px;
+    color: var(--text-3);
+    word-break: break-all;
+}
+
+.src-item-ops {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
+}
+
+.src-op {
+    font-size: 12px;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    padding: 4px 11px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.src-op:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+.src-op.danger:hover:not(:disabled) { color: var(--danger); border-color: rgba(232, 96, 84, 0.4); }
+.src-op:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.src-empty {
+    text-align: center;
+    color: var(--text-3);
+    font-size: 13px;
+    padding: 26px 16px;
+}

@@ -5,7 +5,10 @@ import com.imhgl.workbench.infrastructure.metrics.Overview;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
+import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
+import com.imhgl.workbench.monitor.model.SourceCollectResult;
+import com.imhgl.workbench.monitor.model.SourceConfigView;
 
 import java.util.List;
 
@@ -35,4 +38,21 @@ public interface MonitorApi {
 
     /** 监测域自检 */
     MonitorStatus status();
+
+    /* ---------------- 数据源配置（M6，配置页） ---------------- */
+
+    /** 已接入的数据源列表（含采集运行状态；不含任何 token） */
+    List<SourceConfigView> sourceConfigs();
+
+    /** 接入数据源；返回生成的配置 id。同 repo 重复抛 CONFLICT，非法输入抛 PARAM_INVALID */
+    String createSourceConfig(SourceConfigRequest request);
+
+    /** 修改接入（启用停用 / 指标 / repo）；不存在抛 NOT_FOUND */
+    void updateSourceConfig(String id, SourceConfigRequest request);
+
+    /** 删除接入（停采集，历史数据按保留策略自然过期）；不存在抛 NOT_FOUND */
+    void deleteSourceConfig(String id);
+
+    /** 手动立即采集一次；结果同时回写该源的运行状态 */
+    SourceCollectResult collectSourceConfig(String id);
 }
