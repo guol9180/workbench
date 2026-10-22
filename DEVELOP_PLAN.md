@@ -21,13 +21,13 @@
 - [x] Task 3: monitor 域模型与服务——`TimeRange` 值对象 / `MonitorService` / `TrafficRecordFilter` 自监测（e58a2be）
 - [x] Task 4: monitor 六端点——ingest / sources / overview / series / top-endpoints / status（68e03f0）
 - [x] Task 5: server 集成——配置 + `MonitorIntegrationTest`（自监测链路 / 上报 / Token 三态）（7eca64a）
-- [x] Task 6: 全量验证——`mvn clean package` 全绿（91 用例：存量 54 零回归 + 新增 37），文档定稿，推送 main
+- [x] Task 6: 全量验证——`mvn clean package` 全绿（94 用例：存量 54 零回归 + 新增 40），文档定稿，推送 main；审查 Important 3 项已修（编解码对称/刷盘失败回补/重放行校验）
 
 ## 验收清单（M4 · 每次交付前逐条核对）
 
 后端（本期验收只看后端，前端联调留待 UI 重做期）：
 
-- [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）；**存量 54 用例零回归**（91/91）
+- [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）；**存量 54 用例零回归**（94/94）
 - [x] 零新增第三方依赖；无 MySQL / Redis / OSS / MyBatis 依赖
 - [x] token 未配置：现有行为不变；配置后：无头 / 错值 401 + `40100`，正确值放行；Swagger 不受影响
 - [x] 自监测：调任意 docs API 后 `overview?source=workbench` 计数增长，路径已归一化（数字段 `{n}` / UUID `{u}`）；401 请求也计入流量

@@ -195,6 +195,71 @@ class JsonlTimeSeriesStoreTest {
         }
     }
 
+    @Test
+    @DisplayName("编解码往返：控制字符/引号/反斜杠/中文 的 source 刷盘重放不丢行（p95 样本存活）")
+    void codecRoundTripExoticSource(@TempDir Path dir) throws IOException {
+        // 退格符(0x08) 与 0x01 走写侧的四位十六进制 u 转义——读侧必须能解回来，否则重放静默丢行
+        // （源码注释里不能字面书写该转义样例：Java 先于词法做 Unicode 转义，非法十六进制直接编译错）
+        String weird = "控\u0001制\"引'\\\b符";
+        try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {
+            store.append(rec(M0, weird, "/x/pa\"th", "GET", 200, 3, 90, 30, List.of(10, 20, 30)));
+            store.flush();
+        }
+        try (JsonlTimeSeriesStore reborn = new JsonlTimeSeriesStore(props(dir))) {
+            Overview o = reborn.overview(weird, M0, M0);
+            assertEquals(3, o.count(), "异色 source 应完整往返（含控制字符转义）");
+            assertEquals(30, o.avgMs());
+            assertEquals(30, o.p95Ms(), "重放后延迟样本应存活（p95=样本 30）");
+            assertTrue(reborn.sources().stream().anyMatch(s -> weird.equals(s.name())));
+        }
+    }
+
+    @Test
+    @DisplayName("重放遇到语义坏行（必填字段缺失/分钟非法）跳过且不污染查询")
+    void replaySkipsSemanticBadLines(@TempDir Path dir) throws IOException {
+        Files.writeString(dir.resolve("metrics-" + dayOf(M0) + ".jsonl"), """
+                {"c":1}
+                {"m":0,"s":"bad-minute","e":"/x","h":"GET","c":1,"ec":0,"t":1,"x":1,"n":0,"l":[]}
+                {"m":%d,"s":"good","e":"/x","h":"GET","c":5,"ec":0,"t":100,"x":20,"n":0,"l":[]}
+                """.formatted(M0));
+        try (JsonlTimeSeriesStore reborn = new JsonlTimeSeriesStore(props(dir))) {
+            assertEquals(5, reborn.overview("good", M0, M0).count(), "好行正常重放");
+            assertEquals(1, reborn.sources().size(), "坏行不得产生来源（含 null 名/min≤0 桶）");
+            assertEquals("good", reborn.sources().get(0).name());
+        }
+    }
+
+    @Test
+    @DisplayName("flush 写失败回补脏标记：下一轮 flush 恢复后数据仍能落盘（不丢到停机）")
+    void flushFailureReDirtiesForRetry(@TempDir Path dir) throws IOException {
+        FailingOnceStore store = new FailingOnceStore(props(dir));
+        store.append(rec(M0, "s", "/x", "GET", 200, 4, 80, 20, null));
+        store.flush(); // 第一次写失败（注入 IOException）——桶应回到脏集等待重试
+        store.flush(); // 第二次写恢复——被回补的脏桶应补写落盘
+        store.close();
+        try (JsonlTimeSeriesStore reborn = new JsonlTimeSeriesStore(props(dir))) {
+            assertEquals(4, reborn.overview("s", M0, M0).count(), "刷盘失败不得永久丢数");
+        }
+    }
+
+    /** 注入一次性刷盘失败的探针存储：验证失败回补脏标记的重试语义 */
+    static class FailingOnceStore extends JsonlTimeSeriesStore {
+        boolean failedOnce;
+
+        FailingOnceStore(MetricsProperties props) {
+            super(props);
+        }
+
+        @Override
+        void writeDayFile(java.nio.file.Path path, CharSequence content) throws IOException {
+            if (!failedOnce) {
+                failedOnce = true;
+                throw new IOException("注入的刷盘失败");
+            }
+            super.writeDayFile(path, content);
+        }
+    }
+
     /** 分钟 epoch → UTC yyyyMMdd（文件名日期，与实现保持一致） */
     private static String dayOf(long minute) {
         return java.time.LocalDate.ofInstant(java.time.Instant.ofEpochMilli(minute * 60_000L),

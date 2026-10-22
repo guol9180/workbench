@@ -38,7 +38,7 @@ workbench/
 ```powershell
 $env:JAVA_HOME = 'D:\dev\environment\jdk-25.0.4.1+1'
 cd backend
-mvn package                     # 全量构建 + 测试（54 个用例）
+mvn package                     # 全量构建 + 测试（94 个用例）
 mvn -pl workbench-server spring-boot:run
 ```
 

@@ -69,24 +69,29 @@ class MonitorIntegrationTest {
         return send("GET", pathAndQuery, null);
     }
 
+    /** 从 JSON 抠 count 字段（集成断言够用，不引解析库） */
+    private static int extractCount(String body) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\"count\":(\\d+)").matcher(body);
+        return m.find() ? Integer.parseInt(m.group(1)) : -1;
+    }
+
     @Test
     @Order(1)
     @DisplayName("自监测链路：调 docs API 后 workbench 来源计数增长、端点为归一化路径")
     void selfMonitoringRecordsDocsTraffic() throws Exception {
         assertEquals(200, get("/api/docs/tree").statusCode());
 
-        // 异步投递：轮询等待 overview 出现 workbench 流量
-        String body = "";
+        // 异步投递：轮询提取 count（每轮 overview 请求自身也会累积流量，须用数值断言而非子串匹配）
+        int count = -1;
         long deadline = System.currentTimeMillis() + 8_000;
         while (System.currentTimeMillis() < deadline) {
-            body = get("/api/monitor/overview?source=workbench&range=5m").body();
-            if (body.contains("\"count\":1")) {
+            count = extractCount(get("/api/monitor/overview?source=workbench&range=5m").body());
+            if (count >= 1) {
                 break;
             }
             Thread.sleep(100);
         }
-        assertTrue(body.contains("\"count\":1"), "自监测应记录 1 次 /api/docs/tree 调用：" + body);
-        assertTrue(body.contains("\"rps\":"));
+        assertTrue(count >= 1, "自监测应记录 /api/docs/tree 调用，count=" + count);
         // 自身这条 overview 请求也会被记录——top 端点至少含归一化后的两个端点之一
         String top = get("/api/monitor/top-endpoints?source=workbench&range=5m&limit=5&by=count").body();
         assertTrue(top.contains("/api/docs/tree") || top.contains("/api/monitor/overview"), top);

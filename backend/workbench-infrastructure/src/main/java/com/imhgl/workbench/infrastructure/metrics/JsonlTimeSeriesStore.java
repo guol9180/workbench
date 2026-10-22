@@ -238,8 +238,9 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
         if (dirty.isEmpty()) {
             return;
         }
-        // 按天分组行缓冲：先取脏键快照再逐键清标记，期间的新 append 会重新标脏（最多多刷一次，不丢数据）
+        // 按天分组：路径 → (行缓冲, 键列表)。键列表用于写失败时整组回补脏标记（见 writeDayFile 处 catch）
         Map<Path, StringBuilder> dayLines = new LinkedHashMap<>();
+        Map<Path, List<BucketKey>> dayKeys = new LinkedHashMap<>();
         for (BucketKey key : List.copyOf(dirty)) {
             dirty.remove(key);
             MinuteBucket b = buckets.get(key);
@@ -250,17 +251,25 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
             synchronized (b) {
                 line = JsonlCodec.write(key, b);
             }
+            dayKeys.computeIfAbsent(fileOf(key.minute()), p -> new ArrayList<>()).add(key);
             dayLines.computeIfAbsent(fileOf(key.minute()), p -> new StringBuilder()).append(line).append('\n');
         }
         dayLines.forEach((path, sb) -> {
             try {
-                Files.writeString(path, sb, StandardCharsets.UTF_8,
-                        StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                writeDayFile(path, sb);
             } catch (IOException e) {
-                // 刷盘失败不抛出：监测数据不值得让业务线程/定时线程死掉；脏数据已从 dirty 移除，
-                // 下次该桶再被命中会重新刷——最坏丢一个刷盘周期，符合时序数据可容忍损失的定位
+                // 刷盘失败不抛出：监测数据不值得让业务线程/定时线程死掉。
+                // 关键——整组回补脏标记：被写失败波及的桶重新进入 dirty，下一轮 flush 重试快照，
+                // 保证「失败 → 恢复」后数据一定落盘（无条件成立，而非依赖桶再次被 append 命中）
+                dayKeys.getOrDefault(path, List.of()).forEach(dirty::add);
             }
         });
+    }
+
+    /** 单个天文件的追加写（抽为可覆写入口：注入失败验证回补语义的测试依赖此缝隙） */
+    void writeDayFile(Path path, CharSequence lines) throws IOException {
+        Files.writeString(path, lines, StandardCharsets.UTF_8,
+                StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 
     @Override
@@ -443,6 +452,11 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
                 }
             }
             sc.expect('}');
+            // 语义校验：必填字段缺失或分钟非法的行按坏行处理（由调用方跳过）——
+            // 否则 null source 桶会让后续所有查询在 equals 上 NPE，整个监测域 500
+            if (s == null || e == null || h == null || m <= 0) {
+                throw new IllegalArgumentException("行缺少必填字段或分钟非法");
+            }
             return new ReadRow(m, s, e, h, c, ec, t, x, n, l);
         }
 
@@ -510,6 +524,13 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
                     }
                     if (ch == '\\') {
                         char esc = next();
+                        if (esc == 'u') {
+                            // 四位十六进制 u 转义：与写侧 escape 的控制字符转义对称——缺了它，写出的行自己读不回来
+                            // （注意：源码中不能字面书写反斜杠+u 的转义样例，Java 会先于词法做 Unicode 转义，注释里也会炸）
+                            sb.append((char) Integer.parseInt(s.substring(i, i + 4), 16));
+                            i += 4;
+                            continue;
+                        }
                         sb.append(switch (esc) {
                             case 'n' -> '\n';
                             case 'r' -> '\r';
