@@ -46,6 +46,8 @@ public class TrafficRecordFilter extends OncePerRequestFilter {
     private final BlockingQueue<TrafficRecord> queue;
     private final Thread worker;
 
+    /** Spring 注入用构造器：多构造器并存时必须显式 @Autowired，否则容器找默认构造失败 */
+    @org.springframework.beans.factory.annotation.Autowired
     public TrafficRecordFilter(MonitorService service) {
         this(service, DEFAULT_CAPACITY);
     }

@@ -21,6 +21,14 @@ workbench:
   cors:
     # 允许的前端来源，逗号分隔
     allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+  auth:
+    # 轻量 Token 认证：非空时 /api/** 须带 X-API-Token 请求头；空 = 关闭（本地开发默认态）
+    token: ${API_TOKEN:}
+  metrics:
+    # 监测时序数据目录（按天 JSONL 滚动）
+    data-dir: ${METRICS_DATA:./data/metrics}
+    retention-days: 14
+    flush-interval-seconds: 5
 
 logging:
   level:

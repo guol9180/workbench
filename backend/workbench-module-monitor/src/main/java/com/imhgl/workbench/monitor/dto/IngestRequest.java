@@ -13,7 +13,7 @@ import java.util.List;
  */
 public record IngestRequest(
         @NotBlank String source,
-        @NotEmpty @Valid List<Point> points) {
+        @NotEmpty List<@Valid Point> points) {
 
     /** 单个聚合点：ts 为事件毫秒时间戳（按分钟归桶）；count 与存储侧 TrafficRecord 一致取 int */
     public record Point(
