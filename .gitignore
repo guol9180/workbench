@@ -55,3 +55,6 @@ yarn-error.log*
 
 # SDD plan workspace
 .superpowers/
+# Maven/临时构建日志
+*.log
+!frontend/npm-debug.log*
