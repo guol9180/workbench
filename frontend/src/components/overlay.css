@@ -1,0 +1,110 @@
+/* 全局浮层：对话框 + Toast */
+
+.ovl-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 15, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 80;
+    padding: 16px;
+}
+
+.ovl-card {
+    background: var(--ink-1);
+    border: 1px solid var(--line-strong);
+    border-radius: 8px;
+    padding: 20px;
+    width: min(420px, 92vw);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+.ovl-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.ovl-message {
+    font-size: 13.5px;
+    color: var(--text-2);
+    margin-bottom: 12px;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.ovl-input {
+    width: 100%;
+    padding: 9px 11px;
+    background: var(--ink-0);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 6px;
+    transition: border-color 0.15s;
+}
+
+.ovl-input::placeholder { color: var(--text-3); }
+.ovl-input:focus { border-color: var(--amber); }
+
+.ovl-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.ovl-btn {
+    border: 1px solid var(--line);
+    background: transparent;
+    color: var(--text-2);
+    border-radius: var(--r-ctl);
+    padding: 7px 14px;
+    font-size: 13px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.ovl-btn:hover { color: var(--text); border-color: var(--line-strong); }
+
+.ovl-btn.primary {
+    background: var(--amber-dim);
+    border-color: rgba(232, 163, 61, 0.4);
+    color: var(--amber);
+}
+
+.ovl-btn.primary:hover { color: var(--amber-hi); border-color: var(--amber); }
+
+.ovl-btn.danger {
+    background: rgba(232, 96, 84, 0.12);
+    border-color: rgba(232, 96, 84, 0.4);
+    color: var(--danger);
+}
+
+.ovl-btn.danger:hover { border-color: var(--danger); }
+
+/* ---------- Toast ---------- */
+
+.ovl-toast {
+    position: fixed;
+    bottom: 44px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ink-2);
+    border: 1px solid var(--line-strong);
+    border-left: 2px solid var(--ok);
+    color: var(--text);
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 13.5px;
+    z-index: 95;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    max-width: 80vw;
+}
+
+.ovl-toast.error {
+    border-left-color: var(--danger);
+    color: var(--danger);
+}

@@ -1,0 +1,128 @@
+/* 应用骨架：图标轨 + 主区 + 底部状态条（StatusBar 的样式也归骨架所有） */
+
+.shell {
+    height: 100%;
+    display: grid;
+    grid-template-columns: var(--rail-w) 1fr;
+    grid-template-rows: 1fr var(--strip-h);
+    grid-template-areas:
+        "rail main"
+        "rail strip";
+}
+
+/* ---------- 图标轨 ---------- */
+
+.rail {
+    grid-area: rail;
+    background: var(--ink-1);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 6px;
+}
+
+.rail-brand {
+    display: grid;
+    place-items: center;
+    margin-bottom: 16px;
+}
+
+.rail-nav { display: flex; flex-direction: column; gap: 4px; }
+
+.rail-btn {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    border-radius: var(--r-ctl);
+    display: grid;
+    place-items: center;
+    color: var(--text-3);
+    transition: color 0.15s, background 0.15s;
+}
+
+.rail-btn:hover { color: var(--text-2); background: var(--ink-2); }
+
+.rail-btn.active { color: var(--amber); background: var(--amber-dim); }
+
+/* 当前模块指示：贴轨缘的琥珀短刻线 */
+.rail-btn.active::before {
+    content: "";
+    position: absolute;
+    left: -11px;
+    top: 10px;
+    bottom: 10px;
+    width: 2px;
+    background: var(--amber);
+    border-radius: 1px;
+}
+
+.rail-foot { margin-top: auto; }
+
+/* ---------- 主区 ---------- */
+
+.shell-main {
+    grid-area: main;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* ---------- 底部遥测状态条 ---------- */
+
+.strip {
+    grid-area: strip;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 14px;
+    background: var(--ink-1);
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--text-3);
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.strip-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text-2);
+}
+
+.strip-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--ok);
+    box-shadow: 0 0 6px rgba(78, 203, 143, 0.8);
+    animation: strip-breath 2.4s ease-in-out infinite;
+}
+
+.strip-dot-off {
+    background: var(--text-3);
+    box-shadow: none;
+    animation: none;
+}
+
+.strip-live.is-offline { color: var(--text-3); }
+
+.strip-warn {
+    font-style: normal;
+    color: var(--amber);
+}
+
+@keyframes strip-breath {
+    50% { opacity: 0.45; }
+}
+
+.strip-mid { flex: 1; text-align: center; }
+
+.strip-clock { color: var(--text-2); }
+
+@media (max-width: 768px) {
+    .strip-mid { display: none; }
+}

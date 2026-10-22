@@ -1,0 +1,155 @@
+/* 接入页：粒子景深场 + 玻璃卡 + 3D 倾斜 + 失败抖动 */
+
+.acc {
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    background: var(--ink-0);
+}
+
+/* 极光底色：两团低透明度的琥珀/冰蓝，慢漂移——粒子场的氛围层 */
+.acc-aurora {
+    position: absolute;
+    inset: 0;
+    filter: blur(70px);
+}
+
+.acc-blob {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.5;
+}
+
+.acc-blob-a {
+    width: 46vw;
+    height: 46vw;
+    left: -8vw;
+    top: -14vw;
+    background: rgba(232, 163, 61, 0.16);
+    animation: acc-drift-a 26s ease-in-out infinite alternate;
+}
+
+.acc-blob-b {
+    width: 40vw;
+    height: 40vw;
+    right: -10vw;
+    bottom: -12vw;
+    background: rgba(127, 180, 232, 0.12);
+    animation: acc-drift-b 32s ease-in-out infinite alternate;
+}
+
+@keyframes acc-drift-a {
+    to { transform: translate(9vw, 7vw) scale(1.15); }
+}
+
+@keyframes acc-drift-b {
+    to { transform: translate(-8vw, -6vw) scale(0.92); }
+}
+
+.acc-scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.acc-stage {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    perspective: 900px;
+}
+
+.acc-tilt {
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition: transform 0.12s ease-out;
+    transform-style: preserve-3d;
+}
+
+.acc-card {
+    width: min(360px, 88vw);
+    padding: 34px 30px 24px;
+    text-align: center;
+    background: rgba(16, 22, 36, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--line-strong);
+    border-radius: 12px;
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+}
+
+.acc-mark { margin-bottom: 10px; }
+
+.acc-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+.acc-sub {
+    margin: 6px 0 22px;
+    font-size: 12.5px;
+    color: var(--text-3);
+}
+
+.acc-note { font-size: 13px; color: var(--text-3); padding: 10px 0 18px; }
+
+.acc-offline p { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
+
+.acc-form { display: flex; flex-direction: column; gap: 10px; }
+
+.acc-input {
+    width: 100%;
+    padding: 11px 13px;
+    background: var(--ink-0);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    color: var(--text);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.acc-input::placeholder { color: var(--text-3); }
+.acc-input:focus { border-color: var(--amber); }
+
+.acc-error {
+    font-size: 12.5px;
+    color: var(--danger);
+    text-align: left;
+}
+
+.acc-btn {
+    padding: 10px 0;
+    background: var(--amber-dim);
+    border: 1px solid rgba(232, 163, 61, 0.4);
+    border-radius: var(--r-ctl);
+    color: var(--amber);
+    font-size: 14px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.acc-btn:hover { color: var(--amber-hi); border-color: var(--amber); }
+.acc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.acc-hint {
+    margin-top: 18px;
+    font-size: 11.5px;
+    color: var(--text-3);
+}
+
+/* 登录失败抖动：animationend 后复位，保证下次失败可重触发 */
+.acc-card.shake { animation: acc-shake 0.4s; }
+
+@keyframes acc-shake {
+    20% { transform: translateX(-7px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .acc-tilt { transform: none !important; }
+}

@@ -2,7 +2,7 @@
 
 ## 0. 总则
 
-本项目为**个人后台管理系统（学习向）**：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**——当前含流量监测域（monitor）与第一个工具模块**在线 Markdown 文档（docs）**，后续工具以业务模块形式渐进扩展。
+本项目为**个人后台管理系统（学习项目）**：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**——当前含流量监测域（monitor）与第一个工具模块**在线 Markdown 文档（docs）**，后续工具以业务模块形式渐进扩展。
 
 所有参与本项目开发的人员、AI Agent、代码生成工具，都必须严格遵守本文件中的架构规范、模块规范、命名规范、依赖规则与 API 约定。
 
@@ -15,7 +15,8 @@
 1. **复用优先，不过度设计**：同一逻辑或结构出现第二份副本时，立即抽取为公共函数 / 公共样式 / 公共组件；前端页面表现优先组件化；保证代码质量，不为假想的未来需求预先抽象。
 2. **文档同步**：每次开发结束或提交之前，同步更新 README.md、AGENTS.md、DEVELOP_PLAN.md；文档与代码不同步视为任务未完成。
 3. **代码质量优先（项目追加）**：对代码质量要求高——凡能通过合理的设计模式或算法优化提升清晰度、健壮性与性能处，积极实践；但必须服务于当下真实需求，拒绝炫技式、无收益的抽象。每处抽象都要能回答「它解决了什么已发生的问题」。
-4. **注释质量（学习项目追加）**：注释要规范且易懂，以「帮助下一次阅读的人真正理解代码」为标准；具体要求见下节「注释规范」，与代码同等对待——注释缺失或过时视为未完成。
+4. **注释质量（项目追加）**：注释要规范且易懂，以「帮助下一次阅读的人真正理解代码」为标准；具体要求见下节「注释规范」，与代码同等对待——注释缺失或过时视为未完成。
+5. **数据边界（项目追加）**：前端演示/测试允许自造 mock 数据（仅存在于组件与前端状态，不落盘）；禁止未经同意向任何持久层（时序存储、文档库、配置等）写入数据——包括模拟 ingest 上报、伪造外部源、创建样例文档；接入真实外部数据源属于架构级动作，必须先征得同意并说明形态。未经同意写入的数据视为事故，发现即清除。
 
 ---
 
@@ -34,7 +35,7 @@
 
 ## 1. 架构定位
 
-> **模块化单体**（学习向：用最小的业务面留住完整的架构分层）
+> **模块化单体**（学习项目：用最小的业务面留住完整的架构分层）
 
 1. 单体部署，统一由 `workbench-server` 启动。
 2. 业务代码按模块隔离；模块之间只通过 `api` 层交互，禁止跨模块访问 `model`、`service.impl`、`controller`。
@@ -42,7 +43,7 @@
 4. 禁止在公共模块、框架模块、技术设施模块中写业务逻辑；禁止在启动模块中写业务逻辑。
 5. **纯文件存储，无数据库**：文档即文件（`.md`），不引入 MySQL / Redis / OSS 等外部服务；监测时序数据同样零依赖——用 infrastructure 的中性 JSONL 时序存储（接口抽象，将来可无感替换实现）。
 6. **轻量 Token 认证**：`workbench.auth.token` 非空时 `/api/**` 校验请求头 `X-API-Token`（失败 401 + `UNAUTHORIZED(40100)`）；空值 = 认证关闭（本地开发与既有测试零回归）。单 Token、无用户体系。
-7. 本期后端不与前端联调：API 按本文件约定设计，不为旧前端兼容妥协；前端在 UI 重做期对齐 v2 API。
+7. 前端已于 UI 重做期（M5）对齐 v2 API：后端契约（路径 / 字段 / 错误码）变更时，必须同步 `frontend/src/modules/*/api.ts` 与 AGENTS 第 8 节。
 8. 架构演进渐进式，未经确认不新增 Maven 模块。
 
 ---
@@ -176,6 +177,11 @@ com.imhgl.workbench.<x>/
 | 测试 | JUnit 5（`spring-boot-starter-test` / `junit-jupiter`） | parent 管理 | 各模块 test |
 | 样板代码 | Lombok | parent 管理（provided） | 父 POM dependencyManagement，按需在模块声明 |
 | 通用工具 | Hutool（`hutool-all`） | 父 POM dependencyManagement | 父 POM dependencyManagement，按需在模块声明 |
+| 前端框架 | React + TypeScript（严格模式） | 19 / 5.8 | frontend |
+| 前端构建 | Vite + `@vitejs/plugin-react` | 6 | frontend devDependencies |
+| 前端路由 | `react-router-dom`（hash 路由，保 GitHub Pages 深链） | 7 | frontend |
+| 编辑器 | Vditor（本地 vendored UMD 副本，`public/vendor/vditor`） | 4.0.0 | frontend（无 npm 包） |
+| 前端字体 | `@fontsource/chakra-petch` / `@fontsource/overpass-mono`（latin 子集自托管） | 5 | frontend |
 
 规则：
 
@@ -225,6 +231,20 @@ com.imhgl.workbench.<x>/
 > 语义化机制：infrastructure 的文件操作抛中性的 `StorageException`（Reason = NOT_FOUND / CONFLICT），docs 模块 api 实现层负责翻译为 `BusinessException`——中性异常不出技术设施语义，业务错误码不出现在 infrastructure。
 
 搜索行为：q trim 后空返回 `[]`；大小写不敏感；文件名命中 `fileNameMatch=true` 且 `snippet` 为文件名；内容命中给 `line`（1 起）与 `snippet`（命中行 strip，超 120 字符截断加 `…`）；双命中都给、`snippet` 取内容命中；上限 100；相对路径字典序；单文件 IO 失败静默跳过；懒遍历短路。
+
+---
+
+## 9. 前端约定（frontend/）
+
+React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端（历史见 git 主干）。与后端同守「架构清晰、代码质量优先」，本节是前端的对应规范。
+
+1. **目录结构（按域分模块）**：`src/modules/<域>/`（monitor / docs / access）内聚各自的 `api.ts`（唯一出域请求封装）、视图组件与样式；跨域公共件放 `src/components/`（AppShell / PulseChart / 浮层），全局样式只有 `src/styles/tokens.css`（设计令牌唯一来源）与 `base.css`。
+2. **设计语言「观测站」**：蓝墨底 + 琥珀强调 + mono 读数；层次靠表面明度阶与发丝线，不用投影堆卡片；动效预算 = 非触发的只许一次进场（描迹绘线），其余全部应答式；`prefers-reduced-motion` 全局熄灭动效。
+3. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
+4. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
+5. **认证流**：接入页探测 `/api/monitor/status`——open 直进 / locked 出令牌表单 / offline 重试；令牌仅存 localStorage，不出浏览器。
+6. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
+7. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。
 
 ---
 

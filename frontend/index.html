@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>工作台 · 在线文档</title>
+    <title>工作台 · 观测站</title>
     <link rel="icon" href="./favicon.ico" sizes="32x32">
     <link rel="icon" href="./favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="./apple-touch-icon.png">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#0a0e18">
     <link rel="stylesheet" href="./vendor/vditor/dist/index.css">
 </head>
 <body>
-<div id="app"></div>
+<div id="root"></div>
 
-<!-- Vditor 使用本地 vendored 副本，无外部 CDN 依赖 -->
+<!-- Vditor 本地 vendored 副本：文档工具在里程碑 B 以 React ref 封装复用，无外部 CDN -->
 <script src="./vendor/vditor/dist/index.min.js"></script>
-<script type="module" src="/src/main.js"></script>
+<script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

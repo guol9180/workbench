@@ -1,0 +1,73 @@
+.pulse {
+    position: relative;
+    user-select: none;
+    cursor: crosshair;
+}
+
+.pulse-svg { display: block; }
+
+.pulse-grid {
+    stroke: var(--line);
+    stroke-width: 1;
+    stroke-dasharray: 2 4;
+}
+
+.pulse-axis {
+    fill: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: 10px;
+}
+
+.pulse-trace {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+    /* 描迹绘线：数据到达时自左向右一次，之后静止 */
+    animation: pulse-draw 0.7s ease-out 0.05s forwards;
+}
+
+@keyframes pulse-draw {
+    to { stroke-dashoffset: 0; }
+}
+
+.pulse-cross {
+    stroke: var(--line-strong);
+    stroke-width: 1;
+}
+
+.pulse-tip {
+    position: absolute;
+    top: 8px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 5px 10px;
+    background: var(--ink-2);
+    border: 1px solid var(--line-strong);
+    border-radius: 4px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.pulse-tip-v {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--amber);
+}
+
+.pulse-tip-t {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+}
+
+.pulse-empty {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    color: var(--text-3);
+    font-size: 13px;
+}

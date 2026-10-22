@@ -1,0 +1,301 @@
+/* 概览页：观测站主盘的版式 */
+
+.mon {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 18px 22px 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.mon-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.mon-title {
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+/* ---------- 区间切换（分段器） ---------- */
+
+.mon-ranges {
+    display: flex;
+    background: var(--ink-1);
+    border: 1px solid var(--line);
+    border-radius: var(--r-ctl);
+    overflow: hidden;
+}
+
+.mon-range {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 6px 12px;
+    color: var(--text-3);
+    border-left: 1px solid var(--line);
+    transition: color 0.15s, background 0.15s;
+}
+
+.mon-range:first-child { border-left: none; }
+.mon-range:hover { color: var(--text-2); background: var(--ink-2); }
+.mon-range.active { color: var(--amber); background: var(--amber-dim); }
+
+/* ---------- 源切换 ---------- */
+
+.mon-sources {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mon-sources-label { font-size: 12px; color: var(--text-3); }
+
+.mon-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-2);
+    padding: 4px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.mon-chip:hover { color: var(--text); border-color: var(--line-strong); }
+
+.mon-chip.active {
+    color: var(--amber);
+    border-color: rgba(232, 163, 61, 0.4);
+    background: var(--amber-dim);
+}
+
+.mon-chip-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-3);
+}
+
+.mon-chip-dot.on {
+    background: var(--ok);
+    box-shadow: 0 0 5px rgba(78, 203, 143, 0.7);
+}
+
+.mon-updated {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+}
+
+/* ---------- 面板与主图 ---------- */
+
+.panel {
+    background: var(--ink-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+}
+
+.mon-hero { padding: 0 6px 0; }
+
+/* 主图头部：指标切换（描迹颜色随之切换） */
+.mon-hero-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 10px 0;
+}
+
+.mon-hero-title {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-2);
+}
+
+.mon-metrics { display: flex; gap: 2px; }
+
+.mon-metric {
+    font-size: 12px;
+    color: var(--text-3);
+    padding: 4px 9px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.mon-metric:hover { color: var(--text-2); background: var(--ink-2); }
+.mon-metric.active { background: var(--ink-2); }
+
+/* 错误 / 空态横幅：一行说明 + 行动，不做弹窗 */
+.mon-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    border: 1px solid var(--line-strong);
+    border-left: 2px solid var(--amber);
+    border-radius: 6px;
+    background: var(--ink-1);
+    color: var(--text-2);
+    font-size: 13px;
+}
+
+.mon-banner-btn {
+    flex: none;
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--amber);
+    border: 1px solid rgba(232, 163, 61, 0.4);
+    padding: 4px 12px;
+    border-radius: var(--r-ctl);
+}
+
+.mon-banner-btn:hover { color: var(--amber-hi); border-color: var(--amber); }
+
+/* ---------- 读数排：发丝线分栏，不做卡片 ---------- */
+
+.mon-readouts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+}
+
+.mon-readout {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 18px;
+    border-left: 1px solid var(--line);
+}
+
+.mon-readout:first-child { border-left: none; padding-left: 2px; }
+
+.mon-num {
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+}
+
+.mon-label { font-size: 12px; color: var(--text-3); }
+
+/* ---------- 端点遥测台账 ---------- */
+
+.mon-ledger { overflow: hidden; }
+
+.mon-ledger-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.mon-ledger-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-2);
+}
+
+.mon-sorts { display: flex; gap: 2px; }
+
+.mon-sort {
+    font-size: 12px;
+    color: var(--text-3);
+    padding: 4px 9px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.mon-sort:hover { color: var(--text-2); }
+.mon-sort.active { color: var(--amber); background: var(--amber-dim); }
+
+.mon-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.mon-table th {
+    text-align: left;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--text-3);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--line);
+}
+
+.mon-table td {
+    padding: 9px 16px;
+    border-bottom: 1px solid rgba(30, 40, 57, 0.55);
+}
+
+.mon-table tbody tr:last-child td { border-bottom: none; }
+.mon-table tbody tr { transition: background 0.12s; }
+.mon-table tbody tr:hover { background: var(--ink-2); }
+
+.mon-table .num {
+    text-align: right;
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+}
+
+.mon-ep {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+}
+
+/* 请求列：暗琥珀底条表达量级占比，数字浮在其上 */
+.mon-count-cell { position: relative; }
+
+.mon-count {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 16px;
+    max-width: 100%;
+    background: linear-gradient(90deg, transparent, rgba(232, 163, 61, 0.22));
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.mon-count-n { position: relative; }
+
+.mon-err { color: var(--danger); }
+.mon-zero { color: var(--text-3); }
+
+.mon-table-empty {
+    text-align: center;
+    color: var(--text-3);
+    font-size: 13px;
+    padding: 22px 16px;
+}
+
+/* ---------- 移动端 ---------- */
+
+@media (max-width: 768px) {
+    .mon { padding: 12px 14px 18px; }
+
+    .mon-readouts {
+        grid-template-columns: repeat(2, 1fr);
+        row-gap: 6px;
+    }
+
+    .mon-readout:nth-child(3) { border-left: none; padding-left: 2px; }
+    .mon-updated { display: none; }
+
+    .mon-ledger { overflow-x: auto; }
+    .mon-table { min-width: 560px; }
+}

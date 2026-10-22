@@ -1,0 +1,55 @@
+/** Vditor 暗色对齐：把编辑器的表面与工具栏压到观测站色阶上 */
+.docp-editor {
+    flex: 1;
+    min-height: 0;
+}
+
+.docp-editor .vditor {
+    height: 100%;
+    border-radius: 0;
+    border: none;
+    background: var(--ink-1);
+}
+
+/* Vditor 自带 dark 主题是中性灰黑（#1e1e1e 系），覆写关键表面为蓝墨阶 */
+.docp-editor .vditor--dark .vditor-ir,
+.docp-editor .vditor--dark .vditor-wysiwyg,
+.docp-editor .vditor--dark .vditor-sv {
+    background: var(--ink-1);
+    color: var(--text);
+}
+
+.docp-editor .vditor--dark .vditor-toolbar {
+    background: var(--ink-1);
+    border-bottom: 1px solid var(--line);
+}
+
+.docp-editor .vditor--dark .vditor-panel,
+.docp-editor .vditor--dark .vditor-hint {
+    background: var(--ink-2);
+    border-color: var(--line-strong);
+    color: var(--text);
+}
+
+/* IR 编辑区文字与光标 */
+.docp-editor .vditor-ir .vditor-ir__node--expand,
+.docp-editor .vditor-reset {
+    color: var(--text);
+    font-size: 15px;
+}
+
+.docp-editor .vditor-reset a { color: var(--ice); }
+.docp-editor .vditor-reset code { background: var(--ink-2); }
+.docp-editor .vditor-reset pre { background: var(--ink-0); }
+.docp-editor .vditor-reset blockquote { border-left-color: var(--line-strong); color: var(--text-2); }
+.docp-editor .vditor-reset h1, .docp-editor .vditor-reset h2,
+.docp-editor .vditor-reset h3, .docp-editor .vditor-reset h4 {
+    color: var(--text);
+}
+
+.docp-editor .vditor-ir__node .vditor-ir__marker { color: var(--text-3); }
+.docp-editor .vditor-ir .vditor-ir__marker--heading { color: var(--amber); }
+.docp-editor .vditor-ir .vditor-ir__marker--pre code { background: transparent; }
+
+/* 大纲面板 */
+.docp-editor .vditor-outline { background: var(--ink-2); }

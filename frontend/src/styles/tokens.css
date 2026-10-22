@@ -1,0 +1,39 @@
+/* 观测站设计令牌：唯一事实源。所有视图从这里取色/字/距，禁止散落硬编码色值。 */
+:root {
+    /* 表面明度阶：层次靠明度差与发丝线，不用投影堆 */
+    --ink-0: #0a0e18;
+    --ink-1: #101624;
+    --ink-2: #18202f;
+    --ink-3: #202a3e;
+
+    /* 发丝线：比表面深半档的蓝线 */
+    --line: #1e2839;
+    --line-strong: #2a3650;
+
+    /* 三级文字：主 / 次 / 弱 */
+    --text: #e6ebf4;
+    --text-2: #93a0b8;
+    --text-3: #5c6a85;
+
+    /* 主强调：仪表琥珀（品牌 / 当前态 / 主描迹）——刻意避开荧光绿与默认蓝 */
+    --amber: #e8a33d;
+    --amber-hi: #f6bc5f;
+    --amber-dim: rgba(232, 163, 61, 0.13);
+
+    /* 第二数据色与语义状态色 */
+    --ice: #7fb4e8;
+    --ok: #4ecb8f;
+    --danger: #e86054;
+
+    /* 字体：display 承担铭牌感，mono 承担一切读数，正文走系统 CJK（不加载 CJK webfont） */
+    --font-display: "Chakra Petch", "PingFang SC", "Microsoft YaHei", sans-serif;
+    --font-mono: "Overpass Mono", "JetBrains Mono", Consolas, monospace;
+    --font-body: "PingFang SC", "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+
+    /* 骨架尺寸 */
+    --rail-w: 64px;
+    --strip-h: 30px;
+
+    /* 圆角只给交互件，表面保持锐利 */
+    --r-ctl: 6px;
+}

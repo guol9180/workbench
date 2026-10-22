@@ -1,6 +1,6 @@
 # 工作台 · Workbench
 
-个人后台管理系统（学习向）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含：**流量监测域**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）与第一个工具**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索），后续工具以业务模块渐进扩展。
+个人后台管理系统（学习项目）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含：**流量监测域**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）与第一个工具**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索），后续工具以业务模块渐进扩展。
 
 > 开发规范见 [AGENTS.md](./AGENTS.md)，当前计划与验收见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
@@ -11,7 +11,7 @@
 - **存储**：纯文件系统（文档即文件；监测时序数据为零依赖 JSONL 聚合存储），**无数据库、无缓存、无对象存储**
 - **构建**：Maven 多模块（common / framework / infrastructure / module-docs / module-monitor / server 六模块）
 - **认证**：轻量 Token（`X-API-Token` 请求头，配置式，空 = 关闭）
-- **前端**：Vue 3 + Vite（`frontend/`，本期待 UI 重做期再与 v2 API 对齐，暂不联调）
+- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，「观测站」暗色设计语言：蓝墨底 + 琥珀强调 + mono 读数；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
 
 ## 仓库结构
 
@@ -24,7 +24,7 @@ workbench/
 │   ├── workbench-module-docs/    # 工具：在线文档（api 层 + DocPath 值对象 + 搜索服务）
 │   ├── workbench-module-monitor/ # 流量监测域：自监测 + 上报枢纽 + 查询（TimeRange 值对象）
 │   └── workbench-server/         # 聚合启动（main + application.yml，禁止业务）
-├── frontend/                     # Vue 3 + Vite（UI 重做期对齐 v2 API）
+├── frontend/                     # React 19 + TS「观测站」前端：概览看板 + 在线文档 + 令牌接入
 ├── AGENTS.md / DEVELOP_PLAN.md / README.md
 └── docs/superpowers/plans/       # 重构实施计划（2026-10-15-backend-refactor-docs-only.md）
 ```
@@ -43,6 +43,14 @@ mvn -pl workbench-server spring-boot:run
 ```
 
 启动后：<http://localhost:8080/swagger-ui.html>（接口文档），文档库默认在 `backend/data/docs`（`DOCS_ROOT` 可改），监测数据默认在 `backend/data/metrics`（`METRICS_DATA` 可改）。本地默认不配 Token（`API_TOKEN` 可开启认证）。Windows 也可双击根目录 `start.bat`（已内置局部 `JAVA_HOME`）。
+
+前端（另开一个终端）：
+
+```powershell
+cd frontend
+npm install        # 或 pnpm install
+npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
+```
 
 ## API 一览（统一包装 `{message, code, data}`，code=0 成功）
 

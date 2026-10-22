@@ -9,23 +9,36 @@
 | M1（已归档） | 模块化单体骨架 + 认证 + 在线文档 v1 | ✅ 已完成，随重构移除（auth 模块删除） |
 | M2（已归档） | 部署链（Docker/Caddy/CI）+ 开发环境管家 devsetup | ✅ 已完成，随重构移除（devsetup 模块与部署链暂缓；历史见 git 主干） |
 | M3（已归档） | 后端重构：Java 25 + Spring Boot 4.1 + docs-only | ✅ 已完成并合入 main（54 测试，审查 Important 全修） |
-| M4 | **后台管理系统一期：流量监测域 + 轻量 Token 认证（仅后端）** | 🚩 进行中 |
+| M4（已归档） | **后台管理系统一期：流量监测域 + 轻量 Token 认证（仅后端）** | ✅ 已完成并推送 main（00447e6，94/94，审查 Important 3 项全修） |
+| M5 | **前端重做：React「观测站」设计语言 + v2 API 全面对齐** | 🚩 进行中 |
+| M6（已立项未开工） | **GitHub 数据源接入：Pages 流量 / Release 下载量等，经后端采集器入时序存储** | 📋 需求已登记，方案待与用户确认（仓库范围 / token 提供方式 / 指标粒度） |
 
-## 当前任务（M4 · 流量监测一期）
+## 当前任务（M5 · 前端重做）
 
-实施计划（唯一权威）：[docs/superpowers/plans/2026-10-21-admin-monitor-phase1.md](./docs/superpowers/plans/2026-10-21-admin-monitor-phase1.md)——契约细节、测试矩阵、Review Focus 以计划文件为准，此处只跟踪状态。
+Vue 3 前端整体重写为 React 19 + TypeScript（用户裁定架构可换），落地「观测站」设计语言；旧 Vue 源码不迁移，功能对照移植。devsetup 前端随后端模块一并移除（代码见 git 主干，待后端以新模块重建后再入 UI）。
 
-- [x] Task 0: 规范先行——AGENTS / README / DEVELOP_PLAN 升级为「后台管理系统（监测 + 工具集）」定位，登记 monitor 模块与 Token 认证约定（5778651）
-- [x] Task 1: infrastructure 时序存储——`TimeSeriesStore` / `JsonlTimeSeriesStore`（分钟聚合桶 / 蓄水池采样 / JSONL 刷盘 / 重放 / 保留）（24bd302）
-- [x] Task 2: framework Token 认证——`ApiTokenFilter`（X-API-Token，空 = 关闭）+ `UNAUTHORIZED(40100)`（ab3d9f4）
-- [x] Task 3: monitor 域模型与服务——`TimeRange` 值对象 / `MonitorService` / `TrafficRecordFilter` 自监测（e58a2be）
-- [x] Task 4: monitor 六端点——ingest / sources / overview / series / top-endpoints / status（68e03f0）
-- [x] Task 5: server 集成——配置 + `MonitorIntegrationTest`（自监测链路 / 上报 / Token 三态）（7eca64a）
-- [x] Task 6: 全量验证——`mvn clean package` 全绿（94 用例：存量 54 零回归 + 新增 40），文档定稿，推送 main；审查 Important 3 项已修（编解码对称/刷盘失败回补/重放行校验）
+- [x] Task 1（里程碑 A）: frontend 重置为 React+TS 工程；「观测站」设计令牌（蓝墨/琥珀/mono 读数）+ AppShell（图标轨 + 底部遥测状态条）；概览页 mock 版先行并经无头截图自查修正 y 轴刻度缺陷
+- [x] Task 2: monitor 真数据——六端点封装 / `usePolling`（15s 轮询、页面隐藏暂停、失败保留旧数据）/ 概览页指标切换 / 状态条接 status+overview（离线灰灯、背压丢弃琥珀警示）
+- [x] Task 3: docs React 重写——`useDocs` 状态编排 / 目录树 / 搜索 / Vditor ref 封装（裁定不用 StrictMode：vendored Vditor 不兼容开发期双挂载）/ 本地预览 / 自动保存与全局键
+- [x] Task 4: 接入页——探测式令牌（open 直进 / locked 表单 / offline 重试）+ 粒子景深场重调色（琥珀/冰蓝）
+- [x] Task 5: 联调验证——本地 jar + vite 代理；monitor 真数据渲染、认证三态（无/错令牌 401、对令牌 200）、接入页探测；数据边界事故清除（未经同意的 ingest 演示数据已删，规范新增通用第 5 条）
+- [ ] Task 6: 三文档同步 + 构建复验 + 提交推送
 
-## 验收清单（M4 · 每次交付前逐条核对）
+## 验收清单（M5 · 每次交付前逐条核对）
 
-后端（本期验收只看后端，前端联调留待 UI 重做期）：
+前端工程与联调：
+
+- [x] `tsc --noEmit` 严格模式零错误；`vite build` 成功（除 React 生态必需品外零新增运行时依赖；React Bits 不引入，效果手写）
+- [x] 概览真数据：sources 含自身 `workbench`；range/源/指标切换正确；24h/7d 走小时桶（range→step 固定映射）
+- [x] 底部状态条真数据：rps/错误率/桶数/文件数/认证开关；后端离线灰灯；`droppedEvents>0` 琥珀警示
+- [x] 认证链路：无令牌 401、错令牌 401、对令牌 200；接入页探测三态正确（open 直进 / locked 表单 / offline 重试）；401 统一清令牌跳接入页
+- [x] docs 功能对照旧实现逐项移植：树/读写/新建文件与文件夹/重命名/删除/搜索/本地预览/拖拽/Ctrl+S/自动保存/未保存离开拦截（交互细节以浏览器手工全验为准，首用发现偏差即修）
+- [x] 数据边界：无任何未经同意的持久层写入残留；演示数据仅存在于前端组件（mock 已随真数据接线删除）
+- [ ] 三文档同步 + 提交推送
+
+## 验收清单（M4 · 已归档）
+
+后端（本期验收只看后端，前端联调由 M5 完成）：
 
 - [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）；**存量 54 用例零回归**（94/94）
 - [x] 零新增第三方依赖；无 MySQL / Redis / OSS / MyBatis 依赖
