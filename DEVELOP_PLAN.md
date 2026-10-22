@@ -15,30 +15,30 @@
 
 实施计划（唯一权威）：[docs/superpowers/plans/2026-10-21-admin-monitor-phase1.md](./docs/superpowers/plans/2026-10-21-admin-monitor-phase1.md)——契约细节、测试矩阵、Review Focus 以计划文件为准，此处只跟踪状态。
 
-- [ ] Task 0: 规范先行——AGENTS / README / DEVELOP_PLAN 升级为「后台管理系统（监测 + 工具集）」定位，登记 monitor 模块与 Token 认证约定
-- [ ] Task 1: infrastructure 时序存储——`TimeSeriesStore` / `JsonlTimeSeriesStore`（分钟聚合桶 / 蓄水池采样 / JSONL 刷盘 / 重放 / 保留）
-- [ ] Task 2: framework Token 认证——`ApiTokenFilter`（X-API-Token，空 = 关闭）+ `UNAUTHORIZED(40100)`
-- [ ] Task 3: monitor 域模型与服务——`TimeRange` 值对象 / `MonitorService` / `TrafficRecordFilter` 自监测
-- [ ] Task 4: monitor 六端点——ingest / sources / overview / series / top-endpoints / status
-- [ ] Task 5: server 集成——配置 + `MonitorIntegrationTest`（自监测链路 / 上报 / Token 三态）
-- [ ] Task 6: 全量验证——`mvn clean package` 全绿（54 存量零回归 + 新增用例），文档定稿，推送 main
+- [x] Task 0: 规范先行——AGENTS / README / DEVELOP_PLAN 升级为「后台管理系统（监测 + 工具集）」定位，登记 monitor 模块与 Token 认证约定（5778651）
+- [x] Task 1: infrastructure 时序存储——`TimeSeriesStore` / `JsonlTimeSeriesStore`（分钟聚合桶 / 蓄水池采样 / JSONL 刷盘 / 重放 / 保留）（24bd302）
+- [x] Task 2: framework Token 认证——`ApiTokenFilter`（X-API-Token，空 = 关闭）+ `UNAUTHORIZED(40100)`（ab3d9f4）
+- [x] Task 3: monitor 域模型与服务——`TimeRange` 值对象 / `MonitorService` / `TrafficRecordFilter` 自监测（e58a2be）
+- [x] Task 4: monitor 六端点——ingest / sources / overview / series / top-endpoints / status（68e03f0）
+- [x] Task 5: server 集成——配置 + `MonitorIntegrationTest`（自监测链路 / 上报 / Token 三态）（7eca64a）
+- [x] Task 6: 全量验证——`mvn clean package` 全绿（91 用例：存量 54 零回归 + 新增 37），文档定稿，推送 main
 
 ## 验收清单（M4 · 每次交付前逐条核对）
 
 后端（本期验收只看后端，前端联调留待 UI 重做期）：
 
-- [ ] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）；**存量 54 用例零回归**
-- [ ] 零新增第三方依赖；无 MySQL / Redis / OSS / MyBatis 依赖
-- [ ] token 未配置：现有行为不变；配置后：无头 / 错值 401 + `40100`，正确值放行；Swagger 不受影响
-- [ ] 自监测：调任意 docs API 后 `overview?source=workbench` 计数增长，路径已归一化（数字段 `{n}` / UUID `{u}`）
-- [ ] 上报枢纽：模拟外部系统 `ingest` 后 `series` / `top-endpoints` / `sources` 正确反映；非法 payload 400
-- [ ] 时序存储：同 data-dir 重实例化后数据不丢（重放）；过期文件被清理（保留策略）；并发 append 计数精确
-- [ ] 查询参数校验：`range` / `metric` / `step` / `by` 非法值 400
+- [x] `backend/` 下 `mvn clean package` 构建成功，全部测试通过（命令内局部设置 `JAVA_HOME=JDK25`）；**存量 54 用例零回归**（91/91）
+- [x] 零新增第三方依赖；无 MySQL / Redis / OSS / MyBatis 依赖
+- [x] token 未配置：现有行为不变；配置后：无头 / 错值 401 + `40100`，正确值放行；Swagger 不受影响
+- [x] 自监测：调任意 docs API 后 `overview?source=workbench` 计数增长，路径已归一化（数字段 `{n}` / UUID `{u}`）；401 请求也计入流量
+- [x] 上报枢纽：模拟外部系统 `ingest` 后 `series` / `top-endpoints` / `sources` 正确反映；非法 payload 400
+- [x] 时序存储：同 data-dir 重实例化后数据不丢（重放）；过期文件被清理（保留策略）；并发 append 计数精确（16 线程 × 200）
+- [x] 查询参数校验：`range` / `metric` / `step` / `by` 非法值 400
 
 文档与注释：
 
-- [ ] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
-- [ ] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」（聚合桶 / 蓄水池 / 单写线程等取舍）、无过时注释
+- [x] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
+- [x] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」（聚合桶 / 蓄水池 / 单写线程等取舍）、无过时注释
 
 ## 验收清单（M3 · 已归档，随 M4 重跑仍须全绿）
 
