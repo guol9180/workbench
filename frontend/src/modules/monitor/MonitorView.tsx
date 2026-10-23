@@ -9,6 +9,8 @@ import { fmtClock, fmtHM, fmtInt, fmtMs, fmtRate } from '../../utils/format'
 import { minutesToMs, monitorApi } from './api'
 import type { MetricKey, RangeKey, SortKey } from './api'
 import { usePolling } from './useMonitor'
+import SourceCards from './SourceCards'
+import FirstRunGuide from './FirstRunGuide'
 import './monitor.css'
 
 const RANGES: RangeKey[] = ['5m', '1h', '6h', '24h', '7d']
@@ -109,100 +111,99 @@ export default function MonitorView() {
         </div>
       )}
 
-      {sources.length === 0 && !sourcesQ.loading && !sourcesQ.error && (
-        <div className="mon-banner">
-          <span>还没有任何流量——调用任意 /api 接口，或向 /api/monitor/ingest 上报外部系统数据</span>
-        </div>
+      {sources.length === 0 && !sourcesQ.loading && !sourcesQ.error ? (
+        <FirstRunGuide />
+      ) : (
+        <>
+          <SourceCards sources={sources.map((s) => s.name)} active={source} onPick={setSource} />
+
+          <section className="mon-hero panel">
+            <header className="mon-hero-head">
+              <span className="mon-hero-title">流量描迹</span>
+              <div className="mon-metrics" role="group" aria-label="描迹指标">
+                {METRICS.map((m) => (
+                  <button
+                    key={m.key}
+                    className={'mon-metric' + (m.key === metric ? ' active' : '')}
+                    style={m.key === metric ? { color: m.color } : undefined}
+                    onClick={() => setMetric(m.key)}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+            </header>
+            <PulseChart
+              key={selKey + '|' + metric}
+              points={points}
+              color={activeMetric.color}
+              formatValue={activeMetric.format}
+              formatTime={fmtHM}
+            />
+          </section>
+
+          <section className="mon-readouts">
+            <div className="mon-readout">
+              <span className="mon-num">{overview ? fmtInt(overview.count) : '—'}</span>
+              <span className="mon-label">请求数</span>
+            </div>
+            <div className="mon-readout">
+              <span className="mon-num" style={overview && overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}>
+                {overview ? fmtRate(overview.errRate) : '—'}
+              </span>
+              <span className="mon-label">错误率</span>
+            </div>
+            <div className="mon-readout">
+              <span className="mon-num">{overview ? fmtMs(overview.avgMs) : '—'}</span>
+              <span className="mon-label">平均延迟</span>
+            </div>
+            <div className="mon-readout">
+              <span className="mon-num">{overview ? fmtMs(overview.p95Ms) : '—'}</span>
+              <span className="mon-label">P95 延迟</span>
+            </div>
+          </section>
+        </>
       )}
 
-      <section className="mon-hero panel">
-        <header className="mon-hero-head">
-          <span className="mon-hero-title">流量描迹</span>
-          <div className="mon-metrics" role="group" aria-label="描迹指标">
-            {METRICS.map((m) => (
-              <button
-                key={m.key}
-                className={'mon-metric' + (m.key === metric ? ' active' : '')}
-                style={m.key === metric ? { color: m.color } : undefined}
-                onClick={() => setMetric(m.key)}
-              >
-                {m.label}
-              </button>
-            ))}
-          </div>
-        </header>
-        <PulseChart
-          key={selKey + '|' + metric}
-          points={points}
-          color={activeMetric.color}
-          formatValue={activeMetric.format}
-          formatTime={fmtHM}
-        />
-      </section>
-
-      <section className="mon-readouts">
-        <div className="mon-readout">
-          <span className="mon-num">{overview ? fmtInt(overview.count) : '—'}</span>
-          <span className="mon-label">请求数</span>
-        </div>
-        <div className="mon-readout">
-          <span className="mon-num" style={overview && overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}>
-            {overview ? fmtRate(overview.errRate) : '—'}
-          </span>
-          <span className="mon-label">错误率</span>
-        </div>
-        <div className="mon-readout">
-          <span className="mon-num">{overview ? fmtMs(overview.avgMs) : '—'}</span>
-          <span className="mon-label">平均延迟</span>
-        </div>
-        <div className="mon-readout">
-          <span className="mon-num">{overview ? fmtMs(overview.p95Ms) : '—'}</span>
-          <span className="mon-label">P95 延迟</span>
-        </div>
-      </section>
-
-      <section className="mon-ledger panel">
-        <header className="mon-ledger-head">
-          <span className="mon-ledger-title">端点遥测 · 前 10</span>
-          <div className="mon-sorts">
-            {SORTS.map((s) => (
-              <button key={s.key} className={'mon-sort' + (s.key === sortBy ? ' active' : '')} onClick={() => setSortBy(s.key)}>
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </header>
-        <table className="mon-table">
-          <thead>
-            <tr>
-              <th>端点</th>
-              <th className="num">请求</th>
-              <th className="num">错误</th>
-              <th className="num">均延</th>
-              <th className="num">P95</th>
-            </tr>
-          </thead>
-          <tbody>
-            {endpoints.map((e) => (
-              <tr key={e.endpoint}>
-                <td className="mon-ep">{e.endpoint}</td>
-                <td className="num mon-count-cell">
-                  <span className="mon-count" style={{ width: (e.count / maxCount) * 100 + '%' }} aria-hidden="true" />
-                  <span className="mon-count-n">{fmtInt(e.count)}</span>
-                </td>
-                <td className={'num' + (e.errCount > 0 ? ' mon-err' : ' mon-zero')}>{e.errCount > 0 ? fmtInt(e.errCount) : '—'}</td>
-                <td className="num">{fmtMs(e.avgMs)}</td>
-                <td className="num mon-zero">{fmtMs(e.p95Ms)}</td>
-              </tr>
-            ))}
-            {endpoints.length === 0 && (
+      {endpoints.length > 0 && (
+        <section className="mon-ledger panel">
+          <header className="mon-ledger-head">
+            <span className="mon-ledger-title">端点遥测 · 前 10</span>
+            <div className="mon-sorts">
+              {SORTS.map((s) => (
+                <button key={s.key} className={'mon-sort' + (s.key === sortBy ? ' active' : '')} onClick={() => setSortBy(s.key)}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </header>
+          <table className="mon-table">
+            <thead>
               <tr>
-                <td className="mon-table-empty" colSpan={5}>该区间暂无端点数据</td>
+                <th>端点</th>
+                <th className="num">请求</th>
+                <th className="num">错误</th>
+                <th className="num">均延</th>
+                <th className="num">P95</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {endpoints.map((e) => (
+                <tr key={e.endpoint}>
+                  <td className="mon-ep">{e.endpoint}</td>
+                  <td className="num mon-count-cell">
+                    <span className="mon-count" style={{ width: (e.count / maxCount) * 100 + '%' }} aria-hidden="true" />
+                    <span className="mon-count-n">{fmtInt(e.count)}</span>
+                  </td>
+                  <td className={'num' + (e.errCount > 0 ? ' mon-err' : ' mon-zero')}>{e.errCount > 0 ? fmtInt(e.errCount) : '—'}</td>
+                  <td className="num">{fmtMs(e.avgMs)}</td>
+                  <td className="num mon-zero">{fmtMs(e.p95Ms)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      )}
     </div>
   )
 }

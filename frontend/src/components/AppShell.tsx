@@ -52,7 +52,7 @@ export default function AppShell() {
         </nav>
 
         <div className="rail-foot">
-          <NavLink to="/login" title="接入" className={({ isActive }) => 'rail-btn' + (isActive ? ' active' : '')}>
+          <NavLink to="/login" title="访问令牌" className={({ isActive }) => 'rail-btn' + (isActive ? ' active' : '')}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <circle cx="8" cy="15" r="4.5" stroke="currentColor" strokeWidth="1.6" />
               <path d="M11.5 11.5 20 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />

@@ -9,6 +9,7 @@ import type { SourceConfigInput, SourceConfigView, SourceMetric } from './api'
 import { usePolling } from '../monitor/useMonitor'
 import { fmtClock } from '../../utils/format'
 import { toast } from '../../ui/toast'
+import { showConfirm } from '../../ui/dialog'
 import './sources.css'
 
 const METRIC_LABELS: Array<{ key: SourceMetric; label: string; hint: string }> = [
@@ -155,7 +156,18 @@ export default function SourcesView() {
               <button
                 className="src-op danger"
                 disabled={busy}
-                onClick={() => void run(() => sourcesApi.remove(c.id), '已删除（历史数据将按保留策略过期）')}
+                onClick={() => {
+                  // 破坏性操作必须二次确认：删除立即停采集，不可恢复
+                  void (async () => {
+                    const yes = await showConfirm({
+                      title: '删除确认',
+                      message: '确定删除「' + c.repo + '」？接入立即停止，历史数据将按保留策略自然过期。',
+                      confirmText: '删除',
+                      danger: true,
+                    })
+                    if (yes) await run(() => sourcesApi.remove(c.id), '已删除（历史数据将按保留策略过期）')
+                  })()
+                }}
               >
                 删除
               </button>

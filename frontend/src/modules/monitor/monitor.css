@@ -283,6 +283,144 @@
     padding: 22px 16px;
 }
 
+/* ---------- 全局态势卡片行 ---------- */
+
+.mon-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 10px;
+}
+
+.mon-card {
+    text-align: left;
+    background: var(--ink-1);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.mon-card:hover { background: var(--ink-2); border-color: var(--line-strong); }
+
+.mon-card.active {
+    background: var(--amber-dim);
+    border-color: rgba(232, 163, 61, 0.45);
+}
+
+.mon-card-top {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.mon-card-dot {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+
+.mon-card-dot.ok { background: var(--ok); }
+.mon-card-dot.warn { background: var(--amber); }
+.mon-card-dot.err { background: var(--danger); box-shadow: 0 0 6px rgba(232, 96, 84, 0.7); }
+
+.mon-card-name {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mon-card-win {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+}
+
+.mon-card-num {
+    font-family: var(--font-mono);
+    font-size: 21px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.mon-card-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+}
+
+.mon-card-sub.bad { color: var(--danger); }
+
+/* ---------- 首次使用引导（空态即门） ---------- */
+
+.mon-guide { padding: 20px 22px 22px; }
+
+.mon-guide-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    margin-bottom: 16px;
+}
+
+.mon-guide-steps {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.mon-guide-steps li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.mon-guide-num {
+    flex: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--amber-dim);
+    color: var(--amber);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.mon-guide-steps b {
+    font-size: 13.5px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 3px;
+}
+
+.mon-guide-steps p {
+    font-size: 12.5px;
+    color: var(--text-2);
+    margin-bottom: 5px;
+}
+
+.mon-guide-link {
+    font-size: 12.5px;
+    color: var(--amber);
+    border-bottom: 1px solid rgba(232, 163, 61, 0.4);
+    padding-bottom: 1px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.mon-guide-link:hover { color: var(--amber-hi); border-color: var(--amber); }
+
 /* ---------- 移动端 ---------- */
 
 @media (max-width: 768px) {

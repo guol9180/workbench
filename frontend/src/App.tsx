@@ -5,6 +5,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './components/AppShell'
 import { AppDialog, AppToast } from './components/AppOverlay'
+import CommandPalette from './components/CommandPalette'
 import MonitorView from './modules/monitor/MonitorView'
 import DocsView from './modules/docs/DocsView'
 import SourcesView from './modules/sources/SourcesView'
@@ -25,6 +26,7 @@ export default function App() {
       </Routes>
       <AppDialog />
       <AppToast />
+      <CommandPalette />
     </HashRouter>
   )
 }

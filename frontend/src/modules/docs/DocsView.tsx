@@ -4,6 +4,7 @@
  * 250ms 脏刷新 + 2s 自动保存节流——交互骨架与旧 DocsView.vue 一致。
  */
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { DocsProvider, useDocs } from './useDocs'
 import Sidebar from './Sidebar'
 import VditorEditor from './VditorEditor'
@@ -20,6 +21,8 @@ export default function DocsView() {
 
 function DocsWorkspace() {
   const { state, actions } = useDocs()
+  const location = useLocation()
+  const navigate = useNavigate()
   const [dropActive, setDropActive] = useState(false)
   const dirtyTimer = useRef(0)
   const autosaveTimer = useRef(0)
@@ -30,6 +33,14 @@ function DocsWorkspace() {
     void actions.loadTree()
     // eslint 挂载一次语义：actions 为稳定引用
   }, [actions])
+
+  // 命令面板直达：/docs 带 {openDoc: path} 状态时打开该文档，然后清掉状态防重放
+  useEffect(() => {
+    const target = (location.state as { openDoc?: string } | null)?.openDoc
+    if (!target) return
+    void actions.openDoc(target)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.state, location.pathname, actions, navigate])
 
   function onEditorInput() {
     window.clearTimeout(dirtyTimer.current)
