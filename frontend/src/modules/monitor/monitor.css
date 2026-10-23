@@ -188,6 +188,72 @@
 
 .mon-label { font-size: 12px; color: var(--text-3); }
 
+.mon-label-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+/* 环比小注：后半段 vs 前半程 */
+.mon-delta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+}
+
+.mon-delta.bad { color: var(--danger); }
+.mon-delta.good { color: var(--ok); }
+
+/* ---------- 值得注意面板：异常自己浮上来 ---------- */
+
+.mon-attention {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mon-attention-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    background: var(--ink-1);
+    border: 1px solid var(--line);
+    border-left: 2px solid var(--amber);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+.mon-attention-dot {
+    flex: none;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--amber);
+}
+
+.mon-attention-text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mon-attention-btn {
+    flex: none;
+    margin-left: auto;
+    font-size: 12px;
+    color: var(--amber);
+    border: 1px solid rgba(232, 163, 61, 0.4);
+    border-radius: var(--r-ctl);
+    padding: 3px 10px;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.mon-attention-btn:hover { color: var(--amber-hi); border-color: var(--amber); }
+
 /* ---------- 端点遥测台账 ---------- */
 
 .mon-ledger { overflow: hidden; }

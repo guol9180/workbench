@@ -160,6 +160,36 @@
     border-bottom: 1px solid var(--line);
 }
 
+/* ---------- 最近打开 ---------- */
+
+.docp-recent {
+    border-bottom: 1px solid var(--line);
+    padding: 8px 6px 6px;
+}
+
+.docp-recent-head {
+    font-size: 11px;
+    color: var(--text-3);
+    padding: 0 6px 4px;
+    letter-spacing: 0.05em;
+}
+
+.docp-recent-row {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-size: 13px;
+    color: var(--text-2);
+    padding: 5px 8px;
+    border-radius: var(--r-ctl);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.12s, background 0.12s;
+}
+
+.docp-recent-row:hover { color: var(--text); background: var(--ink-2); }
+
 .docp-tree {
     flex: 1;
     overflow-y: auto;

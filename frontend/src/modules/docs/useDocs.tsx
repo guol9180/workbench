@@ -1,6 +1,7 @@
 import type { DocNode, SearchHit } from './api'
 import { docsApi } from './api'
 import { baseName, extAllowed, parentOf, readLocalFile, todayLogPath, todayLogTemplate } from './util'
+import { pushRecent } from './recent'
 import { getEditorValue, hasEditor, isEditorReady, setEditorValue } from './editor'
 import { showDialog, showConfirm } from '../../ui/dialog'
 import { toast } from '../../ui/toast'
@@ -164,6 +165,7 @@ function useDocsStoreValue(): DocsStore {
     async (path: string) => {
       try {
         const doc = await docsApi.getFile(path)
+        pushRecent(doc.path)
         patch({
           currentPath: doc.path,
           savedContent: doc.content ?? '',
