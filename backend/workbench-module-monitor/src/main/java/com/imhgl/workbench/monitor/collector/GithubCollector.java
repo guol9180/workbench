@@ -131,6 +131,10 @@ public class GithubCollector {
         if (e instanceof IOException io && io.getMessage() != null && io.getMessage().contains("401")) {
             return "GitHub 返回 401——检查 GITHUB_TOKEN 是否有效且具有该仓库读取权限";
         }
+        if (e instanceof IOException io && io.getMessage() != null && io.getMessage().contains("403")) {
+            // traffic 流量接口对 Fine-grained token 存在已知权限限制（文档称 metadata 读即可，实际常 403）
+            return "GitHub 返回 403——traffic 接口对 Fine-grained token 常见权限限制：换 classic token（勾 repo scope）可解，或只采 Release 下载量";
+        }
         if (e instanceof IOException io && io.getMessage() != null && io.getMessage().contains("404")) {
             return "GitHub 返回 404——仓库不存在或 token 无权访问";
         }
