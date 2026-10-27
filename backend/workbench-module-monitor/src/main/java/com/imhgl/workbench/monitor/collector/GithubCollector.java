@@ -29,17 +29,17 @@ public class GithubCollector {
     private final SourceConfigStore store;
     private final GithubClient client;
     private final MonitorService service;
-    private final SourceConfigProperties properties;
+    private final GithubTokenProvider tokenProvider;
 
     /** downloads 累计值基线：key = 配置 id。内存即可——重启后重新起算，符合「宁缺勿假」 */
     private final Map<String, Long> lastTotals = new ConcurrentHashMap<>();
 
     public GithubCollector(SourceConfigStore store, GithubClient client, MonitorService service,
-                           SourceConfigProperties properties) {
+                           GithubTokenProvider tokenProvider) {
         this.store = store;
         this.client = client;
         this.service = service;
-        this.properties = properties;
+        this.tokenProvider = tokenProvider;
     }
 
     /** 采集结果（手动触发的 API 回显用） */
@@ -61,8 +61,8 @@ public class GithubCollector {
     /** 手动立即采集（配置页按钮）；返回结果同时回写进配置状态 */
     public CollectOutcome collectNow(String id) {
         SourceConfig config = store.require(id);
-        if (!properties.hasToken()) {
-            String error = "未配置 GITHUB_TOKEN（环境变量），无法读取 GitHub 数据";
+        if (!tokenProvider.hasToken()) {
+            String error = "未配置 GITHUB_TOKEN——可在本页上方直接粘贴保存，或设环境变量后重启";
             store.markResult(id, false, error, null);
             return new CollectOutcome(false, error);
         }

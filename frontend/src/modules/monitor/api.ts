@@ -44,8 +44,9 @@ export interface MonitorStatusData {
   dataFiles: number
   authEnabled: boolean
   droppedEvents: number
-  /** 只暴露「配没配」布尔位：数据源页据此显示引导条；token 值永不回传 */
+  /** 只暴露「配没配」布尔位与来源（page/env，未配置 null）：数据源页据此渲染配置块；token 值永不回传 */
   githubTokenConfigured: boolean
+  githubTokenSource: string | null
 }
 
 /**

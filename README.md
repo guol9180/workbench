@@ -87,7 +87,7 @@ npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
 | DELETE | `/api/monitor/source-configs/{id}` | 删除（停采集；历史数据按保留策略自然过期） |
 | POST | `/api/monitor/source-configs/{id}/collect` | 手动立即采集（ok=false 时 error 给可行动原因） |
 
-GitHub 采集：环境变量 `GITHUB_TOKEN`（只读 PAT）非空时生效；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
+GitHub 采集：token 可直接在数据源页动态保存（持久化于 `data/sources.json`，**优先于环境变量** `GITHUB_TOKEN`，清除后回落 env）；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
 
 **认证**：环境变量 `API_TOKEN` 非空时，全部 `/api/**` 须携带请求头 `X-API-Token`，失败 401 + `40100`；为空 = 关闭。
 

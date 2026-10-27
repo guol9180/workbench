@@ -19,13 +19,17 @@ import java.util.Optional;
 
 /**
  * 源配置的 JSON 文件存储（data/sources.json）：进程内独占读写，外部没人改。
- * <p>写路径走「临时文件 + 原子移动」，断电也不会留半个 JSON；record 列表整体重写——
- * 配置量级是个位数仓库，整写比增量补丁简单且足够快。
+ * <p>文件形状：{version, settings:{githubToken}, sources:[...]}——settings 区承载页面级
+ * GitHub token（M7 动态配置），与源清单同文件同锁，保证「保存 token + 采集回写」的一致性。
+ * <p>写路径走「临时文件 + 原子移动」，断电也不会留半个 JSON；配置量级是个位数仓库，整写足够快。
  * <p>业务冲突（重复 repo / id 不存在）直接抛 BusinessException：本类只在 monitor 模块内使用，
  * 不跨模块，无需中性异常那层翻译。
  */
 @Component
 public class SourceConfigStore {
+
+    private record StoreDoc(String githubToken, List<SourceConfig> sources) {
+    }
 
     private final Path file;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -38,19 +42,34 @@ public class SourceConfigStore {
     /** 全量配置；文件不存在视为空列表（首次启动） */
     public List<SourceConfig> list() {
         synchronized (lock) {
-            return readAll();
+            return readDoc().sources();
+        }
+    }
+
+    /** 页面级 GitHub token（settings 区持久化）；null = 未设置（回落环境变量） */
+    public String githubToken() {
+        synchronized (lock) {
+            return readDoc().githubToken();
+        }
+    }
+
+    /** 保存/清除页面级 token：null 即清除。立即持久化，采集器下次取值即生效 */
+    public void setGithubToken(String token) {
+        synchronized (lock) {
+            StoreDoc doc = readDoc();
+            writeDoc(new StoreDoc(token, doc.sources()));
         }
     }
 
     /** 新增接入：同 repo（忽略大小写）重复抛 CONFLICT；id 由 repo 归一生成 */
     public SourceConfig create(String type, String repo, boolean enabled, List<String> metrics) {
         synchronized (lock) {
-            List<SourceConfig> all = readAll();
+            List<SourceConfig> all = readDoc().sources();
             String id = idOf(repo);
             ensureRepoFree(all, id);
             SourceConfig config = new SourceConfig(id, type, repo, enabled, metrics, System.currentTimeMillis(), null, null, null);
             all.add(config);
-            writeAll(all);
+            writeDoc(new StoreDoc(readDoc().githubToken(), all));
             return config;
         }
     }
@@ -58,11 +77,11 @@ public class SourceConfigStore {
     /** 更新（repo 变更时同样查重，但不允许把 repo 改成另一个已接入仓库）；不存在抛 NOT_FOUND */
     public SourceConfig update(String id, String type, String repo, boolean enabled, List<String> metrics) {
         synchronized (lock) {
-            List<SourceConfig> all = readAll();
-            ensureExists(all, id);
-            ensureRepoFree(all, idOf(repo));
+            StoreDoc doc = readDoc();
+            ensureExists(doc.sources(), id);
+            ensureRepoFree(doc.sources(), idOf(repo));
             List<SourceConfig> next = new ArrayList<>();
-            for (SourceConfig c : all) {
+            for (SourceConfig c : doc.sources()) {
                 // repo 未变时保留 lastDay 游标；换了 repo 则游标作废重新起算
                 boolean sameRepo = c.repo().equalsIgnoreCase(repo);
                 next.add(c.id().equals(id)
@@ -70,7 +89,7 @@ public class SourceConfigStore {
                                 c.lastOkAt(), c.lastError(), sameRepo ? c.lastDay() : null)
                         : c);
             }
-            writeAll(next);
+            writeDoc(new StoreDoc(doc.githubToken(), next));
             return findIn(next, id).orElseThrow();
         }
     }
@@ -78,16 +97,16 @@ public class SourceConfigStore {
     /** 删除（停采集，历史数据按保留策略自然过期）；不存在抛 NOT_FOUND */
     public void delete(String id) {
         synchronized (lock) {
-            List<SourceConfig> all = readAll();
-            ensureExists(all, id);
-            writeAll(all.stream().filter(c -> !c.id().equals(id)).toList());
+            StoreDoc doc = readDoc();
+            ensureExists(doc.sources(), id);
+            writeDoc(new StoreDoc(doc.githubToken(), doc.sources().stream().filter(c -> !c.id().equals(id)).toList()));
         }
     }
 
     /** 按 id 查找；不存在抛 NOT_FOUND（api 层与采集器共用） */
     public SourceConfig require(String id) {
         synchronized (lock) {
-            return findIn(readAll(), id).orElseThrow(() -> notFound(id));
+            return findIn(readDoc().sources(), id).orElseThrow(() -> notFound(id));
         }
     }
 
@@ -97,24 +116,25 @@ public class SourceConfigStore {
      */
     public void markResult(String id, boolean ok, String error, String lastDay) {
         synchronized (lock) {
-            List<SourceConfig> all = readAll();
+            StoreDoc doc = readDoc();
             List<SourceConfig> next = new ArrayList<>();
-            for (SourceConfig c : all) {
+            for (SourceConfig c : doc.sources()) {
                 next.add(c.id().equals(id)
                         ? c.withResult(ok ? Long.valueOf(System.currentTimeMillis()) : c.lastOkAt(),
                                 ok ? null : error, lastDay)
                         : c);
             }
-            writeAll(next);
+            writeDoc(new StoreDoc(doc.githubToken(), next));
         }
     }
 
-    private List<SourceConfig> readAll() {
+    private StoreDoc readDoc() {
         if (!Files.exists(file)) {
-            return new ArrayList<>();
+            return new StoreDoc(null, new ArrayList<>());
         }
         try {
-            ArrayNode sources = (ArrayNode) mapper.readTree(file.toFile()).withArray("/sources");
+            ObjectNode root = (ObjectNode) mapper.readTree(file.toFile());
+            ArrayNode sources = root.withArray("/sources");
             List<SourceConfig> all = new ArrayList<>();
             for (int i = 0; i < sources.size(); i++) {
                 ObjectNode n = (ObjectNode) sources.get(i);
@@ -131,17 +151,22 @@ public class SourceConfigStore {
                         n.hasNonNull("lastError") ? n.get("lastError").asText() : null,
                         n.hasNonNull("lastDay") ? n.get("lastDay").asText() : null));
             }
-            return all;
+            // 注意：path() 是属性名查找（非指针），settings 是 withObject 指针写入的嵌套对象
+            String token = root.path("settings").path("githubToken").asText(null);
+            return new StoreDoc(token, all);
         } catch (IOException e) {
             throw new UncheckedIOException("源配置文件读取失败：" + file, e);
         }
     }
 
-    private void writeAll(List<SourceConfig> all) {
+    private void writeDoc(StoreDoc doc) {
         ObjectNode root = mapper.createObjectNode();
         root.put("version", 1);
+        if (doc.githubToken() != null) {
+            root.withObject("/settings").put("githubToken", doc.githubToken());
+        }
         ArrayNode sources = root.withArray("/sources");
-        for (SourceConfig c : all) {
+        for (SourceConfig c : doc.sources()) {
             ObjectNode n = sources.addObject();
             n.put("id", c.id());
             n.put("type", c.type());

@@ -22,11 +22,14 @@ export default function SourcesView() {
   const configs = usePolling(() => sourcesApi.list(), 'source-configs', { intervalMs: 20_000 })
   // GitHub token 配置状态：驱动引导条（配没配由服务端判定，这里拿到的只有布尔位）
   const statusQ = usePolling(() => monitorApi.status(), 'status', { intervalMs: 30_000 })
-  const tokenReady = statusQ.data?.githubTokenConfigured
+  const tokenSource = statusQ.data?.githubTokenSource ?? null
+  const tokenReady = tokenSource != null
   const [repo, setRepo] = useState('')
   const [metrics, setMetrics] = useState<SourceMetric[]>(['pages', 'downloads'])
   const [enabled, setEnabled] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [editingToken, setEditingToken] = useState(false)
+  const [tokenInput, setTokenInput] = useState('')
 
   // 轮询触发的重取：手动采集 / 增删改后刷新列表
   const [reloadTick, setReloadTick] = useState(0)
@@ -71,6 +74,32 @@ export default function SourcesView() {
     }, '采集完成')
   }
 
+  /** 保存 token 后立即采集全部启用源：配置到数据可用，一次点击闭环 */
+  async function saveToken() {
+    const value = tokenInput.trim()
+    if (busy || !value) return
+    await run(async () => {
+      await sourcesApi.setGithubToken(value)
+      setTokenInput('')
+      setEditingToken(false)
+      const failures: string[] = []
+      for (const c of await sourcesApi.list()) {
+        if (!c.enabled) continue
+        const r = await sourcesApi.collect(c.id)
+        if (!r.ok) failures.push(c.repo + '：' + (r.error ?? '失败'))
+      }
+      if (failures.length > 0) throw new Error(failures.join('；'))
+      statusQ.reload()
+    }, '已保存并完成采集')
+  }
+
+  async function clearToken() {
+    await run(async () => {
+      await sourcesApi.clearGithubToken()
+      statusQ.reload()
+    }, '已清除——回落环境变量 GITHUB_TOKEN（如设置）')
+  }
+
   return (
     <div className="src">
       <header className="src-head">
@@ -78,17 +107,44 @@ export default function SourcesView() {
         <span className="src-sub">接入外部数据到统一时序存储——概览页的源列表会随之出现</span>
       </header>
 
-      {statusQ.data && !tokenReady && (
-        <div className="src-token-warn" role="status">
-          <span>
-            尚未配置 GITHUB_TOKEN，采集无法读取 GitHub 数据。生成只读 PAT 后，在启动后端前设置环境变量
-            GITHUB_TOKEN，点「重新检测」即可生效。
-          </span>
-          <button className="src-op" onClick={() => statusQ.reload()}>重新检测</button>
-        </div>
-      )}
-      {statusQ.data && tokenReady && (
-        <div className="src-token-ok">GITHUB_TOKEN 已配置 ✓ 采集就绪</div>
+      {statusQ.data && (
+        <section className="panel src-token">
+          <div className="src-token-head">
+            <span className="src-token-title">GITHUB_TOKEN</span>
+            {tokenSource && <span className="src-tag">来源：{tokenSource === 'page' ? '本页保存' : '环境变量'}</span>}
+            <span className="src-token-state">
+              <i className={'src-state ' + (tokenReady ? 'ok' : 'err')} aria-hidden="true" />
+              {tokenReady ? '采集就绪' : '未配置'}
+            </span>
+          </div>
+          {(editingToken || !tokenReady) && (
+            <div className="src-token-row">
+              <input
+                className="src-input"
+                type="password"
+                value={tokenInput}
+                placeholder="粘贴只读 PAT（ghp_… / github_pat_…），仅存本机服务端"
+                onChange={(e) => setTokenInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && void saveToken()}
+              />
+              <button className="src-btn primary" disabled={busy || !tokenInput.trim()} onClick={() => void saveToken()}>
+                保存并采集
+              </button>
+              {tokenReady && (
+                <button className="src-op" onClick={() => { setEditingToken(false); setTokenInput('') }}>
+                  取消
+                </button>
+              )}
+            </div>
+          )}
+          {!editingToken && tokenReady && (
+            <div className="src-token-row">
+              <span className="src-token-note">保存后立即生效并自动采集全部已启用源；清除则回落环境变量 GITHUB_TOKEN（如已设置）。</span>
+              <button className="src-op" onClick={() => setEditingToken(true)}>更换</button>
+              <button className="src-op danger" disabled={busy} onClick={() => void clearToken()}>清除</button>
+            </div>
+          )}
+        </section>
       )}
 
       <section className="panel src-form">

@@ -28,10 +28,10 @@ public class GithubClient {
 
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
-    private final SourceConfigProperties properties;
+    private final GithubTokenProvider tokenProvider;
 
-    public GithubClient(SourceConfigProperties properties) {
-        this.properties = properties;
+    public GithubClient(GithubTokenProvider tokenProvider) {
+        this.tokenProvider = tokenProvider;
     }
 
     /** 每日 Pages 浏览量（GitHub 限制：仅日粒度、最多回看 14 天） */
@@ -51,8 +51,9 @@ public class GithubClient {
                 .header("X-GitHub-Api-Version", "2022-11-28")
                 .GET();
         // 匿名额度极低且 traffic 端点必须认证：有 token 必带；无 token 让 GitHub 401、由采集器翻译成可读提示
-        if (properties.hasToken()) {
-            builder.header("Authorization", "Bearer " + properties.githubToken());
+        String token = tokenProvider.token();
+        if (!token.isBlank()) {
+            builder.header("Authorization", "Bearer " + token);
         }
         HttpResponse<String> res = http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
         if (res.statusCode() != 200) {

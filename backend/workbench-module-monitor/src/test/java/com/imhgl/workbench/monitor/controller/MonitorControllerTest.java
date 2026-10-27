@@ -168,7 +168,7 @@ class MonitorControllerTest {
 
         @Override
         public MonitorStatus status() {
-            return new MonitorStatus(3, 1, false, 0, false);
+            return new MonitorStatus(3, 1, false, 0, false, null);
         }
 
         /* ---------------- 数据源配置（M6）：契约测试见 MonitorSourceConfigApiTest ---------------- */
@@ -194,6 +194,14 @@ class MonitorControllerTest {
         @Override
         public com.imhgl.workbench.monitor.model.SourceCollectResult collectSourceConfig(String id) {
             return new com.imhgl.workbench.monitor.model.SourceCollectResult(true, null);
+        }
+
+        @Override
+        public void setGithubToken(String token) {
+        }
+
+        @Override
+        public void clearGithubToken() {
         }
     }
 }

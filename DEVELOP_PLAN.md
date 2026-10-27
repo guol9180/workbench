@@ -13,6 +13,16 @@
 | M5 | **前端重做：React「观测站」设计语言 + v2 API 全面对齐** | ✅ 已完成并推送（382aa7f，105 用例基线） |
 | M6 | **GitHub 数据源接入：Pages 流量 / Release 下载量 + 数据源配置页** | ✅ 已完成并推送（6a0b3ff，105 用例） |
 | M7 | **体验补全：P0 态势卡片/命令面板 + P1 语境与浮出 + P2 GitHub 适配与 token 闭环** | ✅ 已完成并推送（56fb5d8 / f78781a / P2 本提交） |
+| M8 | **GitHub token 页面动态配置（免重启闭环）** | ✅ 已完成并推送（本提交） |
+
+## 当前任务（M8 · token 动态配置，已完成）
+
+用户反馈「页面上没有配置 token 的地方」——环境变量 + 重启的接入方式不闭环。规范修订见 [AGENTS.md §3.5](./AGENTS.md)（「token 不落盘」约定废止及其理由）。
+
+- [x] `PUT|DELETE /api/monitor/settings/github-token`：保存/清除页面级 token，持久化于 sources.json 的 settings 区，**页面设置 > 环境变量**（清除回落 env）
+- [x] `GithubTokenProvider`：token 唯一读取口（client/collector/status 共用），优先级口径全站一致；status 出参加 `githubTokenSource`（page/env/null）
+- [x] 数据源页 token 配置块：粘贴保存即生效并自动采集全部启用源；已配置显示来源与更换/清除
+- [x] 验证：110 用例全绿（新增 settings 往返 + provider 优先级）；端到端联调——保存假 token 即时生效并打出真实 GitHub 401，清除回落 env
 
 ## 当前任务（M7 · 体验补全 P0）
 

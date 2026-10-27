@@ -110,7 +110,8 @@ workbench-backend
 - **自监测约定**：`TrafficRecordFilter` 拦 `/api/**`（order 先于 Token 过滤器，未认证请求也计入流量），`source="workbench"`；路径归一化（纯数字段→`{n}`、UUID 段→`{u}`）；异步投递有界队列，队列满丢弃并计数、绝不阻塞业务请求。
 - **上报枢纽**：外部系统按 `IngestRequest` 结构 POST 到 `/api/monitor/ingest`，`source` 自带标识（如 `nginx`、`server-a`），数据进同一时序存储。
 - **源配置约定（M6）**：配置持久化为 JSON 文件（`workbench.sources.file`，默认 `data/sources.json`），由 `SourceConfigStore` 独占读写；仓库范围由用户在配置页管理，**运行期配置而非 yml**。同 repo 重复接入 → `CONFLICT(40900)`；删除源只停采集，历史数据按保留策略自然过期。
-- **拉取采集约定（M6）**：`GithubCollector` 按 cron 定时 + 支持手动触发，用 JDK `HttpClient` 调 GitHub REST API（`GITHUB_TOKEN` 环境变量，只读权限），解析零新增依赖（Jackson 为 web starter 既有传递依赖）；**非 HTTP 指标的入库映射**：`source = github/{owner}/{repo}`、`endpoint = 指标名`（views / downloads）、`status = 200`、`totalMs/maxMs = 0`、`count = 增量`（相对上次采集；重启后重新起算基线，首次记 0）、`ts = 数据所属日（UTC 日零点对齐分钟）`——GitHub 侧只提供日粒度、14 天窗口，此为上限而非实现选择。
+- **拉取采集约定（M6）**：`GithubCollector` 按 cron 定时 + 支持手动触发，用 JDK `HttpClient` 调 GitHub REST API（只读权限），解析零新增依赖（Jackson 为 web starter 既有传递依赖）；**非 HTTP 指标的入库映射**：`source = github/{owner}/{repo}`、`endpoint = 指标名`（views / downloads）、`status = 200`、`totalMs/maxMs = 0`、`count = 增量`（相对上次采集；重启后重新起算基线，首次记 0）、`ts = 数据所属日（UTC 日零点对齐分钟）`——GitHub 侧只提供日粒度、14 天窗口，此为上限而非实现选择。
+- **GitHub token 动态配置（M7 起）**：token 支持配置页运行期设置（`PUT|DELETE /api/monitor/settings/github-token`），持久化于 sources.json 的 settings 区；**生效优先级 = 页面设置 > 环境变量 GITHUB_TOKEN**（页面清除后回落 env）。token 值任何接口永不回显，只暴露「已配置布尔位 + 来源（page/env）」。修订说明：原「token 不落盘」约定随动态配置需求废止——本地个人工具下，文件持久化与环境变量的暴露面等同，且换来免重启闭环。
 
 ### 3.6 workbench-server（com.imhgl.workbench）
 
@@ -224,7 +225,9 @@ com.imhgl.workbench.<x>/
 | GET | `/api/monitor/overview?source=&range=5m\|1h\|6h\|24h\|7d` | query | `Overview{count, errCount, errRate, avgMs, p95Ms, rps}` |
 | GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h` | query | `List<SeriesPoint{bucketEpoch, value}>` |
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=count\|err\|avgMs` | query | `List<EndpointRank{endpoint, count, errCount, avgMs, p95Ms}>` |
-| GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关 / GitHub token 配置状态；不回显任何 token 值） |
+| GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关 / GitHub token 配置状态与来源；不回显任何 token 值） |
+| PUT | `/api/monitor/settings/github-token` | `{token}`（trim 后非空） | -（保存页面级 token，立即生效，优先于环境变量） |
+| DELETE | `/api/monitor/settings/github-token` | - | -（清除页面级 token，回落环境变量） |
 | GET | `/api/monitor/source-configs` | - | `List<SourceConfigView{id, type, repo, enabled, metrics[], createdAt, lastOkAt, lastError}>`（token 永不回显） |
 | POST | `/api/monitor/source-configs` | `{type:"github", repo:"owner/name", enabled, metrics:["pages"\|"downloads"]}` | `{id}` |
 | PUT | `/api/monitor/source-configs/{id}` | 同 POST body | - |

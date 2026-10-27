@@ -6,6 +6,7 @@ import com.imhgl.workbench.infrastructure.metrics.Overview;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
+import com.imhgl.workbench.monitor.dto.GithubTokenRequest;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
@@ -118,5 +119,21 @@ public class MonitorController {
     @PostMapping("/source-configs/{id}/collect")
     public ApiResult<SourceCollectResult> collectSourceConfig(@PathVariable String id) {
         return ApiResult.ok(monitorApi.collectSourceConfig(id));
+    }
+
+    /* ---------------- GitHub token 动态配置（M7，配置页） ---------------- */
+
+    /** 保存页面级 token（立即生效，优先于环境变量；值不回显） */
+    @PutMapping("/settings/github-token")
+    public ApiResult<Void> setGithubToken(@Valid @RequestBody GithubTokenRequest request) {
+        monitorApi.setGithubToken(request.token());
+        return ApiResult.ok();
+    }
+
+    /** 清除页面级 token（回落环境变量 GITHUB_TOKEN） */
+    @DeleteMapping("/settings/github-token")
+    public ApiResult<Void> clearGithubToken() {
+        monitorApi.clearGithubToken();
+        return ApiResult.ok();
     }
 }

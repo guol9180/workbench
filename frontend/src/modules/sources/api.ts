@@ -40,4 +40,10 @@ export const sourcesApi = {
     api<void>('/api/monitor/source-configs/' + encodeURIComponent(id), { method: 'DELETE' }),
   collect: (id: string) =>
     api<SourceCollectResult>('/api/monitor/source-configs/' + encodeURIComponent(id) + '/collect', { method: 'POST' }),
+  /** 保存页面级 GitHub token（立即生效，优先于环境变量）；值只在服务端持久化，永不回显 */
+  setGithubToken: (token: string) =>
+    api<void>('/api/monitor/settings/github-token', { method: 'PUT', body: JSON.stringify({ token }) }),
+  /** 清除页面级 token（回落环境变量） */
+  clearGithubToken: () =>
+    api<void>('/api/monitor/settings/github-token', { method: 'DELETE' }),
 }

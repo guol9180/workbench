@@ -42,6 +42,52 @@
 
 .src-token-ok { font-size: 12.5px; color: var(--ok); }
 
+/* ---------- token 配置块 ---------- */
+
+.src-token {
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.src-token-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.src-token-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-2);
+}
+
+.src-token-state {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--text-2);
+}
+
+.src-token-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.src-token-note {
+    font-size: 12px;
+    color: var(--text-3);
+    flex: 1;
+    min-width: 200px;
+}
+
 .panel {
     background: var(--ink-1);
     border: 1px solid var(--line);

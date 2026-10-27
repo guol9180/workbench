@@ -88,7 +88,7 @@ class MonitorSourceConfigApiTest {
         mvc.perform(post("/api/monitor/source-configs/gh-fail/collect"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.ok").value(false))
-                .andExpect(jsonPath("$.data.error").value("未配置 GITHUB_TOKEN（环境变量），无法读取 GitHub 数据"));
+                .andExpect(jsonPath("$.data.error").value("未配置 GITHUB_TOKEN——可在本页上方直接粘贴保存，或设环境变量后重启"));
     }
 
     /** 行为桩：按真实实现可能会抛的异常模拟 store/collector 边界 */
@@ -120,7 +120,7 @@ class MonitorSourceConfigApiTest {
 
         @Override
         public MonitorStatus status() {
-            return new MonitorStatus(0, 0, false, 0, false);
+            return new MonitorStatus(0, 0, false, 0, true, "page");
         }
 
         @Override
@@ -154,8 +154,16 @@ class MonitorSourceConfigApiTest {
         @Override
         public SourceCollectResult collectSourceConfig(String id) {
             return "gh-fail".equals(id)
-                    ? new SourceCollectResult(false, "未配置 GITHUB_TOKEN（环境变量），无法读取 GitHub 数据")
+                    ? new SourceCollectResult(false, "未配置 GITHUB_TOKEN——可在本页上方直接粘贴保存，或设环境变量后重启")
                     : new SourceCollectResult(true, null);
+        }
+
+        @Override
+        public void setGithubToken(String token) {
+        }
+
+        @Override
+        public void clearGithubToken() {
         }
     }
 }

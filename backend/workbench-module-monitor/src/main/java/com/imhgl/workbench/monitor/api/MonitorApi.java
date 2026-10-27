@@ -55,4 +55,10 @@ public interface MonitorApi {
 
     /** 手动立即采集一次；结果同时回写该源的运行状态 */
     SourceCollectResult collectSourceConfig(String id);
+
+    /** 保存页面级 GitHub token（立即生效，优先于环境变量）；空白 token 抛 PARAM_INVALID */
+    void setGithubToken(String token);
+
+    /** 清除页面级 GitHub token（回落环境变量 GITHUB_TOKEN） */
+    void clearGithubToken();
 }

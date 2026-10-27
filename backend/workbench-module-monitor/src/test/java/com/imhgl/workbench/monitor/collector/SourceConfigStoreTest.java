@@ -74,4 +74,21 @@ class SourceConfigStoreTest {
         BusinessException e = assertThrows(BusinessException.class, () -> store.require("gh-owner-repo"));
         assertEquals(ErrorCode.NOT_FOUND, e.getErrorCode());
     }
+
+    @Test
+    @DisplayName("页面级 token 存于 settings 区：跨实例持久化，源操作不覆盖，清除后为 null")
+    void githubTokenSettingsRoundTrip() {
+        SourceConfigStore store = newStore();
+        store.create("github", "owner/repo", true, List.of("pages"));
+        store.setGithubToken("ghp_abc");
+        assertEquals("ghp_abc", newStore().githubToken());
+
+        // 源操作（状态回写）不得覆盖 settings 区
+        store.markResult("gh-owner-repo", true, null, "2026-10-27");
+        assertEquals("ghp_abc", store.githubToken());
+
+        store.setGithubToken(null);
+        assertNull(newStore().githubToken());
+        assertEquals(1, newStore().list().size());
+    }
 }

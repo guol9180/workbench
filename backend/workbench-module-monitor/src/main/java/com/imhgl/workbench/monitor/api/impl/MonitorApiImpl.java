@@ -9,7 +9,7 @@ import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
 import com.imhgl.workbench.monitor.collector.GithubCollector;
-import com.imhgl.workbench.monitor.collector.SourceConfigProperties;
+import com.imhgl.workbench.monitor.collector.GithubTokenProvider;
 import com.imhgl.workbench.monitor.collector.SourceConfigStore;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
@@ -40,16 +40,16 @@ public class MonitorApiImpl implements MonitorApi {
     private final ApiTokenProperties authProperties;
     private final SourceConfigStore sourceConfigStore;
     private final GithubCollector githubCollector;
-    private final SourceConfigProperties sourceConfigProperties;
+    private final GithubTokenProvider tokenProvider;
 
     public MonitorApiImpl(MonitorService service, ApiTokenProperties authProperties,
                           SourceConfigStore sourceConfigStore, GithubCollector githubCollector,
-                          SourceConfigProperties sourceConfigProperties) {
+                          GithubTokenProvider tokenProvider) {
         this.service = service;
         this.authProperties = authProperties;
         this.sourceConfigStore = sourceConfigStore;
         this.githubCollector = githubCollector;
-        this.sourceConfigProperties = sourceConfigProperties;
+        this.tokenProvider = tokenProvider;
     }
 
     @Override
@@ -86,9 +86,10 @@ public class MonitorApiImpl implements MonitorApi {
     public MonitorStatus status() {
         StoreStatus storeStatus = service.storeStatus();
         boolean authEnabled = authProperties.token() != null && !authProperties.token().isBlank();
-        // GitHub token 只暴露「配没配」：配置页的引导条据此决定提示还是放行
+        // GitHub token 只暴露「配没配 + 来源（page/env）」：配置页据此渲染就绪态或引导条
+        boolean tokenReady = tokenProvider.hasToken();
         return new MonitorStatus(storeStatus.memoryBuckets(), storeStatus.dataFiles(),
-                authEnabled, service.droppedEvents(), sourceConfigProperties.hasToken());
+                authEnabled, service.droppedEvents(), tokenReady, tokenProvider.source());
     }
 
     /* ---------------- 数据源配置（M6） ---------------- */
@@ -122,6 +123,19 @@ public class MonitorApiImpl implements MonitorApi {
     public SourceCollectResult collectSourceConfig(String id) {
         GithubCollector.CollectOutcome outcome = githubCollector.collectNow(id);
         return new SourceCollectResult(outcome.ok(), outcome.error());
+    }
+
+    @Override
+    public void setGithubToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAM_INVALID, "token 不能为空");
+        }
+        tokenProvider.setPageToken(token);
+    }
+
+    @Override
+    public void clearGithubToken() {
+        tokenProvider.clearPageToken();
     }
 
     private static void validate(SourceConfigRequest request) {
