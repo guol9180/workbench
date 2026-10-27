@@ -224,7 +224,7 @@ com.imhgl.workbench.<x>/
 | GET | `/api/monitor/overview?source=&range=5m\|1h\|6h\|24h\|7d` | query | `Overview{count, errCount, errRate, avgMs, p95Ms, rps}` |
 | GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h` | query | `List<SeriesPoint{bucketEpoch, value}>` |
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=count\|err\|avgMs` | query | `List<EndpointRank{endpoint, count, errCount, avgMs, p95Ms}>` |
-| GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关，不回显 token 值） |
+| GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关 / GitHub token 配置状态；不回显任何 token 值） |
 | GET | `/api/monitor/source-configs` | - | `List<SourceConfigView{id, type, repo, enabled, metrics[], createdAt, lastOkAt, lastError}>`（token 永不回显） |
 | POST | `/api/monitor/source-configs` | `{type:"github", repo:"owner/name", enabled, metrics:["pages"\|"downloads"]}` | `{id}` |
 | PUT | `/api/monitor/source-configs/{id}` | 同 POST body | - |

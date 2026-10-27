@@ -1,9 +1,10 @@
 /**
- * PulseChart：观测站的示波器主图（纯 SVG，零图表库依赖）。
- * - 刻度栅格 + 琥珀面积描迹；数据到达时描迹自左向右绘线一次——全站唯一非用户触发的动效
- * - hover 十字线吸附最近桶，浮层给出该桶时间与读数
+ * PulseChart：观测站的主图（纯 SVG，零图表库依赖）。
+ * - variant='trace'：刻度栅格 + 面积描迹（分钟/小时语义）；数据到达时描迹自左向右绘线一次——全站唯一非用户触发的动效
+ * - variant='bars'：日柱（GitHub 日粒度数据）——柱心按等宽槽分布，悬浮高亮当前柱
+ * - hover 十字线/柱高亮吸附最近桶，浮层给出该桶时间与读数
  * - 宽度由 ResizeObserver 实测像素，保证 1px 描迹清晰不模糊；
- *   reduced-motion 下绘线动画被全局 CSS 熄灭（瞬时呈现）
+ *   reduced-motion 下动画被全局 CSS 熄灭（瞬时呈现）
  */
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
@@ -23,6 +24,7 @@ interface Props {
   points: ChartPoint[]
   height?: number
   color?: string
+  variant?: 'trace' | 'bars'
   formatValue: (v: number) => string
   formatTime: (t: number) => string
 }
@@ -37,7 +39,14 @@ function niceMax(max: number): number {
   return 10 * base
 }
 
-export default function PulseChart({ points, height = 300, color = 'var(--amber)', formatValue, formatTime }: Props) {
+export default function PulseChart({
+  points,
+  height = 300,
+  color = 'var(--amber)',
+  variant = 'trace',
+  formatValue,
+  formatTime,
+}: Props) {
   const boxRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [hover, setHover] = useState<number | null>(null)
@@ -58,12 +67,16 @@ export default function PulseChart({ points, height = 300, color = 'var(--amber)
     const innerW = width - PAD.left - PAD.right
     const innerH = height - PAD.top - PAD.bottom
     const top = niceMax(Math.max(...points.map((p) => p.v)))
-    const denom = Math.max(1, points.length - 1)
-    const x = (i: number) => PAD.left + (i / denom) * innerW
+    const n = points.length
+    // trace：桶心铺满左右边；bars：等宽槽居中（首尾柱不裁边）
+    const xTrace = (i: number) => PAD.left + (i / Math.max(1, n - 1)) * innerW
+    const xSlot = (i: number) => PAD.left + ((i + 0.5) / n) * innerW
+    const x = variant === 'bars' ? xSlot : xTrace
+    const barW = Math.max(2, (innerW / n) * 0.6)
     const y = (v: number) => PAD.top + innerH - (v / top) * innerH
-    const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')
+    const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${xTrace(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')
     const baseY = (PAD.top + innerH).toFixed(1)
-    const area = `${line} L${x(points.length - 1).toFixed(1)},${baseY} L${PAD.left},${baseY} Z`
+    const area = `${line} L${xTrace(points.length - 1).toFixed(1)},${baseY} L${PAD.left},${baseY} Z`
     // 等分份数按上界整除性选（4 或 5），保证每条栅格的读数都是整洁整数
     const divisions = top % 4 === 0 ? 4 : 5
     const gridY = Array.from({ length: divisions + 1 }, (_, k) => {
@@ -78,14 +91,17 @@ export default function PulseChart({ points, height = 300, color = 'var(--amber)
       const prevIdx = ticks.length > 0 ? ticks[ticks.length - 1].i : 0
       if (lastIdx - prevIdx >= 3) ticks.push({ p: points[lastIdx], i: lastIdx })
     }
-    return { innerW, innerH, x, y, line, area, gridY, ticks }
-  }, [width, height, points])
+    return { innerW, innerH, x, xSlot, barW, y, line, area, gridY, ticks }
+  }, [width, height, points, variant])
 
   function onMove(e: MouseEvent<HTMLDivElement>) {
     if (!geom) return
     const rect = e.currentTarget.getBoundingClientRect()
     const ratio = (e.clientX - rect.left - PAD.left) / geom.innerW
-    const idx = Math.round(ratio * (points.length - 1))
+    const idx =
+      variant === 'bars'
+        ? Math.floor(ratio * points.length)
+        : Math.round(ratio * (points.length - 1))
     setHover(Math.max(0, Math.min(points.length - 1, idx)))
   }
 
@@ -116,18 +132,40 @@ export default function PulseChart({ points, height = 300, color = 'var(--amber)
             </text>
           ))}
 
-          <path d={geom.area} fill={`url(#${gradientId})`} />
-          {/* pathLength=1 归一化：dash 绘线动画无需测量真实路径长度 */}
-          <path
-            d={geom.line}
-            fill="none"
-            stroke={color}
-            strokeWidth="1.6"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            pathLength={1}
-            className="pulse-trace"
-          />
+          {variant === 'bars' ? (
+            <g className="pulse-bars">
+              {points.map((p, i) => {
+                const h = Math.max(1, PAD.top + geom.innerH - geom.y(p.v))
+                return (
+                  <rect
+                    key={i}
+                    x={geom.xSlot(i) - geom.barW / 2}
+                    y={geom.y(p.v)}
+                    width={geom.barW}
+                    height={h}
+                    rx="1.5"
+                    fill={color}
+                    opacity={hover === i ? 1 : 0.72}
+                  />
+                )
+              })}
+            </g>
+          ) : (
+            <>
+              <path d={geom.area} fill={`url(#${gradientId})`} />
+              {/* pathLength=1 归一化：dash 绘线动画无需测量真实路径长度 */}
+              <path
+                d={geom.line}
+                fill="none"
+                stroke={color}
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                pathLength={1}
+                className="pulse-trace"
+              />
+            </>
+          )}
 
           {hover != null && (
             <g>

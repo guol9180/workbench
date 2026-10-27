@@ -9,6 +9,7 @@ import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
 import com.imhgl.workbench.monitor.collector.GithubCollector;
+import com.imhgl.workbench.monitor.collector.SourceConfigProperties;
 import com.imhgl.workbench.monitor.collector.SourceConfigStore;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
@@ -39,13 +40,16 @@ public class MonitorApiImpl implements MonitorApi {
     private final ApiTokenProperties authProperties;
     private final SourceConfigStore sourceConfigStore;
     private final GithubCollector githubCollector;
+    private final SourceConfigProperties sourceConfigProperties;
 
     public MonitorApiImpl(MonitorService service, ApiTokenProperties authProperties,
-                          SourceConfigStore sourceConfigStore, GithubCollector githubCollector) {
+                          SourceConfigStore sourceConfigStore, GithubCollector githubCollector,
+                          SourceConfigProperties sourceConfigProperties) {
         this.service = service;
         this.authProperties = authProperties;
         this.sourceConfigStore = sourceConfigStore;
         this.githubCollector = githubCollector;
+        this.sourceConfigProperties = sourceConfigProperties;
     }
 
     @Override
@@ -82,8 +86,9 @@ public class MonitorApiImpl implements MonitorApi {
     public MonitorStatus status() {
         StoreStatus storeStatus = service.storeStatus();
         boolean authEnabled = authProperties.token() != null && !authProperties.token().isBlank();
+        // GitHub token 只暴露「配没配」：配置页的引导条据此决定提示还是放行
         return new MonitorStatus(storeStatus.memoryBuckets(), storeStatus.dataFiles(),
-                authEnabled, service.droppedEvents());
+                authEnabled, service.droppedEvents(), sourceConfigProperties.hasToken());
     }
 
     /* ---------------- 数据源配置（M6） ---------------- */

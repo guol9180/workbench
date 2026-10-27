@@ -35,6 +35,12 @@ export function fmtHM(ts: number): string {
   return pad(d.getHours()) + ':' + pad(d.getMinutes())
 }
 
+/** MM-dd：日粒度柱图的 x 轴刻度 */
+export function fmtMD(ts: number): string {
+  const d = new Date(ts)
+  return pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+}
+
 /** HH:mm:ss：状态条时钟 */
 export function fmtClock(ts: number): string {
   const d = new Date(ts)

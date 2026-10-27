@@ -29,6 +29,13 @@
     to { stroke-dashoffset: 0; }
 }
 
+/* 日柱入场：整体淡入一次（trace 的绘线等价物） */
+.pulse-bars rect { animation: pulse-bars-in 0.45s ease-out; }
+
+@keyframes pulse-bars-in {
+    from { opacity: 0; }
+}
+
 .pulse-cross {
     stroke: var(--line-strong);
     stroke-width: 1;

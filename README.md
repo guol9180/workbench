@@ -75,7 +75,7 @@ npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
 | GET | `/api/monitor/overview?source=&range=` | 总量 / 错误率 / avg / p95 / rps（range：5m~7d） |
 | GET | `/api/monitor/series?source=&metric=&range=&step=` | 时间序列（metric：count/avgMs/errCount） |
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=` | 端点排行（by：count/err/avgMs） |
-| GET | `/api/monitor/status` | 监测域自检（桶数 / 文件数 / 认证开关） |
+| GET | `/api/monitor/status` | 监测域自检（桶数 / 文件数 / 认证开关 / GitHub token 配置状态） |
 
 **源配置 · monitor 域（M6，配置页驱动）**：
 

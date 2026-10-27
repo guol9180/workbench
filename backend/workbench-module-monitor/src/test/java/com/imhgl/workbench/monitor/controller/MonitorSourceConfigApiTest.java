@@ -120,7 +120,7 @@ class MonitorSourceConfigApiTest {
 
         @Override
         public MonitorStatus status() {
-            return new MonitorStatus(0, 0, false, 0);
+            return new MonitorStatus(0, 0, false, 0, false);
         }
 
         @Override

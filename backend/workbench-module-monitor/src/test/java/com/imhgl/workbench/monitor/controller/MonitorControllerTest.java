@@ -168,7 +168,7 @@ class MonitorControllerTest {
 
         @Override
         public MonitorStatus status() {
-            return new MonitorStatus(3, 1, false, 0);
+            return new MonitorStatus(3, 1, false, 0, false);
         }
 
         /* ---------------- 数据源配置（M6）：契约测试见 MonitorSourceConfigApiTest ---------------- */

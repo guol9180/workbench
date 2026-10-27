@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { sourcesApi } from './api'
 import type { SourceConfigInput, SourceConfigView, SourceMetric } from './api'
 import { usePolling } from '../monitor/useMonitor'
+import { monitorApi } from '../monitor/api'
 import { fmtClock } from '../../utils/format'
 import { toast } from '../../ui/toast'
 import { showConfirm } from '../../ui/dialog'
@@ -19,6 +20,9 @@ const METRIC_LABELS: Array<{ key: SourceMetric; label: string; hint: string }> =
 
 export default function SourcesView() {
   const configs = usePolling(() => sourcesApi.list(), 'source-configs', { intervalMs: 20_000 })
+  // GitHub token 配置状态：驱动引导条（配没配由服务端判定，这里拿到的只有布尔位）
+  const statusQ = usePolling(() => monitorApi.status(), 'status', { intervalMs: 30_000 })
+  const tokenReady = statusQ.data?.githubTokenConfigured
   const [repo, setRepo] = useState('')
   const [metrics, setMetrics] = useState<SourceMetric[]>(['pages', 'downloads'])
   const [enabled, setEnabled] = useState(true)
@@ -73,6 +77,19 @@ export default function SourcesView() {
         <h1 className="src-title">数据源</h1>
         <span className="src-sub">接入外部数据到统一时序存储——概览页的源列表会随之出现</span>
       </header>
+
+      {statusQ.data && !tokenReady && (
+        <div className="src-token-warn" role="status">
+          <span>
+            尚未配置 GITHUB_TOKEN，采集无法读取 GitHub 数据。生成只读 PAT 后，在启动后端前设置环境变量
+            GITHUB_TOKEN，点「重新检测」即可生效。
+          </span>
+          <button className="src-op" onClick={() => statusQ.reload()}>重新检测</button>
+        </div>
+      )}
+      {statusQ.data && tokenReady && (
+        <div className="src-token-ok">GITHUB_TOKEN 已配置 ✓ 采集就绪</div>
+      )}
 
       <section className="panel src-form">
         <div className="src-form-row">
