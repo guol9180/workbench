@@ -6,10 +6,13 @@
  */
 import { useEffect, useRef } from 'react'
 import { attachEditor, markEditorReady } from './editor'
+import { useTheme } from '../../theme'
 import './editor.css'
 
 export default function VditorEditor({ onInput }: { onInput: () => void }) {
   const elRef = useRef<HTMLDivElement>(null)
+  const theme = useTheme()
+  const vditorRef = useRef<VditorInstance | null>(null)
   const onInputRef = useRef(onInput)
   useEffect(() => {
     onInputRef.current = onInput
@@ -34,11 +37,11 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
       cdn: import.meta.env.BASE_URL + 'vendor/vditor',
       lang: 'zh_CN',
       mode: 'ir',
-      theme: 'dark',
+      theme,
       height: '100%',
       cache: { enable: false },
       placeholder: '选择左侧文档开始编辑，或点击「今日工作」新建日志…',
-      preview: { hljs: { lineNumber: false, style: 'github-dark' } },
+      preview: { hljs: { lineNumber: false, style: theme === 'dark' ? 'github-dark' : 'github' } },
       toolbar: [
         'headings', 'bold', 'italic', 'strike', '|',
         'list', 'ordered-list', 'check', 'quote', 'code', 'inline-code', 'link', 'table', '|',
@@ -51,12 +54,26 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
       },
       after: () => markEditorReady(handle),
     })
+    vditorRef.current = vditor
     attachEditor(handle)
     return () => {
       attachEditor(null)
       vditor.destroy()
     }
+    // 刻意只挂载一次：重建实例会丢编辑器缓冲内容。主题热切换交给下方 setTheme API，
+    // hljs 风格保持初始化值（可接受的次要差异）；重新进入页面时取到新主题。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 热切换优先走实例 API（不丢编辑内容）；vendored 实现差异时静默放弃，重建路径兜底
+  useEffect(() => {
+    const inst = vditorRef.current as unknown as { setTheme?: (t: string) => void } | null
+    try {
+      inst?.setTheme?.(theme)
+    } catch {
+      // vendored setTheme 行为差异可忽略：重建路径已保证最终一致
+    }
+  }, [theme])
 
   return <div ref={elRef} className="docp-editor" />
 }

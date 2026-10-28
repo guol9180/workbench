@@ -27,7 +27,7 @@ export default function AccessView() {
   async function probe(): Promise<'open' | 'locked' | 'offline'> {
     const result = await probeStatus()
     if (result === 'open') {
-      navigate('/monitor', { replace: true })
+      navigate('/home', { replace: true })
     } else {
       setPhase(result)
       if (result === 'locked') setTimeout(() => inputRef.current?.focus(), 50)
@@ -73,7 +73,7 @@ export default function AccessView() {
     const result = await probeStatus()
     setBusy(false)
     if (result === 'open') {
-      navigate('/monitor', { replace: true })
+      navigate('/home', { replace: true })
     } else {
       setToken(null)
       setError('令牌不被接受——核对后端 API_TOKEN 后重试')
@@ -95,7 +95,7 @@ export default function AccessView() {
             <svg className="acc-mark" width="40" height="40" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
               <polyline
                 points="3,7 7.5,17 12,9.5 16.5,17 21,7"
-                stroke="var(--amber)"
+                stroke="var(--accent)"
                 strokeWidth="2.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"

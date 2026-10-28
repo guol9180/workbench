@@ -1,0 +1,171 @@
+/* 工作台首页：统一门面。视觉全部引用语义令牌；域色点示意"同一工作台、不同房间" */
+
+.home {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 24px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.home-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.home-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.home-sub {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.home-kbd {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 1px 6px;
+}
+
+.home-clock {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    color: var(--text-2);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 工具卡片 ---------- */
+
+.home-tools {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.home-tool {
+    text-align: left;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    color: var(--text);
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.home-tool:hover { background: var(--s1); border-color: var(--line-strong); }
+
+.home-tool-top { display: flex; align-items: center; gap: 8px; }
+
+.home-tool-domain {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.home-tool-domain.d-analysis { background: var(--accent); }
+.home-tool-domain.d-docs { background: #b4632e; }
+:root[data-theme='dark'] .home-tool-domain.d-docs { background: #d08a4a; }
+
+.home-tool-name {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.home-tool-arrow {
+    margin-left: auto;
+    color: var(--text-3);
+    transition: color 0.15s, transform 0.15s;
+}
+
+.home-tool:hover .home-tool-arrow { color: var(--accent); transform: translateX(2px); }
+
+.home-tool-desc {
+    font-size: 13px;
+    color: var(--text-2);
+    line-height: 1.5;
+}
+
+/* ---------- 健康摘要 / 最近文档 ---------- */
+
+.home-health, .home-recent { padding: 12px 16px 14px; }
+
+.home-health-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 8px;
+}
+
+.home-health-title {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--text-2);
+}
+
+.home-health-more {
+    font-size: 12px;
+    color: var(--accent);
+}
+
+.home-health-more:hover { color: var(--accent-hi); }
+
+.home-health-rows { display: flex; flex-direction: column; }
+
+.home-health-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 4px;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-2);
+    text-align: left;
+    transition: background 0.12s;
+}
+
+.home-health-row:hover { background: var(--s1); }
+.home-health-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.home-health-num { margin-left: auto; color: var(--text); font-variant-numeric: tabular-nums; }
+.home-health-err { width: 72px; text-align: right; color: var(--text-3); }
+.home-health-err.bad { color: var(--danger); }
+.home-health-seen { width: 64px; text-align: right; color: var(--text-3); font-size: 11px; }
+
+.home-recent-rows { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.home-recent-row {
+    font-size: 13px;
+    color: var(--text-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 14px;
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.home-recent-row:hover { color: var(--accent); border-color: var(--accent-border); }
+
+@media (max-width: 768px) {
+    .home { padding: 16px 14px 24px; }
+    .home-clock { display: none; }
+}

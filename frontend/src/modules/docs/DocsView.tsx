@@ -161,8 +161,8 @@ function DocsWorkspace() {
         <Sidebar />
         <main className="docp-main">
           <VditorEditor onInput={onEditorInput} />
-          <LocalPreview />
         </main>
+        <LocalPreview />
       </div>
 
       {dropActive && (

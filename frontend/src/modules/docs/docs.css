@@ -15,15 +15,16 @@
     align-items: center;
     gap: 10px;
     padding: 0 14px;
-    background: var(--ink-1);
+    background: var(--s0);
     border-bottom: 1px solid var(--line);
 }
 
-.docp-menu { display: none; font-size: 17px; color: var(--text-2); padding: 6px 8px; }
+.docp-menu { font-size: 16px; color: var(--text-2); padding: 6px 8px; }
+.docp-menu:hover { color: var(--text); }
 
 .docp-title {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
 }
@@ -45,13 +46,13 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--amber);
+    background: var(--accent);
 }
 
 .docp-save {
     flex: none;
     font-family: var(--font-mono);
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--text-3);
     white-space: nowrap;
 }
@@ -67,7 +68,7 @@
 
 .docp-btn {
     border: 1px solid var(--line);
-    background: var(--ink-1);
+    background: var(--s0);
     color: var(--text);
     border-radius: var(--r-ctl);
     padding: 6px 12px;
@@ -76,15 +77,15 @@
     transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.docp-btn:hover { background: var(--ink-2); border-color: var(--line-strong); }
+.docp-btn:hover { background: var(--s1); border-color: var(--line-strong); }
 
 .docp-btn.primary {
-    background: var(--amber-dim);
-    border-color: rgba(232, 163, 61, 0.4);
-    color: var(--amber);
+    background: var(--accent-dim);
+    border-color: var(--accent-border);
+    color: var(--accent);
 }
 
-.docp-btn.primary:hover { color: var(--amber-hi); border-color: var(--amber); }
+.docp-btn.primary:hover { color: var(--accent-hi); border-color: var(--accent); }
 
 .docp-file { display: none; }
 
@@ -102,11 +103,16 @@
 .docp-sidebar {
     width: 280px;
     flex: none;
-    background: var(--ink-1);
+    background: var(--s0);
     border-right: 1px solid var(--line);
     display: flex;
     flex-direction: column;
     min-height: 0;
+}
+
+/* 桌面端侧栏可折叠（顶部 ☰ 切换）；窄屏抽屉逻辑在下方媒体查询 */
+@media (min-width: 769px) {
+    .docp:not(.sidebar-open) .docp-sidebar { display: none; }
 }
 
 .docp-search {
@@ -120,7 +126,7 @@
     flex: 1;
     min-width: 0;
     padding: 7px 10px;
-    background: var(--ink-0);
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: var(--r-ctl);
     color: var(--text);
@@ -130,11 +136,11 @@
 }
 
 .docp-search input::placeholder { color: var(--text-3); }
-.docp-search input:focus { border-color: var(--amber); }
+.docp-search input:focus { border-color: var(--accent); }
 
 .docp-mini {
     border: 1px solid var(--line);
-    background: var(--ink-1);
+    background: var(--s0);
     border-radius: var(--r-ctl);
     padding: 4px 10px;
     font-size: 12px;
@@ -188,7 +194,7 @@
     transition: color 0.12s, background 0.12s;
 }
 
-.docp-recent-row:hover { color: var(--text); background: var(--ink-2); }
+.docp-recent-row:hover { color: var(--text); background: var(--s1); }
 
 .docp-tree {
     flex: 1;
@@ -209,9 +215,9 @@
     transition: background 0.12s;
 }
 
-.docp-row:hover { background: var(--ink-2); }
+.docp-row:hover { background: var(--s1); }
 
-.docp-row.active { background: var(--amber-dim); color: var(--amber); }
+.docp-row.active { background: var(--accent-dim); color: var(--accent); }
 
 .docp-caret {
     width: 16px;
@@ -228,7 +234,7 @@
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 13.5px;
+    font-size: 13px;
 }
 
 .docp-ops {
@@ -251,7 +257,7 @@
     color: var(--text-3);
 }
 
-.docp-op:hover { background: var(--ink-3); color: var(--text); }
+.docp-op:hover { background: var(--s2); color: var(--text); }
 .docp-op.danger:hover { color: var(--danger); }
 
 .docp-children { margin-left: 14px; }
@@ -285,11 +291,11 @@
 .docp-hits { flex: 1; overflow-y: auto; padding: 6px; }
 
 .docp-hit { padding: 8px 10px; border-radius: var(--r-ctl); cursor: pointer; transition: background 0.12s; }
-.docp-hit:hover { background: var(--ink-2); }
+.docp-hit:hover { background: var(--s1); }
 
 .docp-hit-path {
     font-family: var(--font-mono);
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text);
     margin-bottom: 3px;
     word-break: break-all;
@@ -298,9 +304,9 @@
 .docp-hit-tag {
     font-style: normal;
     margin-left: 6px;
-    font-size: 10px;
-    color: var(--ice);
-    border: 1px solid rgba(127, 180, 232, 0.35);
+    font-size: 11px;
+    color: var(--chart-2);
+    border: 1px solid var(--chart-2-border);
     border-radius: 3px;
     padding: 1px 5px;
 }
@@ -324,16 +330,28 @@
     min-width: 0;
     min-height: 0;
     position: relative;
-    background: var(--ink-1);
+    background: var(--s0);
 }
 
 .docp-lp {
     position: absolute;
     inset: 0;
-    background: var(--ink-0);
+    background: var(--bg);
     display: flex;
     flex-direction: column;
     z-index: 15;
+}
+
+/* 宽屏：本地预览从覆盖层升级为右侧阅读栏，编辑与预览并排 */
+@media (min-width: 1024px) {
+    .docp-lp {
+        position: relative;
+        inset: auto;
+        z-index: auto;
+        flex: none;
+        width: clamp(320px, 38vw, 520px);
+        border-left: 1px solid var(--line);
+    }
 }
 
 .docp-lp-bar {
@@ -342,7 +360,7 @@
     align-items: center;
     gap: 8px;
     padding: 8px 14px;
-    background: var(--ink-1);
+    background: var(--s0);
     border-bottom: 1px solid var(--line);
     flex-wrap: wrap;
 }
@@ -355,7 +373,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 24px max(16px, calc((100% - 820px) / 2)) 60px;
-    background: var(--ink-1);
+    background: var(--s0);
     margin: 14px;
     border-radius: 8px;
     border: 1px solid var(--line);
@@ -366,7 +384,7 @@
 .docp-drop {
     position: fixed;
     inset: 0;
-    background: rgba(10, 14, 24, 0.72);
+    background: var(--overlay);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -374,13 +392,13 @@
 }
 
 .docp-drop-box {
-    background: var(--ink-1);
-    border: 1px solid rgba(232, 163, 61, 0.5);
+    background: var(--s0);
+    border: 1px solid var(--accent-border);
     border-radius: 8px;
     padding: 26px 40px;
     font-size: 16px;
     font-weight: 600;
-    color: var(--amber);
+    color: var(--accent);
 }
 
 /* ---------- 移动端 ---------- */
@@ -413,7 +431,7 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: rgba(5, 8, 15, 0.5);
+        background: var(--overlay);
         z-index: 25;
         opacity: 0;
         pointer-events: none;

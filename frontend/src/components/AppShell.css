@@ -1,86 +1,144 @@
-/* 应用骨架：图标轨 + 主区 + 底部状态条（StatusBar 的样式也归骨架所有） */
+/* 应用骨架：分组文字侧栏（可折叠）+ 主区（域主题作用域）+ 底部状态条 */
 
 .shell {
     height: 100%;
     display: grid;
-    grid-template-columns: var(--rail-w) 1fr;
+    grid-template-columns: var(--sidebar-w) 1fr;
     grid-template-rows: 1fr var(--strip-h);
     grid-template-areas:
-        "rail main"
-        "rail strip";
+        "side main"
+        "side strip";
 }
 
-/* ---------- 图标轨 ---------- */
+.shell.collapsed { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
 
-.rail {
-    grid-area: rail;
-    background: var(--ink-1);
+/* ---------- 侧栏 ---------- */
+
+.sidebar {
+    grid-area: side;
+    background: var(--s0);
     border-right: 1px solid var(--line);
     display: flex;
     flex-direction: column;
+    padding: 12px 10px;
+    gap: 4px;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.side-brand {
+    display: flex;
     align-items: center;
-    padding: 12px 0;
-    gap: 6px;
+    gap: 9px;
+    padding: 4px 8px 16px;
+    white-space: nowrap;
 }
 
-.rail-brand {
-    display: grid;
-    place-items: center;
-    margin-bottom: 16px;
+.side-wordmark {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
 }
 
-.rail-nav { display: flex; flex-direction: column; gap: 4px; }
+.side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; overflow-y: auto; }
 
-.rail-btn {
-    position: relative;
-    width: 42px;
-    height: 42px;
-    border-radius: var(--r-ctl);
-    display: grid;
-    place-items: center;
+.side-group { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
+
+.side-group-name {
+    font-size: 11px;
     color: var(--text-3);
+    letter-spacing: 0.08em;
+    padding: 2px 10px 4px;
+    white-space: nowrap;
+}
+
+.side-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 36px;
+    padding: 0 10px;
+    border-radius: var(--r-ctl);
+    color: var(--text-2);
+    white-space: nowrap;
     transition: color 0.15s, background 0.15s;
 }
 
-.rail-btn:hover { color: var(--text-2); background: var(--ink-2); }
+.side-item:hover { color: var(--text); background: var(--s1); }
+.side-item.active { color: var(--accent); background: var(--accent-dim); }
 
-.rail-btn.active { color: var(--amber); background: var(--amber-dim); }
-
-/* 当前模块指示：贴轨缘的琥珀短刻线 */
-.rail-btn.active::before {
+/* 当前项贴缘刻线：与品牌描迹同一笔意 */
+.side-item.active::before {
     content: "";
     position: absolute;
-    left: -11px;
-    top: 10px;
-    bottom: 10px;
+    left: -10px;
+    top: 8px;
+    bottom: 8px;
     width: 2px;
-    background: var(--amber);
+    background: var(--accent);
     border-radius: 1px;
 }
 
-.rail-foot { margin-top: auto; }
+.side-item-label { font-size: 13px; }
 
-/* ---------- 主区 ---------- */
+/* 域色点：同一工作台、不同房间的暗示（分析青 / 文档赭棕） */
+.side-item-domain {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-left: auto;
+    opacity: 0.85;
+}
+
+.side-item-domain.d-analysis { background: var(--accent); }
+.side-item-domain.d-docs { background: #b4632e; }
+:root[data-theme='dark'] .side-item-domain.d-docs { background: #d08a4a; }
+
+.side-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+}
+
+.side-foot .side-item { width: 100%; }
+
+/* 折叠态：只留图标，字标/分组名/域点全部退场 */
+.collapsed .side-wordmark,
+.collapsed .side-group-name,
+.collapsed .side-item-label,
+.collapsed .side-item-domain { display: none; }
+
+.collapsed .sidebar { padding: 12px 8px; }
+.collapsed .side-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+.collapsed .side-item { justify-content: center; padding: 0; }
+.collapsed .side-item.active::before { left: -8px; }
+
+/* ---------- 主区与状态条 ---------- */
 
 .shell-main {
     grid-area: main;
     min-width: 0;
     min-height: 0;
     overflow: auto;
+    background: var(--bg);
+    transition: background 0.15s;
 }
 
-/* ---------- 底部遥测状态条 ---------- */
-
+/* 域主题由 tokens.css 的 [data-domain] 块接管，这里只负责把底色铺满 */
 .strip {
     grid-area: strip;
     display: flex;
     align-items: center;
     gap: 16px;
     padding: 0 14px;
-    background: var(--ink-1);
+    background: var(--s0);
     border-top: 1px solid var(--line);
     font-family: var(--font-mono);
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--text-3);
     white-space: nowrap;
     overflow: hidden;
@@ -98,7 +156,7 @@
     height: 6px;
     border-radius: 50%;
     background: var(--ok);
-    box-shadow: 0 0 6px rgba(78, 203, 143, 0.8);
+    box-shadow: 0 0 6px var(--ok-glow);
     animation: strip-breath 2.4s ease-in-out infinite;
 }
 
@@ -109,20 +167,21 @@
 }
 
 .strip-live.is-offline { color: var(--text-3); }
-
-.strip-warn {
-    font-style: normal;
-    color: var(--amber);
-}
+.strip-warn { font-style: normal; color: var(--warn); }
 
 @keyframes strip-breath {
     50% { opacity: 0.45; }
 }
 
 .strip-mid { flex: 1; text-align: center; }
-
 .strip-clock { color: var(--text-2); }
 
 @media (max-width: 768px) {
+    .shell, .shell.collapsed { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
+    .side-wordmark, .side-group-name, .side-item-label, .side-item-domain { display: none; }
     .strip-mid { display: none; }
+    .sidebar { padding: 12px 8px; }
+    .side-brand { justify-content: center; padding-left: 0; padding-right: 0; }
+    .side-item { justify-content: center; padding: 0; }
+    .side-item.active::before { left: -8px; }
 }

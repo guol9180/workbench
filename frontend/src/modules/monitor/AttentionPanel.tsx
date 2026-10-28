@@ -7,6 +7,7 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { fmtRate } from '../../utils/format'
+import { GhostButton, StatusDot } from '../../components/ui/ui'
 import type { OverviewData, RangeKey } from './api'
 import type { SourceConfigView } from '../sources/api'
 
@@ -48,11 +49,9 @@ export default function AttentionPanel({ configs, overview, source, range, onSor
     <div className="mon-attention" role="status">
       {shown.map((it) => (
         <div key={it.key} className="mon-attention-row">
-          <i className="mon-attention-dot" aria-hidden="true" />
+          <StatusDot state="warn" />
           <span className="mon-attention-text">{it.text}</span>
-          <button className="mon-attention-btn" onClick={it.onAction}>
-            {it.actionLabel}
-          </button>
+          <GhostButton onClick={it.onAction}>{it.actionLabel}</GhostButton>
         </div>
       ))}
     </div>

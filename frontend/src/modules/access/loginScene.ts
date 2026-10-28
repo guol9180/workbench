@@ -5,8 +5,8 @@
  * - prefers-reduced-motion 只画静态一帧；document.hidden 暂停 RAF；返回清理函数，卸载时调用
  */
 
-// 观测站色板：琥珀为主、冰蓝点缀，与全站强调色一致
-const COLORS = ['#e8a33d', '#f6bc5f', '#7fb4e8']
+// 分析域色板：青为主、冰蓝点缀，与全站强调色一致
+const COLORS = ['#3ec9c4', '#6fdedb', '#7fb4e8']
 const PARALLAX = 14 // 鼠标视差最大位移(px，乘以景深 z)
 
 interface Particle {

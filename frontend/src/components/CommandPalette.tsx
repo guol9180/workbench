@@ -19,6 +19,7 @@ interface Item {
 }
 
 const PAGES: Array<{ label: string; sub: string; path: string }> = [
+  { label: '打开首页', sub: '页面', path: '/home' },
   { label: '打开概览', sub: '页面', path: '/monitor' },
   { label: '打开文档', sub: '页面', path: '/docs' },
   { label: '打开数据源', sub: '页面', path: '/sources' },

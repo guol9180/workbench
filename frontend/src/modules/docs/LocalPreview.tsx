@@ -1,6 +1,7 @@
 /** 本地文件预览：浏览器内渲染（Vditor.preview），不上传 */
 import { useEffect, useRef } from 'react'
 import { useDocs } from './useDocs'
+import { currentTheme } from '../../theme'
 
 export default function LocalPreview() {
   const { state, actions } = useDocs()
@@ -12,7 +13,7 @@ export default function LocalPreview() {
     window.Vditor.preview(contentRef.current, file.content, {
       cdn: import.meta.env.BASE_URL + 'vendor/vditor',
       lang: 'zh_CN',
-      hljs: { lineNumber: false, style: 'github-dark' },
+      hljs: { lineNumber: false, style: currentTheme() === 'dark' ? 'github-dark' : 'github' },
     })
   }, [file])
 

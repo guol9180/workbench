@@ -11,7 +11,7 @@
 - **存储**：纯文件系统（文档即文件；监测时序数据为零依赖 JSONL 聚合存储），**无数据库、无缓存、无对象存储**
 - **构建**：Maven 多模块（common / framework / infrastructure / module-docs / module-monitor / server 六模块）
 - **认证**：轻量 Token（`X-API-Token` 请求头，配置式，空 = 关闭）
-- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，「观测站」暗色设计语言：蓝墨底 + 琥珀强调 + mono 读数；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
+- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，分域主题设计系统：明暗双主题可切换，分析域石墨+青 / 文档域暖纸感，语义令牌唯一事实源 + 共享 UI 原语；工作台首页 + 分组可折叠侧栏；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
 
 ## 仓库结构
 
@@ -24,7 +24,7 @@ workbench/
 │   ├── workbench-module-docs/    # 工具：在线文档（api 层 + DocPath 值对象 + 搜索服务）
 │   ├── workbench-module-monitor/ # 流量监测域：自监测 + 上报枢纽 + 查询（TimeRange 值对象）
 │   └── workbench-server/         # 聚合启动（main + application.yml，禁止业务）
-├── frontend/                     # React 19 + TS「观测站」前端：概览看板 + 在线文档 + 令牌接入
+├── frontend/                     # React 19 + TS 前端：工作台首页 + 概览看板 + 在线文档 + 数据源 + 令牌接入
 ├── AGENTS.md / DEVELOP_PLAN.md / README.md
 └── docs/superpowers/plans/       # 重构实施计划（2026-10-15-backend-refactor-docs-only.md）
 ```

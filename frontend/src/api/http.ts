@@ -53,7 +53,13 @@ export async function api<T = unknown>(url: string, options: RequestInit = {}): 
     location.hash = '#/login'
     throw new ApiError('未认证：请输入接入令牌')
   }
-  const body = (await res.json()) as { message: string; code: number; data: T }
+  // 非 JSON 响应（离线代理错误页/空响应）不能把解析异常原文抛给用户
+  let body: { message: string; code: number; data: T }
+  try {
+    body = (await res.json()) as { message: string; code: number; data: T }
+  } catch {
+    throw new ApiError('后端无响应或返回异常——请确认 workbench-server 已启动')
+  }
   if (body.code !== 0) throw new ApiError(body.message || '操作失败')
   return body.data
 }

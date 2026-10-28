@@ -1,39 +1,149 @@
-/* 观测站设计令牌：唯一事实源。所有视图从这里取色/字/距，禁止散落硬编码色值。 */
-:root {
-    /* 表面明度阶：层次靠明度差与发丝线，不用投影堆 */
-    --ink-0: #0a0e18;
-    --ink-1: #101624;
-    --ink-2: #18202f;
-    --ink-3: #202a3e;
+/*
+ * 设计令牌：唯一事实源。三层结构：
+ * 1. 全局中性层（data-theme='light'|'dark'）：背景/表面/文字/线条/语义状态色
+ * 2. 域强调层（data-domain='analysis'|'docs'）：accent / warn / 图表数据色随域切换
+ * 3. 组件只允许引用这里的语义变量，禁止散落硬编码色值与 rgba(alpha) 变体
+ *
+ * 域只换"房间"的气质：main 区由 AppShell 挂 data-domain，侧栏与状态条保持中性骨架。
+ */
 
-    /* 发丝线：比表面深半档的蓝线 */
-    --line: #1e2839;
-    --line-strong: #2a3650;
+/* ---------- 全局中性层 · 暗色（默认） ---------- */
+:root[data-theme='dark'] {
+    --bg: #0e1214; /* 页面底：石墨 */
+    --s0: #151b1e; /* 面板 / 侧栏 / 工具条 */
+    --s1: #1d2428; /* 悬浮 / 次级表面 */
+    --s2: #263036; /* 深表面 / 滚动条拇指 */
 
-    /* 三级文字：主 / 次 / 弱 */
-    --text: #e6ebf4;
-    --text-2: #93a0b8;
-    --text-3: #5c6a85;
+    --text: #e6ecf0;
+    --text-2: #9aa8b2;
+    --text-3: #74828d; /* 对 s0 ≥ 4.5:1，小字标签达标 WCAG AA */
 
-    /* 主强调：仪表琥珀（品牌 / 当前态 / 主描迹）——刻意避开荧光绿与默认蓝 */
-    --amber: #e8a33d;
-    --amber-hi: #f6bc5f;
-    --amber-dim: rgba(232, 163, 61, 0.13);
+    --line: #232d33;
+    --line-strong: #33414a;
 
-    /* 第二数据色与语义状态色 */
-    --ice: #7fb4e8;
     --ok: #4ecb8f;
+    --ok-glow: rgba(78, 203, 143, 0.7);
     --danger: #e86054;
+    --danger-dim: rgba(232, 96, 84, 0.12);
+    --danger-border: rgba(232, 96, 84, 0.4);
+    --danger-glow: rgba(232, 96, 84, 0.7);
+    --overlay: rgba(8, 11, 12, 0.72);
 
-    /* 字体：display 承担铭牌感，mono 承担一切读数，正文走系统 CJK（不加载 CJK webfont） */
-    --font-display: "Chakra Petch", "PingFang SC", "Microsoft YaHei", sans-serif;
-    --font-mono: "Overpass Mono", "JetBrains Mono", Consolas, monospace;
-    --font-body: "PingFang SC", "MiSans", "HarmonyOS Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+    /* 分析域默认强调（暗色）：青。warn 是专职警示琥珀，与品牌色相分离 */
+    --accent: #3ec9c4;
+    --accent-hi: #6fdedb;
+    --accent-contrast: #06211f; /* 实心主按钮的文字色：亮青上用深字 */
+    --accent-dim: rgba(62, 201, 196, 0.12);
+    --accent-border: rgba(62, 201, 196, 0.4);
+    --accent-faint: rgba(62, 201, 196, 0.2);
+    --warn: #d9a13d;
+    --warn-dim: rgba(217, 161, 61, 0.12);
+    --chart-2: #7fb4e8;
+    --chart-2-border: rgba(127, 180, 232, 0.35);
+}
 
-    /* 骨架尺寸 */
-    --rail-w: 64px;
+/* ---------- 全局中性层 · 浅色 ---------- */
+:root[data-theme='light'] {
+    --bg: #f4f6f7;
+    --s0: #ffffff;
+    --s1: #eef1f2;
+    --s2: #e2e7e9;
+
+    --text: #1c262c;
+    --text-2: #4d5c66;
+    --text-3: #5f6e78; /* 对白表面 ≥ 4.5:1 */
+
+    --line: #dde4e7;
+    --line-strong: #c3ced3;
+
+    --ok: #1e7f4f;
+    --ok-glow: rgba(30, 127, 79, 0.45);
+    --danger: #c2402f;
+    --danger-dim: rgba(194, 64, 47, 0.1);
+    --danger-border: rgba(194, 64, 47, 0.4);
+    --danger-glow: rgba(194, 64, 47, 0.45);
+    --overlay: rgba(28, 38, 44, 0.45);
+
+    /* 分析域默认强调（浅色）：深青（对白底 ≥ 4.5:1） */
+    --accent: #0e7f7a;
+    --accent-hi: #0a6662;
+    --accent-contrast: #ffffff;
+    --accent-dim: rgba(14, 127, 122, 0.1);
+    --accent-border: rgba(14, 127, 122, 0.35);
+    --accent-faint: rgba(14, 127, 122, 0.16);
+    --warn: #8a6116;
+    --warn-dim: rgba(138, 97, 22, 0.1);
+    --chart-2: #2f6db3;
+    --chart-2-border: rgba(47, 109, 179, 0.35);
+}
+
+/* ---------- 域强调层 · 文档域（暖纸感，明暗各一套） ---------- */
+[data-domain='docs'] {
+    --r-ctl: 8px; /* 纸感用更软的圆角 */
+    /* display 换衬线：文档域的标题气质从"仪表"切到"书卷" */
+    --font-display: Georgia, 'Times New Roman', 'Songti SC', 'SimSun', serif;
+}
+
+:root[data-theme='light'] [data-domain='docs'] {
+    --bg: #faf6ef; /* 米白纸 */
+    --s0: #fffdf8;
+    --s1: #f3ede1;
+    --s2: #eae2d2;
+    --text: #2f2a24;
+    --text-2: #5d554a;
+    --text-3: #6e6557;
+    --line: #e7dfd0;
+    --line-strong: #d3c7b0;
+    --ok: #3e7d4e;
+    --danger: #b3402e;
+    --danger-dim: rgba(179, 64, 46, 0.1);
+    --overlay: rgba(47, 42, 36, 0.4);
+    --accent: #b4632e; /* 赭棕 */
+    --accent-hi: #97511f;
+    --accent-contrast: #fff8f0;
+    --accent-dim: rgba(180, 99, 46, 0.1);
+    --accent-border: rgba(180, 99, 46, 0.35);
+    --accent-faint: rgba(180, 99, 46, 0.16);
+    --warn: #8a6116;
+    --warn-dim: rgba(138, 97, 22, 0.1);
+    --chart-2: #7a6a4f;
+    --chart-2-border: rgba(122, 106, 79, 0.35);
+}
+
+:root[data-theme='dark'] [data-domain='docs'] {
+    --bg: #1d1813; /* 牛皮纸 */
+    --s0: #262019;
+    --s1: #302820;
+    --s2: #3a3128;
+    --text: #e8e0d2;
+    --text-2: #b3a893;
+    --text-3: #8d8271;
+    --line: #332b22;
+    --line-strong: #4a3e30;
+    --ok: #6fbe8a;
+    --danger: #e07b6e;
+    --danger-dim: rgba(224, 123, 110, 0.12);
+    --overlay: rgba(18, 14, 10, 0.72);
+    --accent: #d08a4a; /* 琥珀棕 */
+    --accent-hi: #e2a66a;
+    --accent-contrast: #241505;
+    --accent-dim: rgba(208, 138, 74, 0.12);
+    --accent-border: rgba(208, 138, 74, 0.4);
+    --accent-faint: rgba(208, 138, 74, 0.2);
+    --warn: #d9a13d;
+    --warn-dim: rgba(217, 161, 61, 0.12);
+    --chart-2: #a89a7e;
+    --chart-2-border: rgba(168, 154, 126, 0.35);
+}
+
+/* ---------- 字体与骨架尺寸（域可覆盖 display / 圆角） ---------- */
+:root {
+    --font-display: 'Chakra Petch', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'Overpass Mono', 'JetBrains Mono', Consolas, monospace;
+    --font-body: 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+
+    --sidebar-w: 208px;
+    --sidebar-w-collapsed: 56px;
     --strip-h: 30px;
-
-    /* 圆角只给交互件，表面保持锐利 */
     --r-ctl: 6px;
 }

@@ -4,7 +4,7 @@
     height: 100%;
     position: relative;
     overflow: hidden;
-    background: var(--ink-0);
+    background: var(--bg);
 }
 
 /* 极光底色：两团低透明度的琥珀/冰蓝，慢漂移——粒子场的氛围层 */
@@ -25,7 +25,7 @@
     height: 46vw;
     left: -8vw;
     top: -14vw;
-    background: rgba(232, 163, 61, 0.16);
+    background: var(--accent-dim);
     animation: acc-drift-a 26s ease-in-out infinite alternate;
 }
 
@@ -34,7 +34,7 @@
     height: 40vw;
     right: -10vw;
     bottom: -12vw;
-    background: rgba(127, 180, 232, 0.12);
+    background: var(--accent-dim);
     animation: acc-drift-b 32s ease-in-out infinite alternate;
 }
 
@@ -71,7 +71,7 @@
     width: min(360px, 88vw);
     padding: 34px 30px 24px;
     text-align: center;
-    background: rgba(16, 22, 36, 0.78);
+    background: color-mix(in srgb, var(--s0) 82%, transparent);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--line-strong);
@@ -90,7 +90,7 @@
 
 .acc-sub {
     margin: 6px 0 22px;
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--text-3);
 }
 
@@ -103,7 +103,7 @@
 .acc-input {
     width: 100%;
     padding: 11px 13px;
-    background: var(--ink-0);
+    background: var(--bg);
     border: 1px solid var(--line);
     border-radius: var(--r-ctl);
     color: var(--text);
@@ -113,30 +113,30 @@
 }
 
 .acc-input::placeholder { color: var(--text-3); }
-.acc-input:focus { border-color: var(--amber); }
+.acc-input:focus { border-color: var(--accent); }
 
 .acc-error {
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--danger);
     text-align: left;
 }
 
 .acc-btn {
     padding: 10px 0;
-    background: var(--amber-dim);
-    border: 1px solid rgba(232, 163, 61, 0.4);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
     border-radius: var(--r-ctl);
-    color: var(--amber);
+    color: var(--accent);
     font-size: 14px;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.acc-btn:hover { color: var(--amber-hi); border-color: var(--amber); }
+.acc-btn:hover { color: var(--accent-hi); border-color: var(--accent); }
 .acc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .acc-hint {
     margin-top: 18px;
-    font-size: 11.5px;
+    font-size: 11px;
     color: var(--text-3);
 }
 

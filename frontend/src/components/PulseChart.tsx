@@ -42,7 +42,7 @@ function niceMax(max: number): number {
 export default function PulseChart({
   points,
   height = 300,
-  color = 'var(--amber)',
+  color = 'var(--accent)',
   variant = 'trace',
   formatValue,
   formatTime,
@@ -170,7 +170,7 @@ export default function PulseChart({
           {hover != null && (
             <g>
               <line x1={geom.x(hover)} x2={geom.x(hover)} y1={PAD.top} y2={PAD.top + geom.innerH} className="pulse-cross" />
-              <circle cx={geom.x(hover)} cy={geom.y(points[hover].v)} r="3.5" fill={color} stroke="var(--ink-1)" strokeWidth="1.5" />
+              <circle cx={geom.x(hover)} cy={geom.y(points[hover].v)} r="3.5" fill={color} stroke="var(--s0)" strokeWidth="1.5" />
             </g>
           )}
         </svg>

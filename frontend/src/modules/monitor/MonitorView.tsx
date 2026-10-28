@@ -13,6 +13,7 @@ import { usePolling } from './useMonitor'
 import SourceCards from './SourceCards'
 import FirstRunGuide from './FirstRunGuide'
 import AttentionPanel from './AttentionPanel'
+import { Banner, Chip, Segmented } from '../../components/ui/ui'
 import { sourcesApi } from '../sources/api'
 import './monitor.css'
 
@@ -20,8 +21,8 @@ const RANGES: RangeKey[] = ['5m', '1h', '6h', '24h', '7d']
 
 /** 主图指标档：描迹颜色与读数格式随指标切换 */
 const METRICS: Array<{ key: MetricKey; label: string; color: string; format: (v: number) => string }> = [
-  { key: 'count', label: '请求数', color: 'var(--amber)', format: fmtInt },
-  { key: 'avgMs', label: '平均延迟', color: 'var(--ice)', format: fmtMs },
+  { key: 'count', label: '请求数', color: 'var(--accent)', format: fmtInt },
+  { key: 'avgMs', label: '平均延迟', color: 'var(--chart-2)', format: fmtMs },
   { key: 'errCount', label: '错误数', color: 'var(--danger)', format: fmtInt },
 ]
 
@@ -170,44 +171,29 @@ export default function MonitorView() {
     <div className="mon">
       <header className="mon-head">
         <h1 className="mon-title">概览</h1>
-        <div className="mon-ranges" role="group" aria-label="时间区间">
-          {RANGES.map((r) => (
-            <button key={r} className={'mon-range' + (r === range ? ' active' : '')} onClick={() => setRange(r)}>
-              {r}
-            </button>
-          ))}
-        </div>
+        <Segmented options={RANGES.map((r) => ({ value: r, label: r }))} value={range} onChange={setRange} ariaLabel="时间区间" />
       </header>
 
       <div className="mon-sources">
         <span className="mon-sources-label">源</span>
         {sources.map((s) => (
-          <button
+          <Chip
             key={s.name}
-            className={'mon-chip' + (s.name === source ? ' active' : '')}
+            active={s.name === source}
+            dotOn={s.name === source}
             title={'最后活跃 ' + fmtHM(minutesToMs(s.lastSeenMinute))}
             onClick={() => setSource(s.name)}
           >
-            <i className={'mon-chip-dot' + (s.name === source ? ' on' : '')} aria-hidden="true" />
             {s.name}
-          </button>
+          </Chip>
         ))}
         {updatedAt && <span className="mon-updated">更新于 {fmtClock(updatedAt)} · 每 15s 刷新</span>}
       </div>
 
-      <AttentionPanel
-        configs={configsQ.data ?? []}
-        overview={overview}
-        source={source}
-        range={range}
-        onSortByErr={() => setSortBy('err')}
-      />
-
       {firstError && (
-        <div className="mon-banner" role="alert">
-          <span>{friendly(firstError)}</span>
-          <button className="mon-banner-btn" onClick={retryAll}>重试</button>
-        </div>
+        <Banner tone="err" actionLabel="重试" onAction={retryAll}>
+          {friendly(firstError)}
+        </Banner>
       )}
 
       {sources.length === 0 && !sourcesQ.loading && !sourcesQ.error ? (
@@ -216,95 +202,106 @@ export default function MonitorView() {
         <>
           <SourceCards sources={sources.map((s) => s.name)} active={source} onPick={setSource} />
 
-          <section className="mon-hero panel">
-            <header className="mon-hero-head">
-              <span className="mon-hero-title">{isGithub ? '活动柱图（日）' : '流量描迹'}</span>
-              {!isGithub && (
-                <div className="mon-metrics" role="group" aria-label="描迹指标">
-                  {METRICS.map((m) => (
-                    <button
-                      key={m.key}
-                      className={'mon-metric' + (m.key === metric ? ' active' : '')}
-                      style={m.key === metric ? { color: m.color } : undefined}
-                      onClick={() => setMetric(m.key)}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </header>
-            <PulseChart
-              key={selKey + '|' + effectiveMetric}
-              points={points}
-              variant={isGithub ? 'bars' : 'trace'}
-              color={activeMetric.color}
-              formatValue={activeMetric.format}
-              formatTime={isGithub ? fmtMD : fmtHM}
-            />
-          </section>
+          <AttentionPanel
+            configs={configsQ.data ?? []}
+            overview={overview}
+            source={source}
+            range={range}
+            onSortByErr={() => setSortBy('err')}
+          />
 
-          {isGithub ? (
-            <section className="mon-readouts">
-              <Readout num={overview ? fmtInt(overview.count) : '—'} label="总活动（7d）" delta={countDelta} />
-              <Readout num={fmtInt(viewsCount)} label="Pages 浏览量" />
-              <Readout num={fmtInt(downloadsCount)} label="下载增量" />
-              <Readout num={activeDays + ' 天'} label="有数据天数（近 7 天）" />
-            </section>
-          ) : (
-            <section className="mon-readouts">
-              <Readout num={overview ? fmtInt(overview.count) : '—'} label="请求数" delta={countDelta} />
-              <Readout
-                num={overview ? fmtRate(overview.errRate) : '—'}
-                label="错误率"
-                delta={errDelta}
-                numStyle={overview && overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}
-              />
-              <Readout num={overview ? fmtMs(overview.avgMs) : '—'} label="平均延迟" delta={avgDelta} />
-              <Readout num={overview ? fmtMs(overview.p95Ms) : '—'} label="P95 延迟" />
-            </section>
-          )}
-        </>
-      )}
+          <div className="mon-body">
+            <div className="mon-col-main">
+              <section className="mon-hero panel">
+                <header className="mon-hero-head">
+                  <span className="mon-hero-title">{isGithub ? '活动柱图（日）' : '流量描迹'}</span>
+                  {!isGithub && (
+                    <Segmented
+                      options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
+                      value={metric}
+                      onChange={setMetric}
+                      mono={false}
+                      ariaLabel="描迹指标"
+                      itemStyle={(v, active) => {
+                        const m = METRICS.find((x) => x.key === v)
+                        return active && m ? { color: m.color } : undefined
+                      }}
+                    />
+                  )}
+                </header>
+                <PulseChart
+                  key={selKey + '|' + effectiveMetric}
+                  points={points}
+                  variant={isGithub ? 'bars' : 'trace'}
+                  color={activeMetric.color}
+                  formatValue={activeMetric.format}
+                  formatTime={isGithub ? fmtMD : fmtHM}
+                />
 
-      {endpoints.length > 0 && (
-        <section className="mon-ledger panel">
-          <header className="mon-ledger-head">
-            <span className="mon-ledger-title">端点遥测 · 前 10</span>
-            <div className="mon-sorts">
-              {SORTS.map((s) => (
-                <button key={s.key} className={'mon-sort' + (s.key === sortBy ? ' active' : '')} onClick={() => setSortBy(s.key)}>
-                  {s.label}
-                </button>
-              ))}
+                {isGithub ? (
+                  <section className="mon-readouts">
+                    <Readout num={overview ? fmtInt(overview.count) : '—'} label="总活动（7d）" delta={countDelta} />
+                    <Readout num={fmtInt(viewsCount)} label="Pages 浏览量" />
+                    <Readout num={fmtInt(downloadsCount)} label="下载增量" />
+                    <Readout num={activeDays + ' 天'} label="有数据天数（近 7 天）" />
+                  </section>
+                ) : (
+                  <section className="mon-readouts">
+                    <Readout num={overview ? fmtInt(overview.count) : '—'} label="请求数" delta={countDelta} />
+                    <Readout
+                      num={overview ? fmtRate(overview.errRate) : '—'}
+                      label="错误率"
+                      delta={errDelta}
+                      numStyle={overview && overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}
+                    />
+                    <Readout num={overview ? fmtMs(overview.avgMs) : '—'} label="平均延迟" delta={avgDelta} />
+                    <Readout num={overview ? fmtMs(overview.p95Ms) : '—'} label="P95 延迟" />
+                  </section>
+                )}
+              </section>
             </div>
-          </header>
-          <table className="mon-table">
-            <thead>
-              <tr>
-                <th>端点</th>
-                <th className="num">请求</th>
-                <th className="num">错误</th>
-                <th className="num">均延</th>
-                <th className="num">P95</th>
-              </tr>
-            </thead>
-            <tbody>
-              {endpoints.map((e) => (
-                <tr key={e.endpoint}>
-                  <td className="mon-ep">{e.endpoint}</td>
-                  <td className="num mon-count-cell">
-                    <span className="mon-count" style={{ width: (e.count / maxCount) * 100 + '%' }} aria-hidden="true" />
-                    <span className="mon-count-n">{fmtInt(e.count)}</span>
-                  </td>
-                  <td className={'num' + (e.errCount > 0 ? ' mon-err' : ' mon-zero')}>{e.errCount > 0 ? fmtInt(e.errCount) : '—'}</td>
-                  <td className="num">{fmtMs(e.avgMs)}</td>
-                  <td className="num mon-zero">{fmtMs(e.p95Ms)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+
+            {endpoints.length > 0 && (
+              <section className="mon-ledger panel">
+                <header className="mon-ledger-head">
+                  <span className="mon-ledger-title">端点遥测 · 前 10</span>
+                  <Segmented
+                    options={SORTS.map((s) => ({ value: s.key, label: s.label }))}
+                    value={sortBy}
+                    onChange={setSortBy}
+                    mono={false}
+                    ariaLabel="排序"
+                  />
+                </header>
+                <table className="mon-table">
+                  <thead>
+                    <tr>
+                      <th>端点</th>
+                      <th className="num">请求</th>
+                      <th className="num">错误</th>
+                      <th className="num">均延</th>
+                      <th className="num">P95</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {endpoints.map((e) => (
+                      <tr key={e.endpoint}>
+                        <td className="mon-ep">{e.endpoint}</td>
+                        <td className="num mon-count-cell">
+                          <span className="mon-count" style={{ width: (e.count / maxCount) * 100 + '%' }} aria-hidden="true" />
+                          <span className="mon-count-n">{fmtInt(e.count)}</span>
+                        </td>
+                        <td className={'num' + (e.errCount > 0 ? ' mon-err' : ' mon-zero')}>{e.errCount > 0 ? fmtInt(e.errCount) : '—'}</td>
+                        <td className="num">{fmtMs(e.avgMs)}</td>
+                        <td className="num mon-zero">{fmtMs(e.p95Ms)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            )}
+          </div>
+        </>
       )}
     </div>
   )

@@ -250,13 +250,20 @@ com.imhgl.workbench.<x>/
 
 React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端（历史见 git 主干）。与后端同守「架构清晰、代码质量优先」，本节是前端的对应规范。
 
-1. **目录结构（按域分模块）**：`src/modules/<域>/`（monitor / docs / sources / access）内聚各自的 `api.ts`（唯一出域请求封装）、视图组件与样式；跨域公共件放 `src/components/`（AppShell / PulseChart / 浮层），全局样式只有 `src/styles/tokens.css`（设计令牌唯一来源）与 `base.css`。
-2. **设计语言「观测站」**：蓝墨底 + 琥珀强调 + mono 读数；层次靠表面明度阶与发丝线，不用投影堆卡片；动效预算 = 非触发的只许一次进场（描迹绘线），其余全部应答式；`prefers-reduced-motion` 全局熄灭动效。
-3. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
-4. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
-5. **认证流**：接入页探测 `/api/monitor/status`——open 直进 / locked 出令牌表单 / offline 重试；令牌仅存 localStorage，不出浏览器。
-6. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
-7. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。
+1. **目录结构（按域分模块）**：`src/modules/<域>/`（home / monitor / docs / sources / access）内聚各自的 `api.ts`（唯一出域请求封装）、视图组件与样式；跨域公共件放 `src/components/`（AppShell / PulseChart / 浮层 / `ui/` 原语层），全局样式只有 `src/styles/tokens.css`（设计令牌唯一来源）与 `base.css`。
+2. **设计系统「分域主题」（M9 起）**：
+   - **令牌三层**：全局中性层（`data-theme='light'|'dark'`：背景/表面 4 档/文字 3 级/线条/ok/danger）→ 域强调层（`data-domain`：analysis 石墨+青 / docs 暖纸感，双主题各自成套）→ 组件只引用语义变量；禁止散落硬编码色值与 rgba 变体（发光/遮罩走 `--ok-glow`/`--overlay` 等专用令牌）。
+   - **明暗双主题**：默认跟随 `prefers-color-scheme`（无系统偏好取暗色），侧栏手动切换并记忆（`src/theme.ts` 唯一读写口）；`prefers-reduced-motion` 全局熄灭动效。
+   - **域只换主区气质**：AppShell 按路由把 `data-domain` 挂在主区，侧栏与底部状态条保持中性骨架；未来新工具可在 analysis/docs 之外定义自己的域主题块。
+   - **警示色独立**：`--warn`（琥珀黄）专职警示，与品牌强调色色相分离，禁止用强调色表达警告。
+   - **标尺**：字号 7 档（11/12/13/14/16/20/26；文档编辑区阅读面特批 15px/1.75）、间距 4/8/12/16/24 节奏；text-3 两主题对表面 ≥4.5:1（WCAG AA）。
+3. **组件原语**：Panel / Segmented / Chip / GhostButton / StatusDot / Banner / Field / EmptyState（`components/ui/`）是共享视觉件的唯一来源；模块 CSS 只写布局与域特有样式，禁止复制原语观感。
+4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」、可折叠且记忆折叠态，底部放主题切换与访问令牌；导航条目带域色点，未来新增工具 = 首页加一卡 + 侧栏加一条。
+5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
+6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
+7. **认证流**：接入页探测 `/api/monitor/status`——open 直进首页 / locked 出令牌表单 / offline 重试；令牌仅存 localStorage，不出浏览器。
+8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
+9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。
 
 ---
 

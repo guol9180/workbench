@@ -6,6 +6,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppShell from './components/AppShell'
 import { AppDialog, AppToast } from './components/AppOverlay'
 import CommandPalette from './components/CommandPalette'
+import HomeView from './modules/home/HomeView'
 import MonitorView from './modules/monitor/MonitorView'
 import DocsView from './modules/docs/DocsView'
 import SourcesView from './modules/sources/SourcesView'
@@ -16,13 +17,14 @@ export default function App() {
     <HashRouter>
       <Routes>
         <Route element={<AppShell />}>
-          <Route path="/" element={<Navigate to="/monitor" replace />} />
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<HomeView />} />
           <Route path="/monitor" element={<MonitorView />} />
           <Route path="/docs" element={<DocsView />} />
           <Route path="/sources" element={<SourcesView />} />
         </Route>
         <Route path="/login" element={<AccessView />} />
-        <Route path="*" element={<Navigate to="/monitor" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
       <AppDialog />
       <AppToast />

@@ -104,7 +104,8 @@ function useDocsStoreValue(): DocsStore {
     searchResults: [],
     searchSummary: '',
     localFile: null,
-    sidebarOpen: false,
+    // 桌面宽屏默认展开目录侧栏；窄屏走抽屉态默认收起
+    sidebarOpen: window.innerWidth >= 1024,
   })
 
   // 异步链路里的「最新状态」读取口
