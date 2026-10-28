@@ -6,7 +6,8 @@
  */
 import { useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { setToken } from '../api/http'
 import StatusBar from './StatusBar'
 import { initTheme, setTheme, type Theme } from '../theme'
 import './AppShell.css'
@@ -64,9 +65,11 @@ const GROUPS: Array<{ name: string; items: NavItem[] }> = [
 ]
 
 const TOKEN_ICON = w('M8 15a4.5 4.5 0 1 1 3.5-4.5M11.5 11.5 20 3M16.5 6.5l3 3')
+const LOGOUT_ICON = w('M13 4h5v16h-5M9.5 8l-4 4 4 4M5.5 12H16')
 
 export default function AppShell() {
   const location = useLocation()
+  const navigate = useNavigate()
   // 域随路由：docs → 暖纸感；其余 → 分析域。挂在 main 上，侧栏/状态条保持中性骨架
   const domain = location.pathname.startsWith('/docs') ? 'docs' : 'analysis'
 
@@ -81,6 +84,13 @@ export default function AppShell() {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
     setTheme(next)
     setThemeState(next)
+  }
+
+  /** 退出登录：无服务端会话可销毁，语义 = 清除本机令牌并回接入页。
+   *  带 loggedOut 状态让接入页跳过 open 自动回跳（认证关闭时否则会原地弹回首页）。 */
+  function logout() {
+    setToken(null)
+    navigate('/login', { state: { loggedOut: true } })
   }
 
   const itemCls = (active: boolean) => 'side-item' + (active ? ' active' : '')
@@ -107,6 +117,22 @@ export default function AppShell() {
             />
           </svg>
           <span className="side-wordmark">工作台</span>
+          <button
+            className="side-collapse"
+            title={collapsed ? '展开侧栏' : '收起侧栏'}
+            onClick={() => setCollapsed(!collapsed)}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+              style={{ transform: collapsed ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }}
+            >
+              <path d="M14 6.5 8.5 12l5.5 5.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
         </div>
 
         <nav className="side-nav">
@@ -141,22 +167,9 @@ export default function AppShell() {
             {TOKEN_ICON}
             <span className="side-item-label">访问令牌</span>
           </NavLink>
-          <button
-            className="side-item"
-            title={collapsed ? '展开侧栏' : '收起侧栏'}
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
-              style={{ transform: collapsed ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }}
-            >
-              <path d="M14 6.5 8.5 12l5.5 5.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="side-item-label">收起</span>
+          <button className="side-item side-logout" title="清除本机令牌并退出" onClick={logout}>
+            {LOGOUT_ICON}
+            <span className="side-item-label">退出登录</span>
           </button>
         </div>
       </aside>

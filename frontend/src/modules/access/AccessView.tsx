@@ -6,14 +6,17 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, MouseEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { getToken, probeStatus, setToken } from '../../api/http'
 import { initLoginScene } from './loginScene'
 import './access.css'
 
 export default function AccessView() {
   const navigate = useNavigate()
-  const [phase, setPhase] = useState<'probing' | 'locked' | 'offline'>('probing')
+  const location = useLocation()
+  // 「已退出」态：侧栏退出登录带状态进来时，open 探测不自动回跳（否则认证关闭会原地弹回首页）
+  const loggedOut = useRef((location.state as { loggedOut?: boolean } | null)?.loggedOut === true)
+  const [phase, setPhase] = useState<'probing' | 'locked' | 'offline' | 'open'>('probing')
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
@@ -21,12 +24,18 @@ export default function AccessView() {
   const inputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // 消费即清 history state：刷新后视为新访问，不留残留标记
+  useEffect(() => {
+    if (loggedOut.current) navigate(location.pathname, { replace: true, state: null })
+    // eslint-disable-next-line react-hooks/exhaustive-deps —— 仅进页时清一次
+  }, [])
+
   // 指针 3D 视差：细指针且未开启「减少动效」时启用，写入 CSS 变量给 .acc-tilt
   const tiltEnabled = useRef(false)
 
   async function probe(): Promise<'open' | 'locked' | 'offline'> {
     const result = await probeStatus()
-    if (result === 'open') {
+    if (result === 'open' && !loggedOut.current) {
       navigate('/home', { replace: true })
     } else {
       setPhase(result)
@@ -105,6 +114,15 @@ export default function AccessView() {
             <p className="acc-sub">流量观测 · 文档 · 工具——你的个人后台</p>
 
             {phase === 'probing' && <p className="acc-note">正在探测后端…</p>}
+
+            {phase === 'open' && (
+              <div className="acc-offline">
+                <p>已退出登录。当前后端未开启认证。</p>
+                <button className="acc-btn" onClick={() => navigate('/home', { replace: true })}>
+                  重新进入工作台
+                </button>
+              </div>
+            )}
 
             {phase === 'offline' && (
               <div className="acc-offline">

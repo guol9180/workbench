@@ -116,7 +116,7 @@ function DocsWorkspace() {
           : ''
 
   return (
-    <div className="docp">
+    <div className={'docp' + (state.sidebarOpen ? ' sidebar-open' : '')}>
       <header className="docp-bar">
         <button className="docp-menu" title="目录" onClick={() => actions.setSidebarOpen(!state.sidebarOpen)}>
           ☰

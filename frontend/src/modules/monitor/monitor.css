@@ -135,7 +135,10 @@
 
 /* ---------- 端点遥测台账 ---------- */
 
-.mon-ledger { overflow: hidden; }
+.mon-ledger { overflow-x: auto; }
+
+/* 台账 5 列实际需要约 560px：右栏再窄也横向滚动，绝不无声裁切数据 */
+.mon-table { min-width: 560px; }
 
 /* ---------- 宽屏双栏：主图+读数居左，端点台账居右；<1024px 回落纵向 ---------- */
 
@@ -152,6 +155,11 @@
     }
 
     .mon-body > .mon-ledger { position: sticky; top: 12px; }
+}
+
+/* 大屏放宽容器：右栏拿到约 470px，多数情况下表格无需滚动 */
+@media (min-width: 1440px) {
+    .mon { max-width: 1320px; }
 }
 
 .mon-ledger-head {
@@ -397,5 +405,4 @@
     .mon-updated { display: none; }
 
     .mon-ledger { overflow-x: auto; }
-    .mon-table { min-width: 560px; }
 }
