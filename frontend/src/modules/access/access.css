@@ -98,6 +98,16 @@
 
 .acc-offline p { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
 
+/* 离线/已退出/未开认证卡片：竖排居中，主按钮不缩成文字宽 */
+.acc-offline {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.acc-offline p { margin-bottom: 10px; }
+
 .acc-form { display: flex; flex-direction: column; gap: 10px; }
 
 .acc-input {
@@ -122,16 +132,20 @@
 }
 
 .acc-btn {
-    padding: 10px 0;
-    background: var(--accent-dim);
-    border: 1px solid var(--accent-border);
+    /* 卡片唯一主操作：实心强调色（与数据源页 .src-btn 同一语言） */
+    padding: 11px 24px;
+    background: var(--accent);
+    border: 1px solid var(--accent);
     border-radius: var(--r-ctl);
-    color: var(--accent);
+    color: var(--accent-contrast);
     font-size: 14px;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: opacity 0.15s, transform 0.15s;
 }
 
-.acc-btn:hover { color: var(--accent-hi); border-color: var(--accent); }
+.acc-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.acc-btn:active { transform: translateY(0); }
 .acc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .acc-hint {
