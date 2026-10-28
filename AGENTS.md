@@ -164,6 +164,7 @@ com.imhgl.workbench.<x>/
 1. 业务模块配置：`workbench.<module>.*`（如 `workbench.docs.*`）。
 2. infrastructure 配置：技术组件中性命名（如 `workbench.storage.*`），禁止业务前缀。
 3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`、`workbench.auth.token` ↔ `API_TOKEN`、`workbench.metrics.data-dir` ↔ `METRICS_DATA`、`workbench.sources.github-token` ↔ `GITHUB_TOKEN`）。
+   源配置文件路径 `workbench.sources.file` ↔ `WORKBENCH_SOURCES_FILE`（M9.2 起生产 compose 持久化到 workbench-runtime 卷，避免容器重建丢源配置与 token）。
 4. framework 认证配置 `workbench.auth.token` 归 framework 中性管理（Web 通用机制）；infrastructure 时序配置 `workbench.metrics.*`（data-dir / retention-days / flush-interval-seconds）中性命名；monitor 源采集配置 `workbench.sources.*`（file / github-token / cron）归 monitor 模块。
 
 ---

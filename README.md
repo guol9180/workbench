@@ -95,4 +95,12 @@ GitHub 采集：token 可直接在数据源页动态保存（持久化于 `data/
 
 ## 部署
 
-> 🚧 **部署链暂缓**：Docker / Caddy / CI / GitHub Pages 相关文件保留但基于旧版后端，恢复部署时按 Java 25 + docs-only 新栈重写；届时同步更新本节。
+发布流：打 `v*` 标签（或手动触发）→ Actions 构建镜像推送 GHCR（`build-backend.yml`）；前端推 main 自动部署 GitHub Pages（`deploy-frontend.yml`）。
+
+服务器（2c2G 参考配置）：
+
+1. 克隆本仓库（用到 `docker-compose.yml` 与 `Caddyfile`），同目录建 `.env`（参考 `.env.example`，必填 `API_TOKEN`；`openssl rand -base64 24` 生成）
+2. `docker compose pull && docker compose up -d`——Caddy 自动为 api.imhgl.com 申请证书并反代到 workbench:8080
+3. 首次访问 workbench.imhgl.com 会被 401 拦到接入页，输入 `API_TOKEN`（仅存本机浏览器）
+
+持久化：`workbench-docs` 卷存文档库；`workbench-runtime` 卷存监测时序与源配置（含 GitHub token，任何接口不回显）。认证开关 = `API_TOKEN` 是否为空；令牌遗失 → 置空重启回到关闭态，重新生成后再开。

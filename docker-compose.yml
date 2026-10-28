@@ -1,94 +1,46 @@
+# 生产部署参考：打 v* 标签 → Actions 构建镜像推送 GHCR（.github/workflows/build-backend.yml）→ 服务器 pull。
+# 当前架构纯文件存储：无 MySQL / Redis / OSS；持久化全部落在 named volumes。
+# 旧栈（MySQL/Redis/OSS/APP_PASSWORD）已随 M3 重构废弃——不要再按旧记忆补回这些服务。
 services:
   workbench:
-    # 镜像由 GitHub Actions 在打 tag 时自动构建推送（.github/workflows/build-backend.yml）
     image: ghcr.io/guol9180/workbench:latest
-    # 备选：服务器上直接构建（2核2G 跑 Maven 编译较吃力，不推荐）
-    # build: ./backend
     container_name: workbench
     ports:
       # 仅绑定本机回环，外部流量统一走 Caddy HTTPS 反代
       - "127.0.0.1:8080:8080"
     environment:
-      - APP_PASSWORD=${APP_PASSWORD:-workbench123}
-      # Token 签名密钥：务必改成随机长字符串，否则每次重启后需重新登录
-      - APP_TOKEN_SECRET=${APP_TOKEN_SECRET:-please-change-me-to-a-long-random-string}
-      # 允许的前端来源；默认 * 放行所有来源，可收紧为 https://workbench.imhgl.com
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-*}
+      # 非空即开启登录验证；生成：openssl rand -base64 24。置空/删除 = 关闭认证
+      - API_TOKEN=${API_TOKEN:?请在同目录 .env 中设置 API_TOKEN}
+      # 跨域放行的前端来源
+      - CORS_ALLOWED_ORIGINS=https://workbench.imhgl.com
       - DOCS_ROOT=/data/docs
-      # MySQL / Redis 连接（compose 网络内服务名即主机名）
-      - MYSQL_HOST=mysql
-      - MYSQL_PORT=3306
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-workbench}
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}
-      # 阿里云 OSS（devsetup 工件存储；四项齐全才启用，AccessKey 建议用 RAM 子账号仅授该桶权限）
-      - OSS_ENDPOINT=${OSS_ENDPOINT:-}
-      - OSS_BUCKET=${OSS_BUCKET:-}
-      - OSS_ACCESS_KEY=${OSS_ACCESS_KEY:-}
-      - OSS_SECRET=${OSS_SECRET:-}
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      # 监测时序与源配置同样持久化——不挂卷则容器重建即丢（M9.2 排查确认的现状）
+      - METRICS_DATA=/data/runtime/metrics
+      - WORKBENCH_SOURCES_FILE=/data/runtime/sources.json
     volumes:
+      # 文档库沿用既有命名卷（服务器上已有数据，不换卷名以免数据失联）
       - workbench-docs:/data/docs
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    # 2c2g 总预算：app 768m + mysql 384m + redis 48m + caddy 128m + 系统余量
+      # 运行期数据（监测时序 + 源配置，含 GitHub token——文件永不回显）：与文档分开便于各自备份
+      - workbench-runtime:/data/runtime
     mem_limit: 768m
     restart: unless-stopped
 
-  mysql:
-    image: mysql:8
-    container_name: workbench-mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-workbench}
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
-      # 2c2g 服务器：控制 InnoDB 内存占用
-      - --innodb-buffer-pool-size=128M
-      - --performance-schema=OFF
-    volumes:
-      - mysql_data:/var/lib/mysql
-      # 初始化脚本入口：建表 SQL 放 backend/db/init/，首次启动自动按文件名序执行
-      - ./backend/db/init:/docker-entrypoint-initdb.d:ro
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-please-change-mysql-password}"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-    mem_limit: 384m
-    restart: unless-stopped
-
-  redis:
-    image: redis:7-alpine
-    container_name: workbench-redis
-    # 纯缓存用途：关闭持久化，32m 上限 + LRU 淘汰
-    command: ["redis-server", "--appendonly", "no", "--maxmemory", "32mb", "--maxmemory-policy", "allkeys-lru"]
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    mem_limit: 48m
-    restart: unless-stopped
-
-  # HTTPS 反向代理：自动申请并续期 api.imhgl.com 的证书（需放行 80/443）
+  # HTTPS 反向代理：api.imhgl.com → workbench:8080，证书自动申请续期（需放行 80/443）
   caddy:
     image: caddy:2-alpine
-    container_name: caddy
+    container_name: workbench-caddy
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+      - caddy_config:/config
     mem_limit: 128m
     restart: unless-stopped
 
 volumes:
   workbench-docs:
-  mysql_data:
+  workbench-runtime:
   caddy_data:
+  caddy_config:

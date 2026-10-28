@@ -17,6 +17,7 @@
 | M9 | **设计系统重构：分域主题 + 明暗双主题 + 工作台首页** | ✅ 已完成（本提交） |
 | M9.1 | **线上反馈修复批：台账溢出 + 退出登录 + 文档树显示** | ✅ 已完成（本提交） |
 | M9.2 | **开启登录验证前置：CORS 移至 Filter 层（401 带跨域头）** | ✅ 已完成（v1.2.1） |
+| M9.3 | **部署链对齐现状：清退旧栈遗留，compose 重写为当前架构** | ✅ 已完成（本提交） |
 
 ## 当前任务（M9.2 · 开启登录验证前置，已完成）
 
@@ -26,6 +27,16 @@
 - [x] 显式 `allowedHeaders: *`（X-API-Token 是自定义头，预检须放行）与 `allowCredentials: false`
 - [x] 新增组合回归测试：401 带跨域头 / 预检放行带头 / 白名单外来源拒绝
 - [x] 全量构建测试通过；打 v1.2.1 触发镜像重建；服务器侧开启步骤见交付说明（compose 设 `API_TOKEN`、收紧 `CORS_ALLOWED_ORIGINS`、pull + up）
+
+## 任务归档（M9.3 · 部署链对齐现状，已完成）
+
+仓库中的 docker-compose.yml / docker-compose.dev.yml / .env.example 仍是 M1/M2 旧栈（MySQL/Redis/OSS/APP_PASSWORD——backend/db 目录甚至已不存在），照着 up 会直接失败。清理与对齐：
+
+- [x] 删除 docker-compose.dev.yml（纯文件存储架构，本地开发零容器依赖）
+- [x] docker-compose.yml 重写为当前架构：workbench（GHCR 镜像 + API_TOKEN + CORS + 持久化卷）+ Caddy（api.imhgl.com 反代）
+- [x] 持久化补全：监测时序（METRICS_DATA）与源配置（WORKBENCH_SOURCES_FILE）挂 workbench-runtime 卷——此前为容器内临时层，重建即丢源配置与 GitHub token
+- [x] .env.example 重写为当前变量；README 部署节从「暂缓」改为实际发布流（tag → GHCR → pull）
+- [x] 后端零改动（v1.2.1 镜像继续有效，无需新 tag）
 
 ## 任务归档（M9.1 · 线上反馈修复批，已完成）
 
