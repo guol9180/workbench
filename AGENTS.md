@@ -261,7 +261,7 @@ React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端�
 4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」，折叠钮在 logo 行且记忆折叠态，底部为 暗色模式 / 访问令牌 / 退出登录（清除本机令牌并回接入页，带 loggedOut 状态防认证关闭时自动回跳）；导航条目带域色点，未来新增工具 = 首页加一卡 + 侧栏加一条。
 5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
 6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
-7. **认证流**：接入页探测 `/api/monitor/status`——open 直进首页 / locked 出令牌表单 / offline 重试；令牌仅存 localStorage，不出浏览器。
+7. **认证流**：接入页探测 `/api/monitor/status`——open 直进首页 / locked 出令牌表单 / offline 重试；侧栏「访问令牌」（manage）与「退出登录」（loggedOut）进入时 open 不自动回跳，停留显示认证状态卡；令牌仅存 localStorage，不出浏览器。
 8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
 9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。
 

@@ -163,7 +163,8 @@ export default function AppShell() {
             )}
             <span className="side-item-label">{theme === 'dark' ? '浅色模式' : '暗色模式'}</span>
           </button>
-          <NavLink to="/login" title="访问令牌" className={({ isActive }) => itemCls(isActive)}>
+          {/* manage 状态：接入页对 open 探测不自动回跳，停留显示认证状态（否则认证关闭时点了就闪屏弹回） */}
+          <NavLink to="/login" state={{ manage: true }} title="访问令牌" className={({ isActive }) => itemCls(isActive)}>
             {TOKEN_ICON}
             <span className="side-item-label">访问令牌</span>
           </NavLink>

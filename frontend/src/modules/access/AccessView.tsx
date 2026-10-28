@@ -16,6 +16,8 @@ export default function AccessView() {
   const location = useLocation()
   // 「已退出」态：侧栏退出登录带状态进来时，open 探测不自动回跳（否则认证关闭会原地弹回首页）
   const loggedOut = useRef((location.state as { loggedOut?: boolean } | null)?.loggedOut === true)
+  // 「管理」态：侧栏访问令牌入口，同样要求停留（认证关闭时展示"无需令牌"说明卡）
+  const manage = useRef((location.state as { manage?: boolean } | null)?.manage === true)
   const [phase, setPhase] = useState<'probing' | 'locked' | 'offline' | 'open'>('probing')
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -26,7 +28,7 @@ export default function AccessView() {
 
   // 消费即清 history state：刷新后视为新访问，不留残留标记
   useEffect(() => {
-    if (loggedOut.current) navigate(location.pathname, { replace: true, state: null })
+    if (loggedOut.current || manage.current) navigate(location.pathname, { replace: true, state: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps —— 仅进页时清一次
   }, [])
 
@@ -35,7 +37,7 @@ export default function AccessView() {
 
   async function probe(): Promise<'open' | 'locked' | 'offline'> {
     const result = await probeStatus()
-    if (result === 'open' && !loggedOut.current) {
+    if (result === 'open' && !loggedOut.current && !manage.current) {
       navigate('/home', { replace: true })
     } else {
       setPhase(result)
@@ -117,7 +119,11 @@ export default function AccessView() {
 
             {phase === 'open' && (
               <div className="acc-offline">
-                <p>已退出登录。当前后端未开启认证。</p>
+                <p>
+                  {loggedOut.current
+                    ? '已退出登录。当前后端未开启认证。'
+                    : '当前后端未开启认证——无需令牌即可使用。设置服务器环境变量 API_TOKEN 后，在此输入接入令牌。'}
+                </p>
                 <button className="acc-btn" onClick={() => navigate('/home', { replace: true })}>
                   重新进入工作台
                 </button>
