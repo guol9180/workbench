@@ -16,8 +16,18 @@
 | M8 | **GitHub token 页面动态配置（免重启闭环）** | ✅ 已完成并推送（本提交） |
 | M9 | **设计系统重构：分域主题 + 明暗双主题 + 工作台首页** | ✅ 已完成（本提交） |
 | M9.1 | **线上反馈修复批：台账溢出 + 退出登录 + 文档树显示** | ✅ 已完成（本提交） |
+| M9.2 | **开启登录验证前置：CORS 移至 Filter 层（401 带跨域头）** | ✅ 已完成（v1.2.1） |
 
-## 当前任务（M9.1 · 线上反馈修复批，已完成）
+## 当前任务（M9.2 · 开启登录验证前置，已完成）
+
+用户要在生产开启 `API_TOKEN` 登录验证。排查发现跨域部署下存在死锁缺陷：CORS 原在 MVC 层（`addCorsMappings`）处理，而 401 是 `ApiTokenFilter` 在 Filter 层直接写出的——无 `Access-Control-Allow-Origin` 的 401 被浏览器按 CORS 失败拦截，前端把 locked 误判为 offline，登录流程无法开始。
+
+- [x] `CorsConfig` 从 MVC 层迁至 Filter 层：`CorsFilter` 注册于 `/api/*`、order -150（先于 ApiTokenFilter 的 -100），任何 /api 响应（200 与 401）都带 CORS 头
+- [x] 显式 `allowedHeaders: *`（X-API-Token 是自定义头，预检须放行）与 `allowCredentials: false`
+- [x] 新增组合回归测试：401 带跨域头 / 预检放行带头 / 白名单外来源拒绝
+- [x] 全量构建测试通过；打 v1.2.1 触发镜像重建；服务器侧开启步骤见交付说明（compose 设 `API_TOKEN`、收紧 `CORS_ALLOWED_ORIGINS`、pull + up）
+
+## 任务归档（M9.1 · 线上反馈修复批，已完成）
 
 线上验收（大屏 + 实数据）反馈四点，全部前端修复：
 

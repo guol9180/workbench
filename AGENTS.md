@@ -82,7 +82,7 @@ workbench-backend
 
 - 允许存放：全局异常处理（业务异常→400 语义错误码；校验失败→400 `PARAM_INVALID`；未知→500 不泄漏细节）、参数校验、CORS 配置、SpringDoc/OpenAPI 配置、轻量 Token 认证过滤器、请求上下文等 Web 通用机制。
 - 禁止存放：HTTP 端点（一律放业务模块）、业务逻辑、业务 DTO。
-- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig、ApiTokenProperties）、`filter/ApiTokenFilter`。
+- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig、ApiTokenProperties）、`filter/ApiTokenFilter`。CORS 在 Filter 层处理（CorsFilter 先于 ApiTokenFilter，401 响应也带跨域头），不用 MVC 层 CORS——原因见 CorsConfig Javadoc。
 
 ### 3.3 workbench-infrastructure（com.imhgl.workbench.infrastructure）
 
