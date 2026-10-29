@@ -62,13 +62,14 @@ public class MonitorController {
         return ApiResult.ok(monitorApi.overview(source, range));
     }
 
-    /** 时间序列（metric：count|avgMs|errCount；step：m|h，默认 m） */
+    /** 时间序列（metric：count|avgMs|errCount；step：m|h，默认 m；endpoint 可选过滤——GitHub 源拆 views/downloads 曲线用） */
     @GetMapping("/series")
     public ApiResult<List<SeriesPoint>> series(@RequestParam("source") String source,
                                                @RequestParam("metric") String metric,
                                                @RequestParam("range") String range,
-                                               @RequestParam(value = "step", defaultValue = "m") String step) {
-        return ApiResult.ok(monitorApi.series(source, metric, range, step));
+                                               @RequestParam(value = "step", defaultValue = "m") String step,
+                                               @RequestParam(value = "endpoint", required = false) String endpoint) {
+        return ApiResult.ok(monitorApi.series(source, metric, range, step, endpoint));
     }
 
     /** 端点排行（by：count|err|avgMs；limit 默认 10） */
@@ -135,5 +136,11 @@ public class MonitorController {
     public ApiResult<Void> clearGithubToken() {
         monitorApi.clearGithubToken();
         return ApiResult.ok();
+    }
+
+    /** 当前 token 可见的 GitHub 仓库列表（「我的项目」页勾选式接入用；未配 token → 400） */
+    @GetMapping("/github/repos")
+    public ApiResult<List<String>> githubRepos() {
+        return ApiResult.ok(monitorApi.githubRepos());
     }
 }

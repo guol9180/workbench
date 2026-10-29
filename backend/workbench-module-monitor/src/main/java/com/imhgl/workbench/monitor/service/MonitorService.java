@@ -66,9 +66,9 @@ public class MonitorService {
         return store.overview(source, range.fromMinute(now), now);
     }
 
-    public List<SeriesPoint> series(String source, String metric, TimeRange range, boolean hourly) {
+    public List<SeriesPoint> series(String source, String metric, TimeRange range, String endpointFilter, boolean hourly) {
         long now = currentMinute();
-        return store.series(source, metric, range.fromMinute(now), now, hourly);
+        return store.series(source, metric, range.fromMinute(now), now, endpointFilter, hourly);
     }
 
     public List<EndpointRank> topEndpoints(String source, TimeRange range, int limit, String by) {

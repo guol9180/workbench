@@ -67,9 +67,11 @@ export const monitorApi = {
   overview: (source: string, range: RangeKey) =>
     api<OverviewData>(`/api/monitor/overview?source=${encodeURIComponent(source)}&range=${range}`),
 
-  series: (source: string, metric: MetricKey, range: RangeKey) =>
+  /** endpointFilter：按端点过滤（GitHub 源拆 views/downloads 曲线用；缺省=不过滤） */
+  series: (source: string, metric: MetricKey, range: RangeKey, endpointFilter?: string) =>
     api<SeriesPointData[]>(
-      `/api/monitor/series?source=${encodeURIComponent(source)}&metric=${metric}&range=${range}&step=${RANGE_STEPS[range]}`,
+      `/api/monitor/series?source=${encodeURIComponent(source)}&metric=${metric}&range=${range}&step=${RANGE_STEPS[range]}` +
+        (endpointFilter ? '&endpoint=' + encodeURIComponent(endpointFilter) : ''),
     ),
 
   topEndpoints: (source: string, range: RangeKey, by: SortKey, limit = 10) =>

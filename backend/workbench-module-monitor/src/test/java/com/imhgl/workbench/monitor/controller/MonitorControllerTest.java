@@ -127,6 +127,7 @@ class MonitorControllerTest {
         IngestRequest lastIngest;
         String lastRange;
         String lastStep;
+        String lastEndpoint;
         int lastLimit = -1;
         String lastBy;
         boolean throwOnRange;
@@ -152,9 +153,10 @@ class MonitorControllerTest {
         }
 
         @Override
-        public List<SeriesPoint> series(String source, String metric, String range, String step) {
+        public List<SeriesPoint> series(String source, String metric, String range, String step, String endpointFilter) {
             lastRange = range;
             lastStep = step;
+            lastEndpoint = endpointFilter;
             return List.of(new SeriesPoint(7, 9));
         }
 
@@ -169,6 +171,11 @@ class MonitorControllerTest {
         @Override
         public MonitorStatus status() {
             return new MonitorStatus(3, 1, false, 0, false, null);
+        }
+
+        @Override
+        public java.util.List<String> githubRepos() {
+            return List.of();
         }
 
         /* ---------------- 数据源配置（M6）：契约测试见 MonitorSourceConfigApiTest ---------------- */

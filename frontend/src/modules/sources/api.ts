@@ -46,4 +46,6 @@ export const sourcesApi = {
   /** 清除页面级 token（回落环境变量） */
   clearGithubToken: () =>
     api<void>('/api/monitor/settings/github-token', { method: 'DELETE' }),
+  /** 当前 token 可见的仓库列表（owner/name，最近推送优先、上限 100）；未配 token 由后端 400 提示 */
+  listGithubRepos: () => api<string[]>('/api/monitor/github/repos'),
 }

@@ -70,6 +70,31 @@ class JsonlTimeSeriesStoreTest {
     }
 
     @Test
+    @DisplayName("endpoint 过滤：同一来源不同端点的序列可分开查询（GitHub views/downloads 拆曲线的基础）")
+    void seriesEndpointFilter(@TempDir Path dir) {
+        try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {
+            store.append(rec(M0, "github/o/r", "views", "GET", 200, 7, 0, 0, null));
+            store.append(rec(M0, "github/o/r", "downloads", "GET", 200, 3, 0, 0, null));
+            store.append(rec(M0 + 1, "github/o/r", "views", "GET", 200, 5, 0, 0, null));
+
+            // 不带过滤：所有端点混计（历史行为，兼容概览页）
+            assertEquals(15, store.series("github/o/r", "count", M0, M0 + 1, null, false)
+                    .stream().mapToLong(SeriesPoint::value).sum());
+            // views 单独：2 个点，sum=12
+            List<SeriesPoint> views = store.series("github/o/r", "count", M0, M0 + 1, "views", false);
+            assertEquals(2, views.size());
+            assertEquals(12, views.stream().mapToLong(SeriesPoint::value).sum());
+            // downloads 单独：1 个点
+            List<SeriesPoint> downloads = store.series("github/o/r", "count", M0, M0 + 1, "downloads", false);
+            assertEquals(1, downloads.size());
+            assertEquals(3, downloads.get(0).value());
+            // 空串等价于不过滤
+            assertEquals(15, store.series("github/o/r", "count", M0, M0 + 1, "", false)
+                    .stream().mapToLong(SeriesPoint::value).sum());
+        }
+    }
+
+    @Test
     @DisplayName("series：分钟步长逐桶、小时步长归并、metric 三选一")
     void seriesMinuteAndHourly(@TempDir Path dir) {
         try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {
@@ -78,20 +103,20 @@ class JsonlTimeSeriesStoreTest {
             // M0+60 与 M0 同属一小时（UTC）：小时桶应归并 3 次调用
             store.append(rec(M0 + 60, "s", "/x", "GET", 200, 5, 100, 20, null));
 
-            List<SeriesPoint> byMinute = store.series("s", "count", M0, M0 + 1, false);
+            List<SeriesPoint> byMinute = store.series("s", "count", M0, M0 + 1, null, false);
             assertEquals(2, byMinute.size());
             assertEquals(2, byMinute.get(0).value());
             assertEquals(1, byMinute.get(1).value());
 
-            List<SeriesPoint> hourly = store.series("s", "count", M0, M0 + 60, true);
+            List<SeriesPoint> hourly = store.series("s", "count", M0, M0 + 60, null, true);
             assertEquals(2, hourly.size(), "跨两个整点小时");
             assertEquals(3, hourly.get(0).value(), "第一小时归并 M0 与 M0+1");
             assertEquals(5, hourly.get(1).value());
 
-            List<SeriesPoint> errMinute = store.series("s", "errCount", M0, M0 + 1, false);
+            List<SeriesPoint> errMinute = store.series("s", "errCount", M0, M0 + 1, null, false);
             assertEquals(1, errMinute.get(1).value());
 
-            List<SeriesPoint> avg = store.series("s", "avgMs", M0, M0, false);
+            List<SeriesPoint> avg = store.series("s", "avgMs", M0, M0, null, false);
             assertEquals(20, avg.get(0).value(), "avg=40/2=20");
         }
     }

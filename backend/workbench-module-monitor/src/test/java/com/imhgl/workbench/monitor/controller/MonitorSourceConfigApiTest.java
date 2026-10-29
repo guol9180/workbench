@@ -109,7 +109,7 @@ class MonitorSourceConfigApiTest {
         }
 
         @Override
-        public List<com.imhgl.workbench.infrastructure.metrics.SeriesPoint> series(String source, String metric, String range, String step) {
+        public List<com.imhgl.workbench.infrastructure.metrics.SeriesPoint> series(String source, String metric, String range, String step, String endpointFilter) {
             return List.of();
         }
 
@@ -121,6 +121,11 @@ class MonitorSourceConfigApiTest {
         @Override
         public MonitorStatus status() {
             return new MonitorStatus(0, 0, false, 0, true, "page");
+        }
+
+        @Override
+        public java.util.List<String> githubRepos() {
+            return List.of();
         }
 
         @Override

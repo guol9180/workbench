@@ -26,6 +26,7 @@
 | M9.8.1 | **修复 M9.8 白屏回归：boot 层仅在已打开文档时显示** | ✅ 已完成（本提交） |
 | M9.8.2 | **回滚 preload：慢链路上高优先级抢占带宽堵死首屏主 JS** | ✅ 已完成（本提交） |
 | M9.8.3 | **文件树收放改全手动：openDoc 不再自动收起，按钮双态区分** | ✅ 已完成（本提交） |
+| M9.9 | **数据源页重定位「我的项目」：配置与数据查看合一** | ✅ 已完成（本提交） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -267,3 +268,20 @@ Vue 3 前端整体重写为 React 19 + TypeScript（用户裁定架构可换）�
 
 - [x] README.md / AGENTS.md / DEVELOP_PLAN.md 与代码同步（不同步视为任务未完成）
 - [x] 注释符合 [AGENTS.md · 注释规范](./AGENTS.md#注释规范学习项目)：公共契约有 Javadoc（职责/参数/抛错约定）、解释「为什么」、无过时注释
+
+## 当前任务（M9.9 · 数据源页重定位「我的项目」，已完成）
+
+用户澄清产品定位：统计的对象就是「我放在 GitHub 上的项目」。原数据源页是工程师抽象（接入/指标/token 配置管理），与用户心智错位且查看割裂（配在数据源页、看要去概览页）。重定位为「我的项目」：配置与数据查看合一，概览页专注 workbench 自监测。
+
+**后端**：
+- [x] `GET /api/monitor/github/repos`——当前 token 可见仓库列表（/user/repos，full_name、pushed 排序、上限 100）；未配 token → 400 PARAM_INVALID 可行动提示
+- [x] `series` 支持 `endpoint` 过滤（infrastructure 契约 + Jsonl 实现 + MonitorService/MonitorApi/Controller 全链透传；BucketKey 本含 endpoint 维度，实现在桶键上过滤）——views/downloads 拆曲线的基础
+- [x] 测试：endpoint 过滤（4 组断言）、parseRepoNames fixture、Stub 签名更新——全量构建 EXIT=0
+
+**前端**：
+- [x] SourcesView 重构「我的项目」：token 未就绪 → 全页引导卡（说明+步骤+保存并开始）；就绪 → 仓库 datalist 选择（显式「拉取我的仓库列表」）+ 手输兜底，指标 chips 默认全选
+- [x] 项目卡片「查看数据」展开：views/downloads 两条日粒度柱图（复用 PulseChart bars 变体）+ 7d 汇总读数；展开才取数（60s 轮询）
+- [x] 概览页源列表过滤 `github/*` 并清理 isGithub 死分支（专注自监测）；侧栏/首页卡片更名「我的项目」
+- [x] 验证：tsc + vite build 零错；preview 实测引导卡/文案/侧栏渲染正常
+
+**部署注意**：本里程碑含后端改动——前端推 main 自动部署 Pages，但后端需打 `v*` 标签发镜像，服务器 `docker compose pull && up -d` 后 `/api/monitor/github/repos` 与 endpoint 过滤才可用。

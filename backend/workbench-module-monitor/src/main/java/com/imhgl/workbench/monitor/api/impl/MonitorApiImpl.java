@@ -8,6 +8,7 @@ import com.imhgl.workbench.infrastructure.metrics.Overview;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
+import com.imhgl.workbench.monitor.collector.GithubClient;
 import com.imhgl.workbench.monitor.collector.GithubCollector;
 import com.imhgl.workbench.monitor.collector.GithubTokenProvider;
 import com.imhgl.workbench.monitor.collector.SourceConfigStore;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Set;
+import java.io.IOException;
 
 /**
  * MonitorApi 实现：字符串边界 → 值对象校验（TimeRange / step / by）→ 服务编排。
@@ -41,15 +43,17 @@ public class MonitorApiImpl implements MonitorApi {
     private final SourceConfigStore sourceConfigStore;
     private final GithubCollector githubCollector;
     private final GithubTokenProvider tokenProvider;
+    private final GithubClient githubClient;
 
     public MonitorApiImpl(MonitorService service, AuthProperties authProperties,
                           SourceConfigStore sourceConfigStore, GithubCollector githubCollector,
-                          GithubTokenProvider tokenProvider) {
+                          GithubTokenProvider tokenProvider, GithubClient githubClient) {
         this.service = service;
         this.authProperties = authProperties;
         this.sourceConfigStore = sourceConfigStore;
         this.githubCollector = githubCollector;
         this.tokenProvider = tokenProvider;
+        this.githubClient = githubClient;
     }
 
     @Override
@@ -68,13 +72,13 @@ public class MonitorApiImpl implements MonitorApi {
     }
 
     @Override
-    public List<SeriesPoint> series(String source, String metric, String range, String step) {
+    public List<SeriesPoint> series(String source, String metric, String range, String step, String endpointFilter) {
         boolean hourly = switch (step == null ? "" : step) {
             case "m" -> false;
             case "h" -> true;
             default -> throw new IllegalArgumentException("非法步长：" + step + "（可选 m/h）");
         };
-        return service.series(source, metric, TimeRange.of(range), hourly);
+        return service.series(source, metric, TimeRange.of(range), endpointFilter, hourly);
     }
 
     @Override
@@ -136,6 +140,20 @@ public class MonitorApiImpl implements MonitorApi {
     @Override
     public void clearGithubToken() {
         tokenProvider.clearPageToken();
+    }
+
+    @Override
+    public List<String> githubRepos() {
+        // 前端在 token 未就绪时不该发起此请求；这里兜底拦截并给出明确的下一步指引
+        if (!tokenProvider.hasToken()) {
+            throw new BusinessException(ErrorCode.PARAM_INVALID, "请先配置 GitHub 令牌，再拉取仓库列表");
+        }
+        try {
+            return githubClient.listRepos();
+        } catch (IOException | InterruptedException e) {
+            // 细节不对前端暴露（网络/权限语义复杂），统一给可操作的失败提示
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "拉取仓库列表失败——请检查令牌有效性后重试");
+        }
     }
 
     private static void validate(SourceConfigRequest request) {

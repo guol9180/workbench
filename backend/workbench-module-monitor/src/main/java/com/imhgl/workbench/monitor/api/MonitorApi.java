@@ -30,8 +30,8 @@ public interface MonitorApi {
     /** 区间总览；range = 5m|1h|6h|24h|7d */
     Overview overview(String source, String range);
 
-    /** 时间序列；metric = count|avgMs|errCount，step = m|h */
-    List<SeriesPoint> series(String source, String metric, String range, String step);
+    /** 时间序列；metric = count|avgMs|errCount，step = m|h；endpointFilter 可空 = 不过滤（GitHub 源按 views/downloads 拆曲线用） */
+    List<SeriesPoint> series(String source, String metric, String range, String step, String endpointFilter);
 
     /** 端点排行；by = count|err|avgMs */
     List<EndpointRank> topEndpoints(String source, String range, int limit, String by);
@@ -61,4 +61,7 @@ public interface MonitorApi {
 
     /** 清除页面级 GitHub token（回落环境变量 GITHUB_TOKEN） */
     void clearGithubToken();
+
+    /** 当前 token 可见的仓库列表（full_name，按最近推送排序、上限 100）；未配置 token 抛 PARAM_INVALID */
+    List<String> githubRepos();
 }

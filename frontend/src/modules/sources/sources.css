@@ -254,3 +254,88 @@
     .src { padding: 12px 14px 18px; }
     .src-head { flex-direction: column; gap: 4px; }
 }
+
+/* ---------- 我的项目页（M9.9）：令牌引导卡 + 项目数据展开区 ---------- */
+
+.src-guide {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.src-guide-title { font-size: 16px; color: var(--text); }
+
+.src-guide-text { color: var(--text-2); font-size: 13px; line-height: 1.7; }
+
+.src-guide-steps {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1.9;
+}
+
+.src-form-metrics {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    align-self: end;
+    padding-bottom: 4px;
+}
+
+.src-metric-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--text-2);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.src-metric-chip.on { border-color: var(--accent); color: var(--text); }
+
+.src-metric-chip input { accent-color: var(--accent); }
+
+.src-form-ops {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.src-repos-note { color: var(--text-3); font-size: 12px; }
+
+/* 项目数据展开区：两张日粒度柱图并列（窄屏回落纵向） */
+.src-detail {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+}
+
+.src-detail-nums {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 20px;
+    color: var(--text-3);
+    font-size: 12px;
+}
+
+.src-detail-num b { color: var(--text); font-weight: 600; margin-right: 4px; }
+
+.src-chart-head { color: var(--text-3); font-size: 12px; margin-bottom: 4px; }
+
+.src-detail-err {
+    grid-column: 1 / -1;
+    color: var(--danger);
+    font-size: 12px;
+}
+
+@media (max-width: 900px) {
+    .src-detail { grid-template-columns: 1fr; }
+}

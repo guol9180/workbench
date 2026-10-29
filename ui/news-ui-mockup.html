@@ -1,0 +1,703 @@
+<!doctype html>
+<!--
+  资讯模块 UI 原型（设计评审用，不参与构建）
+  - 复刻产品真实骨架：中性侧栏/状态条 + 主区挂独立域主题（对应 AGENTS §9 设计令牌三层）
+  - 资讯域色板「墨蓝新闻纸」独立成套，不受 analysis（石墨青）/ docs（暖纸）影响
+  - 交互：页签切换三视图 · 右上角切明暗 · 点击条目展开 · 星标可点 · 筛选片可点
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>资讯模块 · UI 原型</title>
+<style>
+  /* ===== 中性骨架（= 产品全局层：侧栏 / 状态条 / 首页恒定，不随工具域变） ===== */
+  #mock {
+    --n-bg: #0e1214; --n-s0: #151b1e; --n-s1: #1d2428; --n-s2: #263036;
+    --n-text: #e6ecf0; --n-text2: #9aa8b2; --n-text3: #74828d;
+    --n-line: #232d33; --n-line-strong: #33414a;
+    --n-accent: #3ec9c4; --n-accent-dim: rgba(62, 201, 196, 0.12);
+    --n-accent-border: rgba(62, 201, 196, 0.4);
+    --n-ok: #4ecb8f; --n-ok-glow: rgba(78, 203, 143, 0.7);
+    --n-warn: #d9a13d; --n-danger: #e86054; --n-danger-glow: rgba(232, 96, 84, 0.7);
+    --page: #090d0f;
+    --font-display: 'Chakra Petch', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'Overpass Mono', 'JetBrains Mono', Consolas, monospace;
+    --font-body: 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  }
+  #mock[data-theme='light'] {
+    --n-bg: #f4f6f7; --n-s0: #ffffff; --n-s1: #eef1f2; --n-s2: #e2e7e9;
+    --n-text: #1c262c; --n-text2: #4d5c66; --n-text3: #5f6e78;
+    --n-line: #dde4e7; --n-line-strong: #c3ced3;
+    --n-accent: #0e7f7a; --n-accent-dim: rgba(14, 127, 122, 0.1);
+    --n-accent-border: rgba(14, 127, 122, 0.35);
+    --n-ok: #1e7f4f; --n-warn: #8a6116; --n-danger: #c2402f;
+    --page: #e9edef;
+  }
+
+  /* ===== 资讯域主题（data-domain="news" · 墨蓝新闻纸，独立成套，明暗各自完整） ===== */
+  .zone-news {
+    --bg: #10161c; --s0: #171e26; --s1: #1f2933; --s2: #2a3641;
+    --text: #e4ebf2; --text-2: #9aa8b2; --text-3: #74828d;
+    --line: #25303b; --line-strong: #3a4a59;
+    --ok: #4ecb8f; --warn: #d9a13d;
+    --danger: #e86054; --danger-glow: rgba(232, 96, 84, 0.7);
+    --accent: #5f9fe0; --accent-hi: #8cbdec; --accent-contrast: #0a1a2c;
+    --accent-dim: rgba(95, 159, 224, 0.12);
+    --accent-border: rgba(95, 159, 224, 0.42);
+    --accent-faint: rgba(95, 159, 224, 0.22);
+    --r-ctl: 6px;
+  }
+  #mock[data-theme='light'] .zone-news {
+    --bg: #f3f6f9; --s0: #ffffff; --s1: #edf2f6; --s2: #e0e8ee;
+    --text: #1a2530; --text-2: #4d5c66; --text-3: #5f6e78;
+    --line: #dce5eb; --line-strong: #c1cfda;
+    --ok: #1e7f4f; --warn: #8a6116; --danger: #c2402f;
+    --accent: #1e5ca6; --accent-hi: #14487f; --accent-contrast: #ffffff;
+    --accent-dim: rgba(30, 92, 166, 0.1);
+    --accent-border: rgba(30, 92, 166, 0.38);
+    --accent-faint: rgba(30, 92, 166, 0.16);
+  }
+
+  html, body { margin: 0; padding: 0; min-height: 100%; background: #090d0f; }
+  body[data-theme='light'] { background: #e9edef; }
+  #mock {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--n-text);
+    padding: 18px 20px 26px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  #mock * { box-sizing: border-box; margin: 0; padding: 0; }
+  #mock button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  #mock [hidden] { display: none !important; }
+  #mock svg { flex: none; }
+  .ico { width: 16px; height: 16px; }
+
+  /* ===== 工具条：标题 + 视图页签 + 主题预览 ===== */
+  .mock-toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+  .mock-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; letter-spacing: 0.03em; color: var(--n-text2); }
+  .mock-tabs { display: inline-flex; background: var(--n-s0); border: 1px solid var(--n-line); border-radius: 6px; overflow: hidden; }
+  .mock-tab { font-size: 12px; padding: 6px 14px; color: var(--n-text3); border-left: 1px solid var(--n-line); }
+  .mock-tab:first-child { border-left: none; }
+  .mock-tab:hover { color: var(--n-text2); background: var(--n-s1); }
+  .mock-tab.active { color: var(--n-accent); background: var(--n-accent-dim); }
+  .mock-hint { font-size: 11px; color: var(--n-text3); }
+  .mock-theme {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--n-text2); border: 1px solid var(--n-line);
+    border-radius: 6px; padding: 5px 12px;
+  }
+  .mock-theme:hover { color: var(--n-text); border-color: var(--n-line-strong); }
+  .mock-theme .ico { width: 14px; height: 14px; }
+
+  /* ===== 色板条：资讯域当前主题取色（随主题切换联动） ===== */
+  .palette-strip { display: flex; align-items: center; gap: 18px; margin: 0 2px 14px; flex-wrap: wrap; }
+  .swatch { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--n-text3); }
+  .swatch i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid rgba(128, 128, 128, 0.25); }
+  .swatch.bg i { background: var(--bg); }
+  .swatch.s0 i { background: var(--s0); }
+  .swatch.accent i { background: var(--accent); }
+  .swatch.ok i { background: var(--ok); }
+  .swatch.warn i { background: var(--warn); }
+  .swatch.danger i { background: var(--danger); }
+
+  /* ===== 应用骨架复刻：中性侧栏 + 域主区 + 状态条 ===== */
+  .mock-frame {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    grid-template-rows: 560px 30px;
+    grid-template-areas: "side main" "side strip";
+    border: 1px solid var(--n-line);
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--n-bg);
+  }
+  .mock-side {
+    grid-area: side;
+    background: var(--n-s0);
+    border-right: 1px solid var(--n-line);
+    display: flex; flex-direction: column;
+    padding: 12px 10px; gap: 2px;
+  }
+  .side-brand { display: flex; align-items: center; gap: 9px; padding: 4px 8px 16px; }
+  .side-wordmark { font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: 0.04em; }
+  .side-group-name { font-size: 11px; color: var(--n-text3); letter-spacing: 0.08em; padding: 2px 10px 4px; margin-top: 12px; }
+  .side-item {
+    position: relative; display: flex; align-items: center; gap: 10px;
+    height: 36px; padding: 0 10px; border-radius: 6px;
+    color: var(--n-text2); white-space: nowrap; width: 100%; text-align: left;
+  }
+  .side-item span { font-size: 13px; }
+  .side-item:hover { color: var(--n-text); background: var(--n-s1); }
+  .side-item.active { color: var(--n-accent); background: var(--n-accent-dim); }
+  .side-item.active::before {
+    content: ""; position: absolute; left: -10px; top: 8px; bottom: 8px;
+    width: 2px; background: var(--n-accent); border-radius: 1px;
+  }
+  .side-foot { margin-top: auto; border-top: 1px solid var(--n-line); padding-top: 8px; }
+
+  .mock-main { grid-area: main; min-width: 0; background: var(--bg); overflow-y: auto; }
+
+  /* ===== 模块头部条 ===== */
+  .zone-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 24px 24px 0; gap: 16px;
+  }
+  .zone-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: 0.02em; color: var(--text); }
+  .zone-sub { margin-top: 4px; font-size: 13px; color: var(--text-3); }
+  .zone-sub b { color: var(--accent); font-weight: 600; }
+  .zone-actions { display: flex; gap: 8px; }
+
+  /* 共享原语（与产品 ui.css 同构） */
+  .panel { background: var(--s0); border: 1px solid var(--line); border-radius: 8px; }
+  .ghost-btn {
+    flex: none; font-size: 12px; color: var(--accent); border: 1px solid var(--accent-border);
+    border-radius: var(--r-ctl); padding: 4px 12px; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .ghost-btn .ico { width: 13px; height: 13px; }
+  .ghost-btn:hover { color: var(--accent-hi); border-color: var(--accent); }
+  .ghost-btn.plain { color: var(--text-2); border-color: var(--line); }
+  .ghost-btn.plain:hover { color: var(--text); border-color: var(--line-strong); }
+  .ghost-btn.danger { color: var(--danger); border-color: rgba(232, 96, 84, 0.4); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+    font-size: 12px; color: var(--text-2); padding: 4px 11px;
+    border: 1px solid var(--line); border-radius: 999px;
+  }
+  .chip:hover { color: var(--text); border-color: var(--line-strong); }
+  .chip.active { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+  .seg { display: inline-flex; background: var(--s0); border: 1px solid var(--line); border-radius: var(--r-ctl); overflow: hidden; }
+  .seg-item { font-size: 12px; padding: 6px 12px; color: var(--text-3); border-left: 1px solid var(--line); }
+  .seg-item:first-child { border-left: none; }
+  .seg-item:hover { color: var(--text-2); background: var(--s1); }
+  .seg-item.active { color: var(--accent); background: var(--accent-dim); }
+  .dot { flex: none; width: 6px; height: 6px; border-radius: 50%; }
+  .dot.ok { background: var(--ok); }
+  .dot.err { background: var(--danger); box-shadow: 0 0 6px var(--danger-glow); }
+  .banner {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border: 1px solid var(--line-strong); border-left: 2px solid var(--warn);
+    border-radius: 6px; background: var(--s0); color: var(--text-2); font-size: 13px;
+  }
+  .banner.err { border-left-color: var(--danger); }
+  .banner .ghost-btn { margin-left: auto; }
+  .input {
+    min-width: 0; padding: 8px 11px; background: var(--bg);
+    border: 1px solid var(--line); border-radius: var(--r-ctl);
+    color: var(--text); font-size: 13px; outline: none; flex: 1;
+  }
+  .input:focus { border-color: var(--accent); }
+  .input::placeholder { color: var(--text-3); }
+
+  /* ===== 视图：资讯流 ===== */
+  .feed-filter { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 16px 24px 14px; }
+  .feed-filter .seg { margin-left: auto; }
+  .feed-list { padding: 0 24px 28px; display: flex; flex-direction: column; }
+  .day-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+    letter-spacing: 0.08em; padding: 14px 2px 6px;
+  }
+  .news-item {
+    position: relative; background: var(--s0); border: 1px solid var(--line);
+    border-radius: 8px; padding: 12px 16px 12px 18px; margin-bottom: 8px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .news-item:hover { border-color: var(--line-strong); }
+  .news-item.unread::before {
+    content: ""; position: absolute; left: 0; top: 12px; bottom: 12px;
+    width: 2px; background: var(--accent); border-radius: 1px;
+  }
+  .item-top { display: flex; align-items: center; gap: 10px; }
+  .item-source { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); }
+  .item-cat {
+    font-size: 11px; font-family: var(--font-mono); color: var(--text-3);
+    border: 1px solid var(--line); border-radius: 4px; padding: 1px 7px;
+  }
+  .item-time { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
+  .news-star { color: var(--text-3); width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; }
+  .news-star:hover { color: var(--warn); background: var(--s1); }
+  .news-star.on { color: var(--warn); }
+  .news-star.on svg { fill: var(--warn); }
+  .news-star svg { width: 14px; height: 14px; }
+  .item-title { margin-top: 6px; font-size: 14px; font-weight: 500; color: var(--text-2); line-height: 1.5; }
+  .unread .item-title { font-weight: 600; color: var(--text); }
+  .read .item-title { color: var(--text-3); }
+  .kw { background: var(--accent-dim); color: var(--accent); border-radius: 3px; padding: 0 3px; }
+  .item-snippet {
+    margin-top: 4px; font-size: 13px; color: var(--text-3); line-height: 1.55;
+    display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .news-item.open .item-snippet { -webkit-line-clamp: unset; color: var(--text-2); }
+  .item-detail { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .news-item.open .item-detail { display: flex; align-items: center; gap: 8px; }
+  .item-detail .spacer { flex: 1; }
+
+  /* ===== 视图：源管理 ===== */
+  .src-body { padding: 16px 24px 28px; display: flex; flex-direction: column; gap: 10px; }
+  .src-row { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .src-id { min-width: 0; }
+  .src-name { font-family: var(--font-display); font-size: 14px; font-weight: 600; }
+  .src-url { margin-top: 3px; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .src-state { margin-left: auto; display: flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 11px; color: var(--text-3); white-space: nowrap; }
+  .src-state.bad { color: var(--warn); }
+  .src-actions { display: flex; gap: 6px; }
+  .src-add { padding: 12px 16px; display: flex; align-items: center; gap: 10px; }
+
+  /* ===== 视图：首页卡片（首页属分析域，卡片点缀资讯域色点） ===== */
+  .home-wrap { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .home-title { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
+  .home-tools { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .home-tool {
+    text-align: left; padding: 16px; display: flex; flex-direction: column; gap: 8px;
+    background: var(--n-s0); border: 1px solid var(--n-line); border-radius: 8px; color: var(--n-text);
+  }
+  .home-tool:hover { background: var(--n-s1); border-color: var(--n-line-strong); }
+  .home-tool-top { display: flex; align-items: center; gap: 8px; }
+  .home-tool-domain { width: 7px; height: 7px; border-radius: 50%; }
+  .d-analysis { background: var(--n-accent); }
+  .d-docs { background: #d08a4a; }
+  .d-news { background: #5f9fe0; }
+  body[data-theme='light'] .d-news { background: #1e5ca6; }
+  .home-tool-name { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+  .home-tool-arrow { margin-left: auto; color: var(--n-text3); font-size: 14px; }
+  .home-tool-desc { font-size: 13px; color: var(--n-text2); line-height: 1.5; }
+  .home-recent { padding: 12px 16px 14px; }
+  .home-recent-title { font-family: var(--font-display); font-size: 14px; font-weight: 600; letter-spacing: 0.03em; color: var(--n-text2); padding-bottom: 8px; }
+  .home-row {
+    display: flex; align-items: center; gap: 10px; padding: 7px 4px;
+    border-top: 1px solid var(--n-line); font-size: 13px; color: var(--n-text2);
+  }
+  .home-row .u { width: 5px; height: 5px; border-radius: 50%; background: #5f9fe0; flex: none; }
+  body[data-theme='light'] .home-row .u { background: #1e5ca6; }
+  .home-row .r { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--n-text3); white-space: nowrap; }
+
+  /* ===== 状态条（中性骨架） ===== */
+  .mock-strip {
+    grid-area: strip; display: flex; align-items: center; gap: 16px; padding: 0 14px;
+    background: var(--n-s0); border-top: 1px solid var(--n-line);
+    font-family: var(--font-mono); font-size: 11px; color: var(--n-text3); white-space: nowrap;
+  }
+  .strip-live { display: inline-flex; align-items: center; gap: 7px; color: var(--n-text2); }
+  .strip-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--n-ok); box-shadow: 0 0 6px var(--n-ok-glow); }
+  .strip-mid { flex: 1; text-align: center; }
+</style>
+</head>
+<body data-theme="dark">
+<div id="mock" data-theme="dark">
+
+  <div class="mock-toolbar">
+    <div class="mock-title">资讯模块 · UI 原型</div>
+    <div class="mock-tabs">
+      <button class="mock-tab active" data-view="feed" type="button">资讯流</button>
+      <button class="mock-tab" data-view="sources" type="button">源管理</button>
+      <button class="mock-tab" data-view="home" type="button">首页卡片</button>
+    </div>
+    <span class="mock-hint">点击条目展开 · 点击 ★ 收藏</span>
+    <button class="mock-theme" id="theme-btn" type="button">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3 19 19M19 5l-1.7 1.7M6.7 17.3 5 19"/>
+      </svg>
+      <span>浅色预览</span>
+    </button>
+  </div>
+
+  <div class="palette-strip zone-news">
+    <span class="swatch bg"><i></i>背景</span>
+    <span class="swatch s0"><i></i>表面</span>
+    <span class="swatch accent"><i></i>强调 · 墨蓝</span>
+    <span class="swatch ok"><i></i>正常</span>
+    <span class="swatch warn"><i></i>警示</span>
+    <span class="swatch danger"><i></i>异常</span>
+  </div>
+
+  <div class="mock-frame">
+    <aside class="mock-side">
+      <div class="side-brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
+          <polyline points="3,7 7.5,17 12,9.5 16.5,17 21,7" stroke="var(--n-accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="side-wordmark">工作台</span>
+      </div>
+      <button class="side-item" type="button">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 12 4l8 7M6.5 9.5V20h11V9.5"/></svg>
+        <span>首页</span>
+      </button>
+      <div class="side-group-name">分析</div>
+      <button class="side-item" type="button">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,12 7,12 9.5,6 14.5,18 17,12 22,12"/></svg>
+        <span>概览</span>
+      </button>
+      <button class="side-item" type="button">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c4.4 0 8 1.25 8 2.8v12.4c0 1.55-3.6 2.8-8 2.8s-8-1.25-8-2.8V5.8C4 4.25 7.6 3 12 3Zm-8 2.8c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8M4 12c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8"/></svg>
+        <span>数据源</span>
+      </button>
+      <div class="side-group-name">工具</div>
+      <button class="side-item" type="button">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 2.5h7l4 4V21.5H7zM14 2.5v4h4M10 12.5h5M10 16h5"/></svg>
+        <span>文档</span>
+      </button>
+      <button class="side-item active" type="button">
+        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9.5h6M7 13h6M7 16.5h4M15.5 9.5h2.5v7h-2.5z"/></svg>
+        <span>资讯</span>
+      </button>
+      <div class="side-foot">
+        <button class="side-item" type="button">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5Z"/></svg>
+          <span>浅色模式</span>
+        </button>
+        <button class="side-item" type="button">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M13 4h5v16h-5M9.5 8l-4 4 4 4M5.5 12H16"/></svg>
+          <span>退出登录</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="mock-main">
+
+      <section class="view zone-news" data-view="feed">
+        <div class="zone-head">
+          <div>
+            <div class="zone-title">资讯</div>
+            <div class="zone-sub"><b>12 条未读</b> · 4 个源正常 · 5 分钟前更新</div>
+          </div>
+          <div class="zone-actions">
+            <button class="ghost-btn" type="button">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+              立即刷新
+            </button>
+            <button class="ghost-btn plain js-goto" data-goto="sources" type="button">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg>
+              源管理
+            </button>
+          </div>
+        </div>
+        <div class="feed-filter">
+          <button class="chip active" type="button">全部</button>
+          <button class="chip" type="button">快讯</button>
+          <button class="chip" type="button">科技</button>
+          <button class="chip" type="button">开发</button>
+          <button class="chip" type="button">星标</button>
+          <div class="seg">
+            <button class="seg-item active" type="button">全部</button>
+            <button class="seg-item" type="button">未读</button>
+          </div>
+        </div>
+        <div class="feed-list">
+          <div class="day-label">今天 · 10 月 29 日</div>
+
+          <article class="news-item unread">
+            <div class="item-top">
+              <span class="item-source">36kr快讯</span>
+              <span class="item-cat">快讯</span>
+              <span class="item-time">14:20</span>
+              <button class="news-star" type="button" aria-label="收藏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              </button>
+            </div>
+            <div class="item-title">某大模型厂商发布推理模型新版本，API 价格下调 40%</div>
+            <div class="item-snippet">官方文档显示，新版本在长上下文任务上表现提升明显，同时批量接口费率同步调整，企业客户成本进一步下降。</div>
+            <div class="item-detail">
+              <button class="ghost-btn" type="button">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                阅读原文
+              </button>
+              <button class="ghost-btn plain" type="button">标记已读</button>
+              <span class="spacer"></span>
+            </div>
+          </article>
+
+          <article class="news-item unread open">
+            <div class="item-top">
+              <span class="item-source">Hacker News</span>
+              <span class="item-cat">开发</span>
+              <span class="item-time">13:05</span>
+              <button class="news-star on" type="button" aria-label="收藏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              </button>
+            </div>
+            <div class="item-title">Show HN: 用 300 行 <span class="kw">Rust</span> 写的终端文件管理器</div>
+            <div class="item-snippet">作者从零实现了异步 IO 与虚拟滚动，压缩包仅 2MB，讨论区围绕与 yazi / ranger 的取舍展开，热评指出其按键方案更接近 vim 原生习惯。</div>
+            <div class="item-detail">
+              <button class="ghost-btn" type="button">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                阅读原文
+              </button>
+              <button class="ghost-btn plain" type="button">标记已读</button>
+              <span class="spacer"></span>
+            </div>
+          </article>
+
+          <article class="news-item unread">
+            <div class="item-top">
+              <span class="item-source">阮一峰 · 周刊</span>
+              <span class="item-cat">开发</span>
+              <span class="item-time">09:30</span>
+              <button class="news-star" type="button" aria-label="收藏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              </button>
+            </div>
+            <div class="item-title">科技爱好者周刊（第 330 期）：本地优先软件的回潮</div>
+            <div class="item-snippet">本周主题：为什么越来越多工具回到本地存储；工具栏目收录了 12 个开源项目。</div>
+            <div class="item-detail">
+              <button class="ghost-btn" type="button">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                阅读原文
+              </button>
+              <button class="ghost-btn plain" type="button">标记已读</button>
+              <span class="spacer"></span>
+            </div>
+          </article>
+
+          <article class="news-item read">
+            <div class="item-top">
+              <span class="item-source">少数派</span>
+              <span class="item-cat">科技</span>
+              <span class="item-time">08:12</span>
+              <button class="news-star" type="button" aria-label="收藏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              </button>
+            </div>
+            <div class="item-title">我的 2026 数字极简主义工具箱</div>
+            <div class="item-snippet">从笔记、任务到密码管理，作者复盘了自己收缩工具数量后效率反而提升的过程。</div>
+            <div class="item-detail">
+              <button class="ghost-btn" type="button">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                阅读原文
+              </button>
+              <button class="ghost-btn plain" type="button">标记已读</button>
+              <span class="spacer"></span>
+            </div>
+          </article>
+
+          <div class="day-label">昨天 · 10 月 28 日</div>
+
+          <article class="news-item read">
+            <div class="item-top">
+              <span class="item-source">IT之家</span>
+              <span class="item-cat">科技</span>
+              <span class="item-time">昨天 21:44</span>
+              <button class="news-star" type="button" aria-label="收藏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              </button>
+            </div>
+            <div class="item-title">多家厂商联合发布新一代低功耗移动处理器</div>
+            <div class="item-snippet">续航提升约 18%，首发机型预计下月上市。</div>
+            <div class="item-detail">
+              <button class="ghost-btn" type="button">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                阅读原文
+              </button>
+              <button class="ghost-btn plain" type="button">标记已读</button>
+              <span class="spacer"></span>
+            </div>
+          </article>
+
+          <article class="news-item read">
+            <div class="item-top">
+              <span class="item-source">V2EX</span>
+              <span class="item-cat">开发</span>
+              <span class="item-time">昨天 19:02</span>
+              <button class="news-star" type="button" aria-label="收藏">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg>
+              </button>
+            </div>
+            <div class="item-title">大家 2026 年还在自建 RSS 服务吗？</div>
+            <div class="item-snippet">楼主分享了自己的自托管阅读流方案，评论区推荐了多个轻量聚合器。</div>
+            <div class="item-detail">
+              <button class="ghost-btn" type="button">
+                <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                阅读原文
+              </button>
+              <button class="ghost-btn plain" type="button">标记已读</button>
+              <span class="spacer"></span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view zone-news" data-view="sources" hidden>
+        <div class="zone-head">
+          <div>
+            <div class="zone-title">源管理</div>
+            <div class="zone-sub">4 个源 · 轮询间隔与状态按源独立</div>
+          </div>
+          <div class="zone-actions">
+            <button class="ghost-btn plain js-goto" data-goto="feed" type="button">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7M19 12H5"/></svg>
+              返回资讯流
+            </button>
+          </div>
+        </div>
+        <div class="src-body">
+          <div class="banner err">
+            <span>金十快讯：RSSHub 路由失效（上游 503），已暂停并进入退避，其余源不受影响。</span>
+            <button class="ghost-btn" type="button">重试</button>
+          </div>
+
+          <div class="panel src-row">
+            <div class="src-id">
+              <div class="src-name">Hacker News</div>
+              <div class="src-url">https://hnrss.org/frontpage</div>
+            </div>
+            <span class="chip">开发 · 5m</span>
+            <span class="src-state"><span class="dot ok"></span>2 分钟前采集成功</span>
+            <div class="src-actions">
+              <button class="ghost-btn plain" type="button">采集</button>
+              <button class="ghost-btn danger" type="button">删除</button>
+            </div>
+          </div>
+
+          <div class="panel src-row">
+            <div class="src-id">
+              <div class="src-name">少数派</div>
+              <div class="src-url">https://sspai.com/feed</div>
+            </div>
+            <span class="chip">科技 · 30m</span>
+            <span class="src-state"><span class="dot ok"></span>18 分钟前采集成功</span>
+            <div class="src-actions">
+              <button class="ghost-btn plain" type="button">采集</button>
+              <button class="ghost-btn danger" type="button">删除</button>
+            </div>
+          </div>
+
+          <div class="panel src-row">
+            <div class="src-id">
+              <div class="src-name">36kr快讯</div>
+              <div class="src-url">http://localhost:1200/36kr/newsflashes</div>
+            </div>
+            <span class="chip">快讯 · 5m</span>
+            <span class="src-state"><span class="dot ok"></span>1 分钟前采集成功</span>
+            <div class="src-actions">
+              <button class="ghost-btn plain" type="button">采集</button>
+              <button class="ghost-btn danger" type="button">删除</button>
+            </div>
+          </div>
+
+          <div class="panel src-row">
+            <div class="src-id">
+              <div class="src-name">金十快讯</div>
+              <div class="src-url">http://localhost:1200/jin10</div>
+            </div>
+            <span class="chip">快讯 · 5m</span>
+            <span class="src-state bad"><span class="dot err"></span>退避中 · 第 3 次失败</span>
+            <div class="src-actions">
+              <button class="ghost-btn plain" type="button">采集</button>
+              <button class="ghost-btn danger" type="button">删除</button>
+            </div>
+          </div>
+
+          <div class="panel src-add">
+            <input class="input" placeholder="RSS / Atom / RSSHub 地址，如 https://sspai.com/feed" />
+            <div class="seg">
+              <button class="seg-item active" type="button">科技</button>
+              <button class="seg-item" type="button">开发</button>
+              <button class="seg-item" type="button">快讯</button>
+            </div>
+            <button class="ghost-btn" type="button">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+              添加源
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" data-view="home" hidden>
+        <div class="home-wrap">
+          <div class="home-title">工作台</div>
+          <div class="home-tools">
+            <button class="home-tool" type="button">
+              <span class="home-tool-top"><span class="home-tool-domain d-analysis"></span><span class="home-tool-name">流量监测</span><span class="home-tool-arrow">→</span></span>
+              <span class="home-tool-desc">API 自监测 · 外部上报 · GitHub 采集</span>
+            </button>
+            <button class="home-tool" type="button">
+              <span class="home-tool-top"><span class="home-tool-domain d-docs"></span><span class="home-tool-name">在线文档</span><span class="home-tool-arrow">→</span></span>
+              <span class="home-tool-desc">Markdown 文件树 · 在线编辑保存 · 全文搜索</span>
+            </button>
+            <button class="home-tool" type="button">
+              <span class="home-tool-top"><span class="home-tool-domain d-news"></span><span class="home-tool-name">资讯</span><span class="home-tool-arrow">→</span></span>
+              <span class="home-tool-desc">RSS 订阅聚合 · 快讯流 · 阅读状态（新增）</span>
+            </button>
+          </div>
+          <div class="panel home-recent">
+            <div class="home-recent-title">最新资讯 · 12 条未读</div>
+            <div class="home-row"><span class="u"></span>某大模型厂商发布推理模型新版本，API 价格下调 40%<span class="r">14:20</span></div>
+            <div class="home-row"><span class="u"></span>Show HN: 用 300 行 Rust 写的终端文件管理器<span class="r">13:05</span></div>
+            <div class="home-row"><span class="u"></span>科技爱好者周刊（第 330 期）：本地优先软件的回潮<span class="r">09:30</span></div>
+            <div class="home-row"><span style="width:5px;height:5px;flex:none;"></span>我的 2026 数字极简主义工具箱<span class="r">08:12</span></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="mock-strip">
+      <span class="strip-live"><span class="strip-dot"></span>monitor 正常</span>
+      <span class="strip-mid">资讯：4 源 · 12 未读 · 下次轮询 14:35</span>
+      <span>14:32</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var root = document.getElementById('mock');
+    if (!root) return;
+
+    function switchView(name) {
+      root.querySelectorAll('.mock-tab').forEach(function (x) {
+        x.classList.toggle('active', x.getAttribute('data-view') === name);
+      });
+      root.querySelectorAll('.view').forEach(function (s) {
+        s.hidden = s.getAttribute('data-view') !== name;
+      });
+    }
+
+    root.querySelectorAll('.mock-tab').forEach(function (t) {
+      t.addEventListener('click', function () { switchView(t.getAttribute('data-view')); });
+    });
+
+    // 头部条「源管理 / 返回资讯流」跳转：真实实现里分别是路由与返回
+    root.querySelectorAll('.js-goto').forEach(function (b) {
+      b.addEventListener('click', function () { switchView(b.getAttribute('data-goto')); });
+    });
+
+    var themeBtn = document.getElementById('theme-btn');
+    if (themeBtn) {
+      themeBtn.addEventListener('click', function () {
+        var toLight = root.getAttribute('data-theme') === 'dark';
+        root.setAttribute('data-theme', toLight ? 'light' : 'dark');
+        document.body.setAttribute('data-theme', toLight ? 'light' : 'dark');
+        themeBtn.querySelector('span').textContent = toLight ? '暗色预览' : '浅色预览';
+      });
+    }
+
+    root.querySelectorAll('.news-item').forEach(function (it) {
+      it.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        it.classList.toggle('open');
+      });
+    });
+
+    root.querySelectorAll('.news-star').forEach(function (b) {
+      b.addEventListener('click', function (e) {
+        e.stopPropagation();
+        b.classList.toggle('on');
+      });
+    });
+
+    root.querySelectorAll('.chip, .seg-item').forEach(function (c) {
+      c.addEventListener('click', function () {
+        if (c.parentElement && c.parentElement.classList.contains('seg')) {
+          c.parentElement.querySelectorAll('.seg-item').forEach(function (x) { x.classList.toggle('active', x === c); });
+        } else if (c.classList.contains('chip')) {
+          c.classList.toggle('active');
+        }
+      });
+    });
+  })();
+</script>
+</body>
+</html>

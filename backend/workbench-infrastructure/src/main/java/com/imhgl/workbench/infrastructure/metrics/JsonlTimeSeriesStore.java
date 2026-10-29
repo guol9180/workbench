@@ -145,7 +145,7 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
     public Overview overview(String source, long fromMinute, long toMinute) {
         long count = 0, err = 0, total = 0, max = 0;
         List<Integer> allSamples = new ArrayList<>();
-        for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute)) {
+        for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute, null)) {
             MinuteBucket b = e.getValue();
             synchronized (b) {
                 count += b.count;
@@ -163,11 +163,12 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
     }
 
     @Override
-    public List<SeriesPoint> series(String source, String metric, long fromMinute, long toMinute, boolean hourly) {
+    public List<SeriesPoint> series(String source, String metric, long fromMinute, long toMinute,
+                                    String endpointFilter, boolean hourly) {
         requireMetric(metric);
         // TreeMap 保证序列按时间升序输出；值数组为 [count, errCount, totalMs]
         Map<Long, long[]> groups = new TreeMap<>();
-        for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute)) {
+        for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute, endpointFilter)) {
             long bucket = hourly ? e.getKey().minute() - e.getKey().minute() % 60 : e.getKey().minute();
             long[] agg = groups.computeIfAbsent(bucket, k -> new long[3]);
             MinuteBucket b = e.getValue();
@@ -199,7 +200,7 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
         Map<String, long[]> byEndpoint = new LinkedHashMap<>(); // count, err, total
         Map<String, List<Integer>> samplesByEndpoint = new HashMap<>();
         Map<String, Long> maxByEndpoint = new HashMap<>();
-        for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute)) {
+        for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute, null)) {
             long[] agg = byEndpoint.computeIfAbsent(e.getKey().endpoint(), k -> new long[3]);
             MinuteBucket b = e.getValue();
             synchronized (b) {
@@ -291,10 +292,13 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
 
     // ---------- 内部机制 ----------
 
-    private Iterable<Map.Entry<BucketKey, MinuteBucket>> inRange(String source, long from, long to) {
+    /** 端点过滤在桶键上做：BucketKey 本就含 endpoint 维度，无需改变存储结构 */
+    private Iterable<Map.Entry<BucketKey, MinuteBucket>> inRange(String source, long from, long to, String endpointFilter) {
         return () -> buckets.entrySet().stream()
                 .filter(e -> e.getKey().source().equals(source)
-                        && e.getKey().minute() >= from && e.getKey().minute() <= to)
+                        && e.getKey().minute() >= from && e.getKey().minute() <= to
+                        && (endpointFilter == null || endpointFilter.isBlank()
+                            || e.getKey().endpoint().equals(endpointFilter)))
                 .iterator();
     }
 

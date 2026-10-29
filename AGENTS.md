@@ -111,6 +111,7 @@ workbench-backend
 - **上报枢纽**：外部系统按 `IngestRequest` 结构 POST 到 `/api/monitor/ingest`，`source` 自带标识（如 `nginx`、`server-a`），数据进同一时序存储。
 - **源配置约定（M6）**：配置持久化为 JSON 文件（`workbench.sources.file`，默认 `data/sources.json`），由 `SourceConfigStore` 独占读写；仓库范围由用户在配置页管理，**运行期配置而非 yml**。同 repo 重复接入 → `CONFLICT(40900)`；删除源只停采集，历史数据按保留策略自然过期。
 - **拉取采集约定（M6）**：`GithubCollector` 按 cron 定时 + 支持手动触发，用 JDK `HttpClient` 调 GitHub REST API（只读权限），解析零新增依赖（Jackson 为 web starter 既有传递依赖）；**非 HTTP 指标的入库映射**：`source = github/{owner}/{repo}`、`endpoint = 指标名`（views / downloads）、`status = 200`、`totalMs/maxMs = 0`、`count = 增量`（相对上次采集；重启后重新起算基线，首次记 0）、`ts = 数据所属日（UTC 日零点对齐分钟）`——GitHub 侧只提供日粒度、14 天窗口，此为上限而非实现选择。
+- **项目数据查询约定（M9.9 起）**：series 支持 `endpoint` 过滤（中性维度，BucketKey 本就含 endpoint）——GitHub 源的 views/downloads 单独出曲线；`GET /api/monitor/github/repos` 用当前 token 拉用户仓库列表供前端勾选接入（只读，/user/repos 上限 100 按 pushed 排序）。产品定位「我的项目」页：配置与数据查看合一，概览页专注 workbench 自监测（前端过滤 github/* 源）。
 - **GitHub token 动态配置（M7 起）**：token 支持配置页运行期设置（`PUT|DELETE /api/monitor/settings/github-token`），持久化于 sources.json 的 settings 区；**生效优先级 = 页面设置 > 环境变量 GITHUB_TOKEN**（页面清除后回落 env）。token 值任何接口永不回显，只暴露「已配置布尔位 + 来源（page/env）」。修订说明：原「token 不落盘」约定随动态配置需求废止——本地个人工具下，文件持久化与环境变量的暴露面等同，且换来免重启闭环。
 
 ### 3.6 workbench-server（com.imhgl.workbench）
@@ -224,7 +225,7 @@ com.imhgl.workbench.<x>/
 | POST | `/api/monitor/ingest` | `{source, points:[{endpoint, method, status, count, totalMs, maxMs, ts}]}` | - |
 | GET | `/api/monitor/sources` | - | `List<SourceStat{name, lastSeenMinute}>`（含自身 `workbench`） |
 | GET | `/api/monitor/overview?source=&range=5m\|1h\|6h\|24h\|7d` | query | `Overview{count, errCount, errRate, avgMs, p95Ms, rps}` |
-| GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h` | query | `List<SeriesPoint{bucketEpoch, value}>` |
+| GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h&endpoint=` | query | `List<SeriesPoint{bucketEpoch, value}>`（endpoint 可选：视图按端点过滤，如 GitHub 源的 views/downloads 单独出曲线；缺省=不过滤） |
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=count\|err\|avgMs` | query | `List<EndpointRank{endpoint, count, errCount, avgMs, p95Ms}>` |
 | GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关 / GitHub token 配置状态与来源；不回显任何 token 值） |
 | PUT | `/api/monitor/settings/github-token` | `{token}`（trim 后非空） | -（保存页面级 token，立即生效，优先于环境变量） |
@@ -234,6 +235,7 @@ com.imhgl.workbench.<x>/
 | PUT | `/api/monitor/source-configs/{id}` | 同 POST body | - |
 | DELETE | `/api/monitor/source-configs/{id}` | - | -（停采集；历史数据按保留策略自然过期） |
 | POST | `/api/monitor/source-configs/{id}/collect` | - | `{ok, error}`（手动立即采集；token 未配置时 ok=false 并给提示） |
+| GET | `/api/monitor/github/repos` | - | `List<String>`（当前 token 可见的仓库 full_name 列表，按最近推送排序、上限 100——「我的项目」页勾选式接入用；未配置 token → 400 + PARAM_INVALID） |
 
 源配置约定：`type` 当前仅 `github`；`repo` 须为 `owner/name`；`metrics` ⊆ {pages, downloads}；同 repo 重复接入 → 400 + `CONFLICT(40900)`；不存在 id → 404 + `NOT_FOUND(40400)`；校验失败 → 400 + `PARAM_INVALID`。
 
@@ -259,7 +261,7 @@ React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端�
    - **警示色独立**：`--warn`（琥珀黄）专职警示，与品牌强调色色相分离，禁止用强调色表达警告。
    - **标尺**：字号 7 档（11/12/13/14/16/20/26；文档编辑区阅读面特批 15px/1.75）、间距 4/8/12/16/24 节奏；text-3 两主题对表面 ≥4.5:1（WCAG AA）。
 3. **组件原语**：Panel / Segmented / Chip / GhostButton / StatusDot / Banner / Field / EmptyState（`components/ui/`）是共享视觉件的唯一来源；模块 CSS 只写布局与域特有样式，禁止复制原语观感。
-4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」，折叠钮在 logo 行且记忆折叠态，底部为 暖色/暗色切换 与 退出登录（清除本机密码并回登录页，带 loggedOut 状态防认证关闭时自动回跳）；登录页无侧栏入口——401 自动拦截与退出落地已覆盖全部到达路径，手动入口冗余；导航条目不加装饰性标记（M9.7 裁定：域色点因易被误读为状态提示而删除），未来新增工具 = 首页加一卡 + 侧栏加一条。
+4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」（概览=API 自监测态势，我的项目=GitHub 项目流量与下载量），折叠钮在 logo 行且记忆折叠态，底部为 暖色/暗色切换 与 退出登录（清除本机密码并回登录页，带 loggedOut 状态防认证关闭时自动回跳）；登录页无侧栏入口——401 自动拦截与退出落地已覆盖全部到达路径，手动入口冗余；导航条目不加装饰性标记（M9.7 裁定：域色点因易被误读为状态提示而删除），未来新增工具 = 首页加一卡 + 侧栏加一条。
 5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
 6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
 7. **认证流（M9.5 会话模型）**：登录页以「密码」呈现——密码经 `POST /api/auth/login` 换取会话令牌（SecureRandom 32B、内存态、默认 7 天过期），浏览器以 `X-API-Token: <会话令牌>` 携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」先调 `/api/auth/logout` 失效服务端会话再清本地；密码只在登录瞬间出现，浏览器存的是可过期会话令牌。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。

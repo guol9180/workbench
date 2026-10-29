@@ -127,8 +127,9 @@ class TrafficRecordFilterTest {
         }
 
         @Override
-        public List<SeriesPoint> series(String source, String metric, long fromMinute, long toMinute, boolean hourly) {
-            return delegate.series(source, metric, fromMinute, toMinute, hourly);
+        public List<SeriesPoint> series(String source, String metric, long fromMinute, long toMinute,
+                                        String endpointFilter, boolean hourly) {
+            return delegate.series(source, metric, fromMinute, toMinute, null, hourly);
         }
 
         @Override

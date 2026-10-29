@@ -44,6 +44,11 @@ public class GithubClient {
         return parseDownloadsTotal(get("/repos/" + repo + "/releases?per_page=100"));
     }
 
+    /** 当前 token 可见的仓库列表（full_name，最近推送优先、上限 100）——「我的项目」页勾选式接入用 */
+    public List<String> listRepos() throws IOException, InterruptedException {
+        return parseRepoNames(get("/user/repos?per_page=100&sort=pushed&affiliation=owner"));
+    }
+
     private JsonNode get(String path) throws IOException, InterruptedException {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.github.com" + path))
@@ -80,6 +85,16 @@ public class GithubClient {
             }
         }
         return total;
+    }
+
+    /** /user/repos 响应 → full_name 列表（跳过异常条目，宁缺勿错） */
+    static List<String> parseRepoNames(JsonNode root) {
+        List<String> out = new ArrayList<>();
+        for (JsonNode repo : root.withArray("")) {
+            String name = repo.path("full_name").asText("");
+            if (!name.isBlank()) out.add(name);
+        }
+        return out;
     }
 
     /** ISO 日期/时刻 → UTC 对齐毫秒（GitHub 日粒度数据的时间戳本身就是该日 UTC 零点） */

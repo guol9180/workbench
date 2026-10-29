@@ -97,9 +97,9 @@ const TOOLS = [
   },
   {
     to: '/sources',
-    name: '数据源',
+    name: '我的项目',
     domain: 'analysis' as const,
-    desc: '接入 GitHub Pages 流量与 Release 下载量等外部数据',
+    desc: '你放在 GitHub 上的项目：Pages 流量与 Release 下载量统计',
   },
 ]
 

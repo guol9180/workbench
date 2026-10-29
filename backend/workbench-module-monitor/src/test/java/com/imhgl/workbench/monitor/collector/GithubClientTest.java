@@ -49,4 +49,14 @@ class GithubClientTest {
         assertEquals(5, GithubCollector.delta(95L, 100L));
         assertEquals(0, GithubCollector.delta(120L, 100L));
     }
+
+    @Test
+    @DisplayName("user/repos：full_name 列表，异常条目跳过")
+    void parseRepoNames() throws Exception {
+        String json = """
+                [{"full_name":"o/a"},{"full_name":"o/b"},{"name":"broken-no-full-name"}]
+                """;
+        List<String> names = GithubClient.parseRepoNames(mapper.readTree(json));
+        assertEquals(List.of("o/a", "o/b"), names);
+    }
 }

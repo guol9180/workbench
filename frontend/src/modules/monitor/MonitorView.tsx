@@ -6,7 +6,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import PulseChart from '../../components/PulseChart'
-import { fmtClock, fmtHM, fmtInt, fmtMD, fmtMs, fmtRate } from '../../utils/format'
+import { fmtClock, fmtHM, fmtInt, fmtMs, fmtRate } from '../../utils/format'
 import { minutesToMs, monitorApi } from './api'
 import type { MetricKey, RangeKey, SeriesPointData, SortKey } from './api'
 import { usePolling } from './useMonitor'
@@ -94,16 +94,12 @@ export default function MonitorView() {
   const [metric, setMetric] = useState<MetricKey>('count')
   const [sortBy, setSortBy] = useState<SortKey>('count')
 
-  // GitHub 源是日粒度数据：唯一有意义的窗口是 7d，选中即自动切过去；avgMs/errCount 对它无意义，柱状图恒用 count
-  const isGithub = source.startsWith('github/')
-  useEffect(() => {
-    if (isGithub && range !== '7d') setRange('7d')
-  }, [isGithub, range])
-  const effectiveMetric: MetricKey = isGithub ? 'count' : metric
+  // 概览页专注系统自监测（M9.9 定位）：GitHub 项目数据住「我的项目」页，源列表在这里不出现
+  const apiSources = (sourcesQ.data ?? []).filter((s) => !s.name.startsWith('github/'))
 
   // 源列表就绪后矫正选择：优先自身 workbench，否则第一个源；无源保持空（不发起后续请求）
   useEffect(() => {
-    const names = (sourcesQ.data ?? []).map((s) => s.name)
+    const names = apiSources.map((s) => s.name)
     if (names.length > 0 && !names.includes(source)) {
       setSource(names.includes('workbench') ? 'workbench' : names[0])
     }
@@ -112,11 +108,9 @@ export default function MonitorView() {
   const enabled = source !== ''
   const selKey = `${source}|${range}`
   const overviewQ = usePolling(() => monitorApi.overview(source, range), 'ov|' + selKey, { enabled })
-  const seriesQ = usePolling(
-    () => monitorApi.series(source, effectiveMetric, range),
-    'se|' + selKey + '|' + effectiveMetric,
-    { enabled },
-  )
+  const seriesQ = usePolling(() => monitorApi.series(source, metric, range), 'se|' + selKey + '|' + metric, {
+    enabled,
+  })
   const endpointsQ = usePolling(() => monitorApi.topEndpoints(source, range, sortBy), 'ep|' + selKey + '|' + sortBy, { enabled })
   // 环比注脚：一次取三个指标序列，前半程 vs 后半段在客户端算（后端不支持历史窗口偏移）
   const deltasQ = usePolling(
@@ -139,11 +133,7 @@ export default function MonitorView() {
     [seriesQ.data],
   )
   const maxCount = Math.max(...endpoints.map((e) => e.count), 1)
-  const activeMetric = METRICS.find((m) => m.key === effectiveMetric)!
-  // GitHub 源读数位换算：views/downloads 是台账里的两行；活动天数 = 非零桶数
-  const viewsCount = endpoints.find((e) => e.endpoint === 'views')?.count ?? 0
-  const downloadsCount = endpoints.find((e) => e.endpoint === 'downloads')?.count ?? 0
-  const activeDays = points.filter((p) => p.v > 0).length
+  const activeMetric = METRICS.find((m) => m.key === metric)!
 
   // 环比读数：请求数（中性）、错误率（pp，升=坏）、均延（升=坏）；P95 无序列口径，不出注脚
   const [countSeries, avgSeries, errSeries] = deltasQ.data ?? [null, null, null]
@@ -214,50 +204,39 @@ export default function MonitorView() {
             <div className="mon-col-main">
               <section className="mon-hero panel">
                 <header className="mon-hero-head">
-                  <span className="mon-hero-title">{isGithub ? '活动柱图（日）' : '流量描迹'}</span>
-                  {!isGithub && (
-                    <Segmented
-                      options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
-                      value={metric}
-                      onChange={setMetric}
-                      mono={false}
-                      ariaLabel="描迹指标"
-                      itemStyle={(v, active) => {
-                        const m = METRICS.find((x) => x.key === v)
-                        return active && m ? { color: m.color } : undefined
-                      }}
-                    />
-                  )}
+                  <span className="mon-hero-title">流量描迹</span>
+                  <Segmented
+                    options={METRICS.map((m) => ({ value: m.key, label: m.label }))}
+                    value={metric}
+                    onChange={setMetric}
+                    mono={false}
+                    ariaLabel="描迹指标"
+                    itemStyle={(v, active) => {
+                      const m = METRICS.find((x) => x.key === v)
+                      return active && m ? { color: m.color } : undefined
+                    }}
+                  />
                 </header>
                 <PulseChart
-                  key={selKey + '|' + effectiveMetric}
+                  key={selKey + '|' + metric}
                   points={points}
-                  variant={isGithub ? 'bars' : 'trace'}
+                  variant="trace"
                   color={activeMetric.color}
                   formatValue={activeMetric.format}
-                  formatTime={isGithub ? fmtMD : fmtHM}
+                  formatTime={fmtHM}
                 />
 
-                {isGithub ? (
-                  <section className="mon-readouts">
-                    <Readout num={overview ? fmtInt(overview.count) : '—'} label="总活动（7d）" delta={countDelta} />
-                    <Readout num={fmtInt(viewsCount)} label="Pages 浏览量" />
-                    <Readout num={fmtInt(downloadsCount)} label="下载增量" />
-                    <Readout num={activeDays + ' 天'} label="有数据天数（近 7 天）" />
-                  </section>
-                ) : (
-                  <section className="mon-readouts">
-                    <Readout num={overview ? fmtInt(overview.count) : '—'} label="请求数" delta={countDelta} />
-                    <Readout
-                      num={overview ? fmtRate(overview.errRate) : '—'}
-                      label="错误率"
-                      delta={errDelta}
-                      numStyle={overview && overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}
-                    />
-                    <Readout num={overview ? fmtMs(overview.avgMs) : '—'} label="平均延迟" delta={avgDelta} />
-                    <Readout num={overview ? fmtMs(overview.p95Ms) : '—'} label="P95 延迟" />
-                  </section>
-                )}
+                <section className="mon-readouts">
+                  <Readout num={overview ? fmtInt(overview.count) : '—'} label="请求数" delta={countDelta} />
+                  <Readout
+                    num={overview ? fmtRate(overview.errRate) : '—'}
+                    label="错误率"
+                    delta={errDelta}
+                    numStyle={overview && overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}
+                  />
+                  <Readout num={overview ? fmtMs(overview.avgMs) : '—'} label="平均延迟" delta={avgDelta} />
+                  <Readout num={overview ? fmtMs(overview.p95Ms) : '—'} label="P95 延迟" />
+                </section>
               </section>
             </div>
 

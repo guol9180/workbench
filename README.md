@@ -24,7 +24,7 @@ workbench/
 │   ├── workbench-module-docs/    # 工具：在线文档（api 层 + DocPath 值对象 + 搜索服务）
 │   ├── workbench-module-monitor/ # 流量监测域：自监测 + 上报枢纽 + 查询（TimeRange 值对象）
 │   └── workbench-server/         # 聚合启动（main + application.yml，禁止业务）
-├── frontend/                     # React 19 + TS 前端：工作台首页 + 概览看板 + 在线文档 + 数据源 + 令牌接入
+├── frontend/                     # React 19 + TS 前端：工作台首页 + 概览看板 + 我的项目（GitHub）+ 在线文档
 ├── AGENTS.md / DEVELOP_PLAN.md / README.md
 └── docs/superpowers/plans/       # 重构实施计划（2026-10-15-backend-refactor-docs-only.md）
 ```
@@ -86,8 +86,9 @@ npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
 | PUT | `/api/monitor/source-configs/{id}` | 修改（启停 / 指标 / repo） |
 | DELETE | `/api/monitor/source-configs/{id}` | 删除（停采集；历史数据按保留策略自然过期） |
 | POST | `/api/monitor/source-configs/{id}/collect` | 手动立即采集（ok=false 时 error 给可行动原因） |
+| GET | `/api/monitor/github/repos` | 当前 token 可见的仓库列表（「我的项目」页勾选式接入用） |
 
-GitHub 采集：token 可直接在数据源页动态保存（持久化于 `data/sources.json`，**优先于环境变量** `GITHUB_TOKEN`，清除后回落 env）；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
+GitHub 采集：token 可直接在「我的项目」页动态保存（持久化于 `data/sources.json`，**优先于环境变量** `GITHUB_TOKEN`，清除后回落 env）；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
 
 **认证**（M9.5 双凭据）：`AUTH_PASSWORD_SHA256` = 登录密码的 SHA-256（服务端只存哈希），登录页输密码经 `/api/auth/login` 换取 7 天会话令牌；`API_TOKEN` = 机器凭据（外部系统 ingest 上报静态携带，可选）。任一非空 = 认证开启；全部 `/api/**` 须带 `X-API-Token`（浏览器带会话令牌、外部系统带机器令牌），失败 401 + `40100`；两者皆空 = 关闭。
 

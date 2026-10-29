@@ -23,9 +23,12 @@ public interface TimeSeriesStore extends AutoCloseable {
      * 时间序列：按分钟或整小时步长聚合。
      *
      * @param metric count | avgMs | errCount 之一，非法值抛 IllegalArgumentException
+     * @param endpointFilter 端点过滤（中性维度；null/空白 = 不过滤）——同一来源不同端点的
+     *                       序列需要分开看时使用（如拉取采集的 views 与 downloads）
      * @param hourly true = 小时步长（bucketEpoch 为整小时对齐的分钟值）
      */
-    List<SeriesPoint> series(String source, String metric, long fromMinute, long toMinute, boolean hourly);
+    List<SeriesPoint> series(String source, String metric, long fromMinute, long toMinute,
+                             String endpointFilter, boolean hourly);
 
     /**
      * 端点排行。
