@@ -264,7 +264,7 @@ React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端�
 6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
 7. **认证流（M9.5 会话模型）**：登录页以「密码」呈现——密码经 `POST /api/auth/login` 换取会话令牌（SecureRandom 32B、内存态、默认 7 天过期），浏览器以 `X-API-Token: <会话令牌>` 携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」先调 `/api/auth/logout` 失效服务端会话再清本地；密码只在登录瞬间出现，浏览器存的是可过期会话令牌。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。
 8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
-9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。Lute 引擎（约 3.7MB，懒加载且 Pages 缓存仅 10 分钟）由 `modules/docs/prefetch.ts` 在应用空闲时预执行——其脚本按 id 去重，预载必须 onload 后才补 id（镜像 Vditor 加载器行为），防止引擎未就绪被误判可用。
+9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。Lute（3.7MB）与 hljs 由 `modules/docs/prefetch.ts` 应用空闲时预执行——Pages 对大文件免 gzip 且跨境链路慢（实测 3.7MB 下载 215s），预载按 id 握手（onload 后补 id，镜像 Vditor 加载器去重行为）；引擎就绪前文档页以纯文本只读预览先展示内容（`docp-boot` 层，数据源 = openDoc 已落库的 savedContent），就绪后自动切换编辑器——内容可见不依赖引擎下载。
 
 ---
 

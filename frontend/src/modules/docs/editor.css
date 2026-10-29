@@ -1,41 +1,7 @@
 /** Vditor 主题对齐：编辑器表面统一压到语义令牌上，明暗随域主题自适应 */
-.docp-editor-wrap {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-}
-
 .docp-editor {
     flex: 1;
     min-height: 0;
-}
-
-/* Lute 引擎就绪前的加载反馈（见 VditorEditor） */
-.docp-editor-loading {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: var(--s0);
-    color: var(--text-3);
-    font-size: 13px;
-}
-
-.docp-editor-loading-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: docp-loading-pulse 1.2s ease-in-out infinite;
-}
-
-@keyframes docp-loading-pulse {
-    0%, 100% { opacity: 0.35; }
-    50% { opacity: 1; }
 }
 
 .docp-editor .vditor {

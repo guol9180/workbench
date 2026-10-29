@@ -22,6 +22,7 @@
 | M9.5 | **密码→会话认证（服务端只存哈希 + 登录限流 + 会话令牌）** | ✅ 已完成（v1.3.0） |
 | M9.6 | **文档首开提速：Lute 空闲预载 + 编辑器加载反馈 + Vditor 主库 defer** | ✅ 已完成（本提交） |
 | M9.7 | **删除侧栏域色点（易误读为状态提示）** | ✅ 已完成（本提交） |
+| M9.8 | **文档打开零等待：纯文本先读 + hljs 预载** | ✅ 已完成（本提交） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -72,6 +73,16 @@
 ## 当前任务（M9.7 · 删除侧栏域色点，已完成）
 
 用户反馈侧栏导航条目右侧的域色点（M9 引入的分析青/文档赭棕装饰）容易被误会为信息类提示。当前 2 域 4 页规模下该符号无可辨识信息量，且无 tooltip 等解释通道——删除。同步清理 NavItem.domain 死字段与 AppShell.css 中两处硬编码色值（#b4632e/#d08a4a）；主区 data-domain 域主题切换逻辑不受影响。AGENTS §9.4 已裁定：导航条目不加装饰性标记。
+
+## 当前任务（M9.8 · 文档打开零等待，已完成）
+
+**实测定位**（M9.6 预载后用户仍报等待很久）：`curl` 线上实测 `lute.min.js` —— Content-Encoding 为空（GitHub Pages/Fastly 对 3.7MB 大文件免 gzip），原样传输 3,701,520 bytes，跨境链路有效带宽约 17KB/s，总下载 215.5 秒。预载逻辑正常，但预载自身也受同一慢链路制约；等待与服务器（2C2G）无关。
+
+- [x] 打开文档不再等引擎：`docp-boot` 纯文本只读预览层（数据 = openDoc 已有的 savedContent，零额外请求），编辑器就绪（onEditorReady 订阅，先补写后通知）后自动切换；未打开文档时退化为加载提示
+- [x] VditorEditor 内部 loading 遮罩删除，加载 UI 统一归 DocsView（单一覆盖层）
+- [x] prefetch 扩展：hljs `highlight.min.js?v=11.7.0` 与 `third-languages.js?v=1.0.1`（查询串与 Vditor 请求逐字一致以合并下载）
+- [x] 保存安全：saveDoc/autosave 均有 isEditorReady 卫语句，预览期无输入无保存请求
+- [x] 验证：tsc + vite build 零错；preview 实测编辑器就绪后 boot 层正确卸载、无布局回归；后端零改动
 
 **服务器开启方式（v1.3.0 起）**：compose 设 `AUTH_PASSWORD_SHA256`（生成方式见 .env.example）→ `docker compose pull && up -d` → 浏览器登录输密码。密码遗失兜底：置空哈希重启 = 关闭认证。
 

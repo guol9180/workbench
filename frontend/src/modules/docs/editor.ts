@@ -15,6 +15,7 @@ export interface EditorHandle {
 let editor: EditorHandle | null = null
 let ready = false
 let pendingValue: string | null = null // 就绪前收到、待补写的内容；null 表示没有待补写内容
+const readyListeners = new Set<() => void>()
 
 export function attachEditor(instance: EditorHandle | null): void {
   editor = instance
@@ -26,10 +27,26 @@ export function attachEditor(instance: EditorHandle | null): void {
 export function markEditorReady(instance: EditorHandle): void {
   if (instance !== editor) return
   ready = true
-  if (pendingValue === null) return
-  const text = pendingValue
-  pendingValue = null
-  editor!.setValue(text)
+  if (pendingValue !== null) {
+    const text = pendingValue
+    pendingValue = null
+    editor!.setValue(text)
+  }
+  // 先补写再通知：监听方（文档页预览层卸载）看到 ready 时内容已就位
+  for (const cb of readyListeners) cb()
+  readyListeners.clear()
+}
+
+/** 订阅编辑器就绪（已就绪则同步回调）；返回退订函数供 effect cleanup */
+export function onEditorReady(cb: () => void): () => void {
+  if (ready) {
+    cb()
+    return () => {}
+  }
+  readyListeners.add(cb)
+  return () => {
+    readyListeners.delete(cb)
+  }
 }
 
 export function hasEditor(): boolean {

@@ -5,6 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { isEditorReady, onEditorReady } from './editor'
 import { DocsProvider, useDocs } from './useDocs'
 import Sidebar from './Sidebar'
 import VditorEditor from './VditorEditor'
@@ -28,6 +29,9 @@ function DocsWorkspace() {
   const autosaveTimer = useRef(0)
   const dragDepth = useRef(0)
   const fileInput = useRef<HTMLInputElement>(null)
+  // 编辑器就绪信号：Lute（3.7MB，Pages 免 gzip + 跨境慢链路）下载期间以纯文本先读
+  const [editorReady, setEditorReady] = useState(isEditorReady())
+  useEffect(() => onEditorReady(() => setEditorReady(true)), [])
 
   useEffect(() => {
     void actions.loadTree()
@@ -161,6 +165,24 @@ function DocsWorkspace() {
         <Sidebar />
         <main className="docp-main">
           <VditorEditor onInput={onEditorInput} />
+          {!editorReady && (
+            <div className="docp-boot" role="status">
+              {state.currentPath ? (
+                <>
+                  <pre className="docp-boot-text">{state.savedContent}</pre>
+                  <div className="docp-boot-hint">
+                    <i className="docp-boot-dot" />
+                    编辑器引擎加载中——已先展示纯文本，就绪后自动进入编辑
+                  </div>
+                </>
+              ) : (
+                <div className="docp-boot-hint">
+                  <i className="docp-boot-dot" />
+                  编辑器引擎加载中…
+                </div>
+              )}
+            </div>
+          )}
         </main>
         <LocalPreview />
       </div>
