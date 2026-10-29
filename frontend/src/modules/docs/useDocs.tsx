@@ -174,7 +174,6 @@ function useDocsStoreValue(): DocsStore {
           saveStatus: '',
           savedAt: '',
           localFile: null,
-          sidebarOpen: false,
         })
         setEditorValue(doc.content)
       } catch (e) {

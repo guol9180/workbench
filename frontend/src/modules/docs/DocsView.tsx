@@ -122,8 +122,21 @@ function DocsWorkspace() {
   return (
     <div className={'docp' + (state.sidebarOpen ? ' sidebar-open' : '')}>
       <header className="docp-bar">
-        <button className="docp-menu" title="目录" onClick={() => actions.setSidebarOpen(!state.sidebarOpen)}>
-          ☰
+        {/* 文件树收放全由用户手动控制（openDoc 不再自动收起）；收/放图标+提示语双态区分 */}
+        <button
+          className="docp-menu"
+          title={state.sidebarOpen ? '收起目录' : '展开目录'}
+          onClick={() => actions.setSidebarOpen(!state.sidebarOpen)}
+        >
+          {state.sidebarOpen ? (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+            </svg>
+          )}
         </button>
         <span className="docp-title">文档</span>
         <span className="docp-doc" title={state.currentPath}>
