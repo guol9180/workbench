@@ -13,8 +13,9 @@
 <body>
 <div id="root"></div>
 
-<!-- Vditor 本地 vendored 副本：文档工具在里程碑 B 以 React ref 封装复用，无外部 CDN -->
-<script src="./vendor/vditor/dist/index.min.js"></script>
+<!-- Vditor 本地 vendored 副本：文档工具在里程碑 B 以 React ref 封装复用，无外部 CDN。
+     defer 解除对首屏渲染的阻塞（window.Vditor 仅在文档路由挂载时访问，时序安全） -->
+<script defer src="./vendor/vditor/dist/index.min.js"></script>
 <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

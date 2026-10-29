@@ -4,7 +4,7 @@
  * 就绪协议见 editor.ts——句柄先建、异步就绪后补挂，双向不阻塞。
  * 卸载时先解绑适配层再销毁实例：迟到的 after 回调会因句柄不符被忽略。
  */
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { attachEditor, markEditorReady } from './editor'
 import { useTheme } from '../../theme'
 import './editor.css'
@@ -13,6 +13,7 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
   const elRef = useRef<HTMLDivElement>(null)
   const theme = useTheme()
   const vditorRef = useRef<VditorInstance | null>(null)
+  const [editorReady, setEditorReady] = useState(false)
   const onInputRef = useRef(onInput)
   useEffect(() => {
     onInputRef.current = onInput
@@ -52,7 +53,10 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
         if (suppressDirty) return
         onInputRef.current()
       },
-      after: () => markEditorReady(handle),
+      after: () => {
+        setEditorReady(true)
+        markEditorReady(handle)
+      },
     })
     vditorRef.current = vditor
     attachEditor(handle)
@@ -75,5 +79,16 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
     }
   }, [theme])
 
-  return <div ref={elRef} className="docp-editor" />
+  return (
+    <div className="docp-editor-wrap">
+      <div ref={elRef} className="docp-editor" />
+      {/* Lute 引擎就绪前的诚实反馈：预载命中时几乎不出现，弱网/直链深跳时兜底 */}
+      {!editorReady && (
+        <div className="docp-editor-loading" role="status">
+          <i className="docp-editor-loading-dot" />
+          编辑器引擎加载中…
+        </div>
+      )}
+    </div>
+  )
 }

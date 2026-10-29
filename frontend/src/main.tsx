@@ -10,9 +10,13 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './components/ui/ui.css'
 import App from './App'
+import { prefetchVditorLute } from './modules/docs/prefetch'
 
 createRoot(document.getElementById('root')!).render(
   // 不用 StrictMode：开发期「挂载→卸载→再挂载」会让 vendored Vditor 在半初始化态被
   // destroy 后重建，内部抛 "reading 'element'"。编辑器生命周期自身已保证配对（见 VditorEditor）。
   <App />,
 )
+
+// 空闲预载 Vditor Lute 引擎：文档页首开不再等 3.7MB 下载（详见 prefetch.ts）
+prefetchVditorLute()

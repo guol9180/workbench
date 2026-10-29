@@ -20,6 +20,7 @@
 | M9.3 | **部署链对齐现状：清退旧栈遗留，compose 重写为当前架构** | ✅ 已完成（本提交） |
 | M9.4 | **登录体验密码化 + 移除侧栏令牌入口** | ✅ 已完成 |
 | M9.5 | **密码→会话认证（服务端只存哈希 + 登录限流 + 会话令牌）** | ✅ 已完成（v1.3.0） |
+| M9.6 | **文档首开提速：Lute 空闲预载 + 编辑器加载反馈 + Vditor 主库 defer** | ✅ 已完成（本提交） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -57,6 +58,15 @@
 **AGENTS 前置修订（动码前必须先改）**：§3.2 framework 允许承载 `/api/auth/login|logout` 端点（认证机制属框架能力，与 Token 过滤器同属）；§8 认证段重写为双凭据模型；§6.3 增 `workbench.auth.password-sha256` ↔ `AUTH_PASSWORD_SHA256` 映射。
 
 **已勘点（探查结论， resume 时直接用）**：`ApiTokenProperties` 触点 = framework 的 config/filter 与 ApiTokenFilterTest、CorsApiTokenCompositionTest（重写为 AuthProperties + 组合场景）+ monitor `MonitorApiImpl`（status 的 authEnabled）与 MonitorCon…测试；前端触点 = AccessView submit（改打 login 端点，fetch 直连不走 api() 包装——401 在登录页不能触发自跳转）、http.ts 加 loginRequest 帮助函数、AppShell logout 先调 logout 端点。
+
+## 当前任务（M9.6 · 文档首开提速，已完成）
+
+**排查结论**：在线文档「内容已拿到但渲染慢」的瓶颈不在服务器（前端静态走 GitHub Pages CDN、API 只传文本），而在浏览器端——Vditor 的 Lute 引擎（3,656KB）在进入文档页时才开始懒加载下载+解析，`after()` 触发前 setValue 全部挂起；Pages 缓存仅 10 分钟，每个新会话首开都要重下。已读 vendored 压缩源码确认其加载器按 `id="vditorLuteScript"` 去重、id 存在即复用。
+
+- [x] `modules/docs/prefetch.ts`：应用空闲（requestIdleCallback，3s 兜底）预执行 Lute；onload 后才补 id 且已存在时不重复置——与 Vditor 加载器握手安全，早于预载进文档页时同 URL 并发请求自动合并
+- [x] `VditorEditor` 就绪前渲染「编辑器引擎加载中」遮罩（弱网/深链兜底，预载命中时几乎不出现）
+- [x] `index.html` Vditor 主库（290KB）加 `defer`——解除对全站首屏的阻塞，window.Vditor 仅文档路由挂载时访问、时序安全
+- [x] 验证：`tsc` + `vite build` 零错；本地 preview 实测编辑器正常初始化（工具栏渲染、占位出现、遮罩消失）；后端零改动
 
 **服务器开启方式（v1.3.0 起）**：compose 设 `AUTH_PASSWORD_SHA256`（生成方式见 .env.example）→ `docker compose pull && up -d` → 浏览器登录输密码。密码遗失兜底：置空哈希重启 = 关闭认证。
 
