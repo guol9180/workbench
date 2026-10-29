@@ -97,19 +97,6 @@
 
 .side-item-label { font-size: 13px; }
 
-/* 域色点：同一工作台、不同房间的暗示（分析青 / 文档赭棕） */
-.side-item-domain {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    margin-left: auto;
-    opacity: 0.85;
-}
-
-.side-item-domain.d-analysis { background: var(--accent); }
-.side-item-domain.d-docs { background: #b4632e; }
-:root[data-theme='dark'] .side-item-domain.d-docs { background: #d08a4a; }
-
 .side-foot {
     display: flex;
     flex-direction: column;
@@ -120,11 +107,10 @@
 
 .side-foot .side-item { width: 100%; }
 
-/* 折叠态：只留图标，字标/分组名/域点全部退场 */
+/* 折叠态：只留图标，字标/分组名退场 */
 .collapsed .side-wordmark,
 .collapsed .side-group-name,
-.collapsed .side-item-label,
-.collapsed .side-item-domain { display: none; }
+.collapsed .side-item-label { display: none; }
 
 .collapsed .sidebar { padding: 12px 8px; }
 .collapsed .side-brand { flex-direction: column; gap: 8px; padding-left: 0; padding-right: 0; }
@@ -196,7 +182,7 @@
 
 @media (max-width: 768px) {
     .shell, .shell.collapsed { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
-    .side-wordmark, .side-group-name, .side-item-label, .side-item-domain { display: none; }
+    .side-wordmark, .side-group-name, .side-item-label { display: none; }
     .strip-mid { display: none; }
     .sidebar { padding: 12px 8px; }
     .side-brand { flex-direction: column; gap: 8px; padding-left: 0; padding-right: 0; }

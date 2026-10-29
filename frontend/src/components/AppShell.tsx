@@ -17,7 +17,6 @@ const COLLAPSE_KEY = 'wb-rail-collapsed'
 interface NavItem {
   to: string
   label: string
-  domain: 'analysis' | 'docs'
   icon: ReactElement
 }
 
@@ -30,7 +29,6 @@ const w = (d: string): ReactElement => (
 const HOME: NavItem = {
   to: '/home',
   label: '首页',
-  domain: 'analysis',
   icon: w('M4 11 12 4l8 7M6.5 9.5V20h11V9.5'),
 }
 const GROUPS: Array<{ name: string; items: NavItem[] }> = [
@@ -40,7 +38,6 @@ const GROUPS: Array<{ name: string; items: NavItem[] }> = [
       {
         to: '/monitor',
         label: '概览',
-        domain: 'analysis',
         icon: (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
             <polyline
@@ -53,13 +50,13 @@ const GROUPS: Array<{ name: string; items: NavItem[] }> = [
           </svg>
         ),
       },
-      { to: '/sources', label: '数据源', domain: 'analysis', icon: w('M12 3c4.4 0 8 1.25 8 2.8v12.4c0 1.55-3.6 2.8-8 2.8s-8-1.25-8-2.8V5.8C4 4.25 7.6 3 12 3Zm-8 2.8c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8M4 12c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8') },
+      { to: '/sources', label: '数据源', icon: w('M12 3c4.4 0 8 1.25 8 2.8v12.4c0 1.55-3.6 2.8-8 2.8s-8-1.25-8-2.8V5.8C4 4.25 7.6 3 12 3Zm-8 2.8c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8M4 12c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8') },
     ],
   },
   {
     name: '工具',
     items: [
-      { to: '/docs', label: '文档', domain: 'docs', icon: w('M7 2.5h7l4 4V21.5H7zM14 2.5v4h4M10 12.5h5M10 16h5') },
+      { to: '/docs', label: '文档', icon: w('M7 2.5h7l4 4V21.5H7zM14 2.5v4h4M10 12.5h5M10 16h5') },
     ],
   },
 ]
@@ -99,7 +96,6 @@ export default function AppShell() {
     <NavLink key={it.to} to={it.to} title={it.label} className={({ isActive }) => itemCls(isActive)}>
       {it.icon}
       <span className="side-item-label">{it.label}</span>
-      <i className={'side-item-domain d-' + it.domain} aria-hidden="true" />
     </NavLink>
   )
 
