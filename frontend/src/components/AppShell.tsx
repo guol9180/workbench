@@ -1,7 +1,7 @@
 /**
  * 应用骨架：分组文字侧栏（可折叠记忆）+ 主区 + 底部遥测状态条。
  * - 主区按路由挂 data-domain：换域即换气质（analysis 石墨青 / docs 暖纸），骨架恒定
- * - 侧栏底部：主题切换（明暗记忆）+ 访问令牌 + 折叠钮
+ * - 侧栏底部：主题切换（明暗记忆）+ 退出登录；登录页无侧栏入口（401 拦截与退出落地已覆盖全部到达路径）
  * - 骨架不掺任何业务语义；各模块自带头部条
  */
 import { useEffect, useState } from 'react'
@@ -64,7 +64,6 @@ const GROUPS: Array<{ name: string; items: NavItem[] }> = [
   },
 ]
 
-const TOKEN_ICON = w('M8 15a4.5 4.5 0 1 1 3.5-4.5M11.5 11.5 20 3M16.5 6.5l3 3')
 const LOGOUT_ICON = w('M13 4h5v16h-5M9.5 8l-4 4 4 4M5.5 12H16')
 
 export default function AppShell() {
@@ -163,12 +162,7 @@ export default function AppShell() {
             )}
             <span className="side-item-label">{theme === 'dark' ? '浅色模式' : '暗色模式'}</span>
           </button>
-          {/* manage 状态：接入页对 open 探测不自动回跳，停留显示认证状态（否则认证关闭时点了就闪屏弹回） */}
-          <NavLink to="/login" state={{ manage: true }} title="访问令牌" className={({ isActive }) => itemCls(isActive)}>
-            {TOKEN_ICON}
-            <span className="side-item-label">访问令牌</span>
-          </NavLink>
-          <button className="side-item side-logout" title="清除本机令牌并退出" onClick={logout}>
+          <button className="side-item side-logout" title="清除已保存的密码并退出" onClick={logout}>
             {LOGOUT_ICON}
             <span className="side-item-label">退出登录</span>
           </button>

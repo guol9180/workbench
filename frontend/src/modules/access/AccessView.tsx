@@ -1,7 +1,7 @@
 /**
- * 接入页：令牌认证（v2 后端无密码登录端点）。
- * 流程：进页探测 /api/monitor/status——open 直接进概览；locked 出令牌表单；
- * offline 给重试。提交令牌 = 写入本地 + 重新探测，成功即走。
+ * 登录页：密码登录（界面呈现为密码；内部机制 = 密码即后端 API_TOKEN，经 X-API-Token 携带）。
+ * 流程：进页探测 /api/monitor/status——open 直接进首页；locked 出密码表单；
+ * offline 给重试。提交 = 写入本地 + 重新探测，成功即走。
  * 视觉：粒子景深场（琥珀/冰蓝）+ 玻璃卡 + 指针 3D 倾斜 + 失败抖动——旧登录页的好基因全保留。
  */
 import { useEffect, useRef, useState } from 'react'
@@ -16,8 +16,6 @@ export default function AccessView() {
   const location = useLocation()
   // 「已退出」态：侧栏退出登录带状态进来时，open 探测不自动回跳（否则认证关闭会原地弹回首页）
   const loggedOut = useRef((location.state as { loggedOut?: boolean } | null)?.loggedOut === true)
-  // 「管理」态：侧栏访问令牌入口，同样要求停留（认证关闭时展示"无需令牌"说明卡）
-  const manage = useRef((location.state as { manage?: boolean } | null)?.manage === true)
   const [phase, setPhase] = useState<'probing' | 'locked' | 'offline' | 'open'>('probing')
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -28,7 +26,7 @@ export default function AccessView() {
 
   // 消费即清 history state：刷新后视为新访问，不留残留标记
   useEffect(() => {
-    if (loggedOut.current || manage.current) navigate(location.pathname, { replace: true, state: null })
+    if (loggedOut.current) navigate(location.pathname, { replace: true, state: null })
     // eslint-disable-next-line react-hooks/exhaustive-deps —— 仅进页时清一次
   }, [])
 
@@ -37,7 +35,7 @@ export default function AccessView() {
 
   async function probe(): Promise<'open' | 'locked' | 'offline'> {
     const result = await probeStatus()
-    if (result === 'open' && !loggedOut.current && !manage.current) {
+    if (result === 'open' && !loggedOut.current) {
       navigate('/home', { replace: true })
     } else {
       setPhase(result)
@@ -87,7 +85,7 @@ export default function AccessView() {
       navigate('/home', { replace: true })
     } else {
       setToken(null)
-      setError('令牌不被接受——核对后端 API_TOKEN 后重试')
+      setError('密码不正确——请核对后重试')
       shake()
     }
   }
@@ -120,9 +118,8 @@ export default function AccessView() {
             {phase === 'open' && (
               <div className="acc-offline">
                 <p>
-                  {loggedOut.current
-                    ? '已退出登录。当前后端未开启认证。'
-                    : '当前后端未开启认证——无需令牌即可使用。设置服务器环境变量 API_TOKEN 后，在此输入接入令牌。'}
+                  {/* phase=open 只可能来自 loggedOut：无状态直链会被探测自动接回首页 */}
+                  已退出登录。当前后端未开启认证。
                 </p>
                 <button className="acc-btn" onClick={() => navigate('/home', { replace: true })}>
                   重新进入工作台
@@ -152,7 +149,7 @@ export default function AccessView() {
                   value={value}
                   className="acc-input"
                   type="password"
-                  placeholder="接入令牌"
+                  placeholder="请输入登录密码"
                   autoComplete="current-password"
                   onChange={(e) => setValue(e.target.value)}
                 />
@@ -164,7 +161,7 @@ export default function AccessView() {
             )}
 
             <p className="acc-hint">
-              {getToken() ? '本地已存有令牌，失效后需重新输入。' : '令牌只存在本机浏览器，不发往别处。'}
+              {getToken() ? '本地已保存密码，失效后需重新输入。' : '密码仅保存在本机浏览器，不发往别处。'}
             </p>
           </div>
         </div>

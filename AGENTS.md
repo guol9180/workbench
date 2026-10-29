@@ -259,10 +259,10 @@ React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端�
    - **警示色独立**：`--warn`（琥珀黄）专职警示，与品牌强调色色相分离，禁止用强调色表达警告。
    - **标尺**：字号 7 档（11/12/13/14/16/20/26；文档编辑区阅读面特批 15px/1.75）、间距 4/8/12/16/24 节奏；text-3 两主题对表面 ≥4.5:1（WCAG AA）。
 3. **组件原语**：Panel / Segmented / Chip / GhostButton / StatusDot / Banner / Field / EmptyState（`components/ui/`）是共享视觉件的唯一来源；模块 CSS 只写布局与域特有样式，禁止复制原语观感。
-4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」，折叠钮在 logo 行且记忆折叠态，底部为 暗色模式 / 访问令牌 / 退出登录（清除本机令牌并回接入页，带 loggedOut 状态防认证关闭时自动回跳）；导航条目带域色点，未来新增工具 = 首页加一卡 + 侧栏加一条。
+4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」，折叠钮在 logo 行且记忆折叠态，底部为 暖色/暗色切换 与 退出登录（清除本机密码并回登录页，带 loggedOut 状态防认证关闭时自动回跳）；登录页无侧栏入口——401 自动拦截与退出落地已覆盖全部到达路径，手动入口冗余；导航条目带域色点，未来新增工具 = 首页加一卡 + 侧栏加一条。
 5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
 6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
-7. **认证流**：接入页探测 `/api/monitor/status`——open 直进首页 / locked 出令牌表单 / offline 重试；侧栏「访问令牌」（manage）与「退出登录」（loggedOut）进入时 open 不自动回跳，停留显示认证状态卡；令牌仅存 localStorage，不出浏览器。
+7. **认证流（密码化 UX，M9.4 起）**：登录页以「密码」呈现——密码即服务器 `API_TOKEN`（同值），经 `X-API-Token` 头携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」（loggedOut）进入时 open 不自动回跳；密码仅存 localStorage，不出浏览器。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。
 8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
 9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。
 

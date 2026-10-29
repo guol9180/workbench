@@ -51,7 +51,7 @@ export async function api<T = unknown>(url: string, options: RequestInit = {}): 
     setToken(null)
     // hash 路由：直接改 hash 触发路由切换，避免引入 router 依赖
     location.hash = '#/login'
-    throw new ApiError('未认证：请输入接入令牌')
+    throw new ApiError('未认证或密码已变更，请重新登录')
   }
   // 非 JSON 响应（离线代理错误页/空响应）不能把解析异常原文抛给用户
   let body: { message: string; code: number; data: T }
