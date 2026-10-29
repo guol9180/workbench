@@ -165,22 +165,15 @@ function DocsWorkspace() {
         <Sidebar />
         <main className="docp-main">
           <VditorEditor onInput={onEditorInput} />
-          {!editorReady && (
+          {/* 只在「已打开文档且引擎未就绪」时覆盖：未打开文档时让 Vditor 骨架
+              （工具栏+placeholder，无需 Lute 即渲染）直接可见，避免整片空白 */}
+          {!editorReady && state.currentPath && (
             <div className="docp-boot" role="status">
-              {state.currentPath ? (
-                <>
-                  <pre className="docp-boot-text">{state.savedContent}</pre>
-                  <div className="docp-boot-hint">
-                    <i className="docp-boot-dot" />
-                    编辑器引擎加载中——已先展示纯文本，就绪后自动进入编辑
-                  </div>
-                </>
-              ) : (
-                <div className="docp-boot-hint">
-                  <i className="docp-boot-dot" />
-                  编辑器引擎加载中…
-                </div>
-              )}
+              <pre className="docp-boot-text">{state.savedContent}</pre>
+              <div className="docp-boot-hint">
+                <i className="docp-boot-dot" />
+                编辑器引擎加载中——已先展示纯文本，就绪后自动进入编辑
+              </div>
             </div>
           )}
         </main>

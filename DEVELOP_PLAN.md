@@ -23,6 +23,7 @@
 | M9.6 | **文档首开提速：Lute 空闲预载 + 编辑器加载反馈 + Vditor 主库 defer** | ✅ 已完成（本提交） |
 | M9.7 | **删除侧栏域色点（易误读为状态提示）** | ✅ 已完成（本提交） |
 | M9.8 | **文档打开零等待：纯文本先读 + hljs 预载** | ✅ 已完成（本提交） |
+| M9.8.1 | **修复 M9.8 白屏回归：boot 层仅在已打开文档时显示** | ✅ 已完成（本提交） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -83,6 +84,15 @@
 - [x] prefetch 扩展：hljs `highlight.min.js?v=11.7.0` 与 `third-languages.js?v=1.0.1`（查询串与 Vditor 请求逐字一致以合并下载）
 - [x] 保存安全：saveDoc/autosave 均有 isEditorReady 卫语句，预览期无输入无保存请求
 - [x] 验证：tsc + vite build 零错；preview 实测编辑器就绪后 boot 层正确卸载、无布局回归；后端零改动
+
+## 当前任务（M9.8.1 · 白屏回归修复，已完成）
+
+用户实测 M9.8 后两个反馈：① 点击文档入口整页发白；② 刷新后内容秒出但编辑器仍要等很久。定位：① 是 M9.8 设计失误——`docp-boot` 在未打开文档时也全屏覆盖主区，把 Vditor 无需 Lute 即渲染的工具栏+placeholder 骨架盖住，视觉上整片空白；② 是 Lute 215s 慢下载的物理事实，预览层已让内容先行，编辑器就绪无法再由前端逻辑加速。
+
+- [x] boot 层显示条件收紧为「已打开文档（currentPath 非空）且引擎未就绪」——未打开文档时 Vditor 骨架直接可见
+- [x] index.html 增加 Lute `<link rel="preload" as="script">`：下载起点从 idle 回调提前到 HTML 解析，与首屏渲染并行（执行仍由 prefetch.ts 空闲时做，命中缓存）
+- [x] 验证：tsc + build 零错；preview 实测进入 /docs 骨架立即可见无白屏
+- [ ] 编辑器就绪的首次 215s 无法在前端消除；根治需把 vendor 静态资源挪到自有服务器（Caddy 自动 gzip + 国内链路），涉及部署链调整，待用户决策
 
 **服务器开启方式（v1.3.0 起）**：compose 设 `AUTH_PASSWORD_SHA256`（生成方式见 .env.example）→ `docker compose pull && up -d` → 浏览器登录输密码。密码遗失兜底：置空哈希重启 = 关闭认证。
 

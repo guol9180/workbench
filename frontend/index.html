@@ -9,6 +9,9 @@
     <link rel="apple-touch-icon" href="./apple-touch-icon.png">
     <meta name="theme-color" content="#0a0e18">
     <link rel="stylesheet" href="./vendor/vditor/dist/index.css">
+    <!-- Lute 是文档编辑器的必经引擎且 Pages 免 gzip、跨境慢（实测 3.7MB 215s）：
+         HTML 解析即开始预取，与首屏渲染并行；真正的执行仍由 prefetch.ts 在空闲时做 -->
+    <link rel="preload" href="./vendor/vditor/dist/js/lute/lute.min.js" as="script">
 </head>
 <body>
 <div id="root"></div>
