@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { CSSProperties, FormEvent, MouseEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { getToken, probeStatus, setToken } from '../../api/http'
+import { getToken, loginRequest, probeStatus } from '../../api/http'
 import { initLoginScene } from './loginScene'
 import './access.css'
 
@@ -74,18 +74,16 @@ export default function AccessView() {
 
   async function submit(e: FormEvent) {
     e.preventDefault()
-    const token = value.trim()
-    if (!token || busy) return
+    const password = value.trim()
+    if (!password || busy) return
     setBusy(true)
     setError('')
-    setToken(token)
-    const result = await probeStatus()
+    const result = await loginRequest(password)
     setBusy(false)
-    if (result === 'open') {
+    if (result.ok) {
       navigate('/home', { replace: true })
     } else {
-      setToken(null)
-      setError('密码不正确——请核对后重试')
+      setError(result.message)
       shake()
     }
   }

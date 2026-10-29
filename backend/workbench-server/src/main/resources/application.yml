@@ -22,8 +22,12 @@ workbench:
     # 允许的前端来源，逗号分隔
     allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
   auth:
-    # 轻量 Token 认证：非空时 /api/** 须带 X-API-Token 请求头；空 = 关闭（本地开发默认态）
-    token: ${API_TOKEN:}
+    # 密码登录（人类）：AUTH_PASSWORD_SHA256 = 登录密码的 SHA-256 hex（echo -n '密码' | sha256sum）；非空 = /api/auth/login 开启
+    password-sha256: ${AUTH_PASSWORD_SHA256:}
+    # 机器凭据（ingest 外部上报）：API_TOKEN 非空时外部系统可带 X-API-Token 直连
+    machine-token: ${API_TOKEN:}
+    # 会话时长（小时）；会话存内存，容器重启即失效
+    session-ttl-hours: 168
   metrics:
     # 监测时序数据目录（按天 JSONL 滚动）
     data-dir: ${METRICS_DATA:./data/metrics}

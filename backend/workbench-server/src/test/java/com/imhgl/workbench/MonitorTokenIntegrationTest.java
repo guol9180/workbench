@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Token 认证集成（开启态）：无头/错值 401+40100、正确值放行、Swagger 天然放行、
+ * 机器凭据认证集成（开启态）：无头/错值 401+40100、正确值放行、Swagger 天然放行、
  * 401 请求也被自监测计入（过滤器先于认证）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -35,7 +35,7 @@ class MonitorTokenIntegrationTest {
     static void props(DynamicPropertyRegistry registry) throws IOException {
         Path metricsDir = Files.createTempDirectory("workbench-metrics-t");
         Path docsDir = Files.createTempDirectory("workbench-docs-t");
-        registry.add("workbench.auth.token", () -> TOKEN);
+        registry.add("workbench.auth.machine-token", () -> TOKEN);
         registry.add("workbench.metrics.data-dir", () -> metricsDir.toString());
         registry.add("workbench.storage.root", () -> docsDir.toString());
     }

@@ -19,8 +19,55 @@ export function setToken(token: string | null): void {
 /** 后端返回 code !== 0 或 401 时抛出，message 面向用户可直接展示 */
 export class ApiError extends Error {}
 
+/** 登录请求结果：ok=false 时 message 为可直接展示的错误文案 */
+export interface LoginResult {
+  ok: boolean
+  message: string
+}
+
 /** 探测结论：open=无需令牌，locked=需要令牌，offline=后端不可达 */
 export type ProbeResult = 'open' | 'locked' | 'offline'
+
+/**
+ * 密码登录：POST /api/auth/login 换取会话令牌并写入本地存储。
+ * fetch 直连不走 api()——登录页自身的 401/429 不能触发「清令牌跳登录页」的自跳转。
+ */
+export async function loginRequest(password: string): Promise<LoginResult> {
+  try {
+    const res = await fetch(BASE + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    })
+    if (res.ok) {
+      const body = (await res.json()) as { code: number; data: { token: string } | null; message: string | null }
+      if (body.code === 0 && body.data?.token) {
+        setToken(body.data.token)
+        return { ok: true, message: '' }
+      }
+      return { ok: false, message: body.message || '登录失败' }
+    }
+    if (res.status === 401) return { ok: false, message: '密码不正确——请核对后重试' }
+    if (res.status === 429) {
+      const body = (await res.json().catch(() => null)) as { message?: string } | null
+      return { ok: false, message: body?.message ?? '尝试次数过多，请稍后再试' }
+    }
+    return { ok: false, message: '登录失败，请稍后再试' }
+  } catch {
+    return { ok: false, message: '后端无响应或返回异常——请确认 workbench-server 已启动' }
+  }
+}
+
+/** 注销：尽力失效服务端会话（离线/失败不阻断本地清理，调用方负责清令牌） */
+export async function logoutRequest(): Promise<void> {
+  try {
+    const token = getToken()
+    if (!token) return
+    await fetch(BASE + '/api/auth/logout', { method: 'POST', headers: { 'X-API-Token': token } })
+  } catch {
+    // 离线时本地清理照常进行
+  }
+}
 
 /**
  * 认证探测：只看 /api/monitor/status 的状态码，不做 401 跳转、不抛错——

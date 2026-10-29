@@ -9,7 +9,10 @@ services:
       # 仅绑定本机回环，外部流量统一走 Caddy HTTPS 反代
       - "127.0.0.1:8080:8080"
     environment:
-      # 非空即开启登录验证；生成：openssl rand -base64 24。置空/删除 = 关闭认证
+      # 登录密码哈希：必填。先生成密码，再取其 SHA-256（echo -n '密码' | sha256sum）；置空/删除 = 关闭认证
+      - AUTH_PASSWORD_SHA256=${AUTH_PASSWORD_SHA256:?请在同目录 .env 中设置（生成方式见 .env.example）}
+      # 可选机器凭据（ingest 外部上报静态携带）；不用可留空或删除
+      - API_TOKEN=${API_TOKEN:-}
       - API_TOKEN=${API_TOKEN:?请在同目录 .env 中设置 API_TOKEN}
       # 跨域放行的前端来源
       - CORS_ALLOWED_ORIGINS=https://workbench.imhgl.com

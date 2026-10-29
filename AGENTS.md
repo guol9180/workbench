@@ -80,9 +80,9 @@ workbench-backend
 
 职责：Web 应用运行所需的通用框架能力。
 
-- 允许存放：全局异常处理（业务异常→400 语义错误码；校验失败→400 `PARAM_INVALID`；未知→500 不泄漏细节）、参数校验、CORS 配置、SpringDoc/OpenAPI 配置、轻量 Token 认证过滤器、请求上下文等 Web 通用机制。
+- 允许存放：全局异常处理（业务异常→400 语义错误码；校验失败→400 `PARAM_INVALID`；未知→500 不泄漏细节）、参数校验、CORS 配置、SpringDoc/OpenAPI 配置、轻量认证机制（Token 过滤器 + `/api/auth/login|logout` 认证端点——M9.5 起修订放行，属认证机制而非业务端点）、请求上下文等 Web 通用机制。
 - 禁止存放：HTTP 端点（一律放业务模块）、业务逻辑、业务 DTO。
-- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig、ApiTokenProperties）、`filter/ApiTokenFilter`。CORS 在 Filter 层处理（CorsFilter 先于 ApiTokenFilter，401 响应也带跨域头），不用 MVC 层 CORS——原因见 CorsConfig Javadoc。
+- 当前内容：`handler/GlobalExceptionHandler`、`config/`（CorsProperties、CorsConfig、OpenApiConfig、AuthProperties）、`filter/AuthFilter`、`auth/`（LoginService 密码→会话签发与失败锁定、AuthController 认证端点）。CORS 在 Filter 层处理（CorsFilter 先于 ApiTokenFilter，401 响应也带跨域头），不用 MVC 层 CORS——原因见 CorsConfig Javadoc。
 
 ### 3.3 workbench-infrastructure（com.imhgl.workbench.infrastructure）
 
@@ -163,7 +163,7 @@ com.imhgl.workbench.<x>/
 
 1. 业务模块配置：`workbench.<module>.*`（如 `workbench.docs.*`）。
 2. infrastructure 配置：技术组件中性命名（如 `workbench.storage.*`），禁止业务前缀。
-3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`、`workbench.auth.token` ↔ `API_TOKEN`、`workbench.metrics.data-dir` ↔ `METRICS_DATA`、`workbench.sources.github-token` ↔ `GITHUB_TOKEN`）。
+3. 环境变量映射保持部署稳定：改配置键不改环境变量（`workbench.storage.root` ↔ `DOCS_ROOT`、`workbench.cors.allowed-origins` ↔ `CORS_ALLOWED_ORIGINS`、SpringDoc 开关 ↔ `SPRINGDOC_API_DOCS_ENABLED`、`workbench.auth.token` ↔ `API_TOKEN`、`workbench.metrics.data-dir` ↔ `METRICS_DATA`、`workbench.sources.github-token` ↔ `GITHUB_TOKEN`）。M9.5 起认证为双凭据模型：`workbench.auth.password-sha256` ↔ `AUTH_PASSWORD_SHA256`（人类登录，服务端只存哈希）、`workbench.auth.machine-token` ↔ `API_TOKEN`（机器凭据，ingest 沿用原名）。
    源配置文件路径 `workbench.sources.file` ↔ `WORKBENCH_SOURCES_FILE`（M9.2 起生产 compose 持久化到 workbench-runtime 卷，避免容器重建丢源配置与 token）。
 4. framework 认证配置 `workbench.auth.token` 归 framework 中性管理（Web 通用机制）；infrastructure 时序配置 `workbench.metrics.*`（data-dir / retention-days / flush-interval-seconds）中性命名；monitor 源采集配置 `workbench.sources.*`（file / github-token / cron）归 monitor 模块。
 
@@ -202,7 +202,7 @@ com.imhgl.workbench.<x>/
 
 统一包装：`ApiResult{message, code, data}`，`code=0` 成功；错误码见 3.1。
 
-**认证（全局）**：`workbench.auth.token` 非空时，全部 `/api/**` 请求须携带请求头 `X-API-Token`（含 docs 与 monitor；Swagger 路径不在 `/api/**` 内天然放行），失败 → HTTP 401 + `UNAUTHORIZED(40100, "未认证")`；token 为空 = 认证关闭。
+**认证（全局，M9.5 双凭据模型）**：启用方式二选一或并用——① `AUTH_PASSWORD_SHA256`（登录密码的 SHA-256 hex，服务端只存哈希）：`POST /api/auth/login` {password} 常量时间比对后签发会话令牌（内存态，默认 7 天过期，重启即失效），浏览器后续以 `X-API-Token: <会话令牌>` 访问；连续 5 次失败全局锁 60 秒（HTTP 429 + Retry-After）。② `API_TOKEN`（机器凭据，供 ingest 外部上报静态携带）。任一非空 = 认证开启，全部 `/api/**`（`/api/auth/**` 与 Swagger 除外）须携带 `X-API-Token`，失败 → HTTP 401 + `UNAUTHORIZED(40100, "未认证")`；两者皆空 = 认证关闭。`POST /api/auth/logout` 失效当前会话。
 
 **docs 域（八端点，工具）**：
 
@@ -262,7 +262,7 @@ React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端�
 4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」，折叠钮在 logo 行且记忆折叠态，底部为 暖色/暗色切换 与 退出登录（清除本机密码并回登录页，带 loggedOut 状态防认证关闭时自动回跳）；登录页无侧栏入口——401 自动拦截与退出落地已覆盖全部到达路径，手动入口冗余；导航条目带域色点，未来新增工具 = 首页加一卡 + 侧栏加一条。
 5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
 6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
-7. **认证流（密码化 UX，M9.4 起）**：登录页以「密码」呈现——密码即服务器 `API_TOKEN`（同值），经 `X-API-Token` 头携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」（loggedOut）进入时 open 不自动回跳；密码仅存 localStorage，不出浏览器。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。
+7. **认证流（M9.5 会话模型）**：登录页以「密码」呈现——密码经 `POST /api/auth/login` 换取会话令牌（SecureRandom 32B、内存态、默认 7 天过期），浏览器以 `X-API-Token: <会话令牌>` 携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」先调 `/api/auth/logout` 失效服务端会话再清本地；密码只在登录瞬间出现，浏览器存的是可过期会话令牌。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。
 8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
 9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。
 

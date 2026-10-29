@@ -89,7 +89,7 @@ npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
 
 GitHub 采集：token 可直接在数据源页动态保存（持久化于 `data/sources.json`，**优先于环境变量** `GITHUB_TOKEN`，清除后回落 env）；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
 
-**认证**：环境变量 `API_TOKEN` 非空时，全部 `/api/**` 须携带请求头 `X-API-Token`，失败 401 + `40100`；为空 = 关闭。登录页以「密码」呈现，密码即 `API_TOKEN` 同值。
+**认证**（M9.5 双凭据）：`AUTH_PASSWORD_SHA256` = 登录密码的 SHA-256（服务端只存哈希），登录页输密码经 `/api/auth/login` 换取 7 天会话令牌；`API_TOKEN` = 机器凭据（外部系统 ingest 上报静态携带，可选）。任一非空 = 认证开启；全部 `/api/**` 须带 `X-API-Token`（浏览器带会话令牌、外部系统带机器令牌），失败 401 + `40100`；两者皆空 = 关闭。
 
 错误映射：文件/目录不存在 → 400 + `40400`；已存在/冲突 → 400 + `40900`；非法输入（穿越、非法名、扩展名白名单外）→ 400 + `40000`；未知路径 → 404 + `40400`；方法不支持 → 405 + `40500`；未认证 → 401 + `40100`；未知异常 → 500 + `50000`「服务器内部错误」。完整行为约定见 [AGENTS.md · API 设计约定](./AGENTS.md#8-api-设计约定apidocs-与-apimonitor)。
 
@@ -101,6 +101,6 @@ GitHub 采集：token 可直接在数据源页动态保存（持久化于 `data/
 
 1. 克隆本仓库（用到 `docker-compose.yml` 与 `Caddyfile`），同目录建 `.env`（参考 `.env.example`，必填 `API_TOKEN`；`openssl rand -base64 24` 生成）
 2. `docker compose pull && docker compose up -d`——Caddy 自动为 api.imhgl.com 申请证书并反代到 workbench:8080
-3. 首次访问 workbench.imhgl.com 会被 401 拦到登录页，输入登录密码（即 `API_TOKEN`，仅存本机浏览器）
+3. 首次访问 workbench.imhgl.com 会被 401 拦到登录页，输入登录密码——服务端校验后签发 7 天会话令牌，仅存本机浏览器
 
 持久化：`workbench-docs` 卷存文档库；`workbench-runtime` 卷存监测时序与源配置（含 GitHub token，任何接口不回显）。认证开关 = `API_TOKEN` 是否为空；令牌遗失 → 置空重启回到关闭态，重新生成后再开。

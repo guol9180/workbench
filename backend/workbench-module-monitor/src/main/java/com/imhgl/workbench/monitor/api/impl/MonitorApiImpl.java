@@ -2,7 +2,7 @@ package com.imhgl.workbench.monitor.api.impl;
 
 import com.imhgl.workbench.common.exception.BusinessException;
 import com.imhgl.workbench.common.exception.ErrorCode;
-import com.imhgl.workbench.framework.config.ApiTokenProperties;
+import com.imhgl.workbench.framework.config.AuthProperties;
 import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
@@ -37,12 +37,12 @@ public class MonitorApiImpl implements MonitorApi {
     private static final Set<String> SUPPORTED_METRICS = Set.of("pages", "downloads");
 
     private final MonitorService service;
-    private final ApiTokenProperties authProperties;
+    private final AuthProperties authProperties;
     private final SourceConfigStore sourceConfigStore;
     private final GithubCollector githubCollector;
     private final GithubTokenProvider tokenProvider;
 
-    public MonitorApiImpl(MonitorService service, ApiTokenProperties authProperties,
+    public MonitorApiImpl(MonitorService service, AuthProperties authProperties,
                           SourceConfigStore sourceConfigStore, GithubCollector githubCollector,
                           GithubTokenProvider tokenProvider) {
         this.service = service;
@@ -85,7 +85,7 @@ public class MonitorApiImpl implements MonitorApi {
     @Override
     public MonitorStatus status() {
         StoreStatus storeStatus = service.storeStatus();
-        boolean authEnabled = authProperties.token() != null && !authProperties.token().isBlank();
+        boolean authEnabled = authProperties.enabled();
         // GitHub token 只暴露「配没配 + 来源（page/env）」：配置页据此渲染就绪态或引导条
         boolean tokenReady = tokenProvider.hasToken();
         return new MonitorStatus(storeStatus.memoryBuckets(), storeStatus.dataFiles(),

@@ -19,7 +19,7 @@
 | M9.2 | **开启登录验证前置：CORS 移至 Filter 层（401 带跨域头）** | ✅ 已完成（v1.2.1） |
 | M9.3 | **部署链对齐现状：清退旧栈遗留，compose 重写为当前架构** | ✅ 已完成（本提交） |
 | M9.4 | **登录体验密码化 + 移除侧栏令牌入口** | ✅ 已完成 |
-| M9.5 | **密码→会话认证（服务端只存哈希 + 登录限流 + 会话令牌）** | ⏸ 暂停（设计已定，未动码） |
+| M9.5 | **密码→会话认证（服务端只存哈希 + 登录限流 + 会话令牌）** | ✅ 已完成（v1.3.0） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -30,7 +30,18 @@
 - [x] 清理死代码：AccessView 的 manage 状态（唯一发送方是被删的侧栏入口）；401 提示改「未认证或密码已变更，请重新登录」
 - [x] `/login` 路由保留：401 自动拦截、退出落地、无状态直链（认证关闭时自动进入）三种路径不变
 
-## 当前任务（M9.5 · 密码→会话认证，⏸ 暂停——设计已定，未写代码）
+## 当前任务（M9.5 · 密码→会话认证，已完成）
+
+（设计触发与威胁模型分析见 git 历史 96e9e57 的暂停记录；本节为落地清单。）
+
+- [x] `AuthProperties`（替换 ApiTokenProperties）：passwordSha256 / machineToken / sessionTtlHours 三字段 + enabled()/loginEnabled() 语义
+- [x] `LoginService`：SHA-256 常量时间比对、SecureRandom 32B 会话签发（内存 Map、TTL 惰性清理）、全局 5 次失败锁 60 秒、WrongPassword/RateLimited/LoginDisabled 语义异常
+- [x] `AuthController`：POST /api/auth/login（401 密码错 / 429 带 Retry-After / 404 未启用）、POST /api/auth/logout
+- [x] `ApiTokenFilter` → `AuthFilter`：会话令牌 ∨ 机器令牌双校验；/api/auth/** 直通（login 无凭据可达，logout 对未知令牌无害）
+- [x] monitor status：authEnabled = 密码哈希非空 ∨ 机器令牌非空（AuthProperties.enabled()）
+- [x] 测试：LoginServiceTest 5 例、AuthFilterTest 7 例（禁用/会话流/机器流/锁定/预检/直通）、CorsApiTokenCompositionTest 4 例（401 带跨域头 + 登录跨域可达）、MonitorTokenIntegrationTest 迁移到 machine-token——全量构建 EXIT=0
+- [x] 前端：http.ts loginRequest（fetch 直连防自跳转）+ logoutRequest；AccessView 提交走登录端点（401/429 文案直显）；退出登录先失效服务端会话
+- [x] 配置/文档：application.yml 双凭据键、compose 与 .env.example 换 AUTH_PASSWORD_SHA256、README 认证段与部署步、AGENTS §3.2/§6.3/§8 修订
 
 **触发**：用户裁定「安全永远第一位」，否决 M9.4 的「密码与 API_TOKEN 同值直传」作为长期方案（该方案的真实缺口：① 无爆破防护——静态头可被无限次猜解且无锁定；② 服务端明文存 API_TOKEN——compose/.env 泄露即全失守；③ 浏览器存全权永久凭据——XSS 窃取即失守）。
 
@@ -47,7 +58,7 @@
 
 **已勘点（探查结论， resume 时直接用）**：`ApiTokenProperties` 触点 = framework 的 config/filter 与 ApiTokenFilterTest、CorsApiTokenCompositionTest（重写为 AuthProperties + 组合场景）+ monitor `MonitorApiImpl`（status 的 authEnabled）与 MonitorCon…测试；前端触点 = AccessView submit（改打 login 端点，fetch 直连不走 api() 包装——401 在登录页不能触发自跳转）、http.ts 加 loginRequest 帮助函数、AppShell logout 先调 logout 端点。
 
-**注意**：生产当前未开启认证（API_TOKEN 空），暂停不影响线上；若要在 M9.5 落地前先开认证，用旧方式（直接配 API_TOKEN）即可，M9.5 落地时再迁到哈希模式。
+**服务器开启方式（v1.3.0 起）**：compose 设 `AUTH_PASSWORD_SHA256`（生成方式见 .env.example）→ `docker compose pull && up -d` → 浏览器登录输密码。密码遗失兜底：置空哈希重启 = 关闭认证。
 
 ## 任务归档（M9.2 · 开启登录验证前置，已完成）
 

@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react'
 import type { ReactElement } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { setToken } from '../api/http'
+import { logoutRequest, setToken } from '../api/http'
 import StatusBar from './StatusBar'
 import { initTheme, setTheme, type Theme } from '../theme'
 import './AppShell.css'
@@ -85,9 +85,10 @@ export default function AppShell() {
     setThemeState(next)
   }
 
-  /** 退出登录：无服务端会话可销毁，语义 = 清除本机令牌并回接入页。
-   *  带 loggedOut 状态让接入页跳过 open 自动回跳（认证关闭时否则会原地弹回首页）。 */
-  function logout() {
+  /** 退出登录：先尽力失效服务端会话，再清本机密码并回登录页。
+   *  带 loggedOut 状态让登录页跳过 open 自动回跳（认证关闭时否则会原地弹回首页）。 */
+  async function logout() {
+    await logoutRequest()
     setToken(null)
     navigate('/login', { state: { loggedOut: true } })
   }
@@ -162,7 +163,7 @@ export default function AppShell() {
             )}
             <span className="side-item-label">{theme === 'dark' ? '浅色模式' : '暗色模式'}</span>
           </button>
-          <button className="side-item side-logout" title="清除已保存的密码并退出" onClick={logout}>
+          <button className="side-item side-logout" title="清除已保存的密码并退出" onClick={() => void logout()}>
             {LOGOUT_ICON}
             <span className="side-item-label">退出登录</span>
           </button>
