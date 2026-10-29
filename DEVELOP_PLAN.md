@@ -24,6 +24,7 @@
 | M9.7 | **删除侧栏域色点（易误读为状态提示）** | ✅ 已完成（本提交） |
 | M9.8 | **文档打开零等待：纯文本先读 + hljs 预载** | ✅ 已完成（本提交） |
 | M9.8.1 | **修复 M9.8 白屏回归：boot 层仅在已打开文档时显示** | ✅ 已完成（本提交） |
+| M9.8.2 | **回滚 preload：慢链路上高优先级抢占带宽堵死首屏主 JS** | ✅ 已完成（本提交） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -93,6 +94,13 @@
 - [x] index.html 增加 Lute `<link rel="preload" as="script">`：下载起点从 idle 回调提前到 HTML 解析，与首屏渲染并行（执行仍由 prefetch.ts 空闲时做，命中缓存）
 - [x] 验证：tsc + build 零错；preview 实测进入 /docs 骨架立即可见无白屏
 - [ ] 编辑器就绪的首次 215s 无法在前端消除；根治需把 vendor 静态资源挪到自有服务器（Caddy 自动 gzip + 国内链路），涉及部署链调整，待用户决策
+
+## 当前任务（M9.8.2 · preload 白屏回滚，已完成）
+
+M9.8.1 的 preload 在生产链路上造成整站白屏（本地 preview 带宽无限无法复现——测试盲区）：`<link rel="preload" as="script">` 声明于 head，HTML 解析即以高优先级下载 3.7MB Lute；站点为 HTTP/2 单连接，慢链路（~17KB/s）下 Lute 传输占满连接带宽，body 末尾的主 module script（325KB）排队等待，React 迟迟不挂载 → 首屏白屏数分钟。教训：大资源预取禁止使用 preload 抢首屏带宽窗口，空闲注入（M9.6 模式）才是正确姿势。
+
+- [x] 删除 index.html 的 preload 行；Lute 预载回归 prefetch.ts 空闲注入（等待应用启动完成后才占带宽）
+- [x] 教训写入本节：本仓库所有「优化传输时序」的改动必须在慢链路条件下验证（本地 devtools 节流或线上实测），preview 通过不代表生产可用
 
 **服务器开启方式（v1.3.0 起）**：compose 设 `AUTH_PASSWORD_SHA256`（生成方式见 .env.example）→ `docker compose pull && up -d` → 浏览器登录输密码。密码遗失兜底：置空哈希重启 = 关闭认证。
 
