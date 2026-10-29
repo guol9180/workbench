@@ -19,6 +19,7 @@
 | M9.2 | **开启登录验证前置：CORS 移至 Filter 层（401 带跨域头）** | ✅ 已完成（v1.2.1） |
 | M9.3 | **部署链对齐现状：清退旧栈遗留，compose 重写为当前架构** | ✅ 已完成（本提交） |
 | M9.4 | **登录体验密码化 + 移除侧栏令牌入口** | ✅ 已完成 |
+| M9.5 | **密码→会话认证（服务端只存哈希 + 登录限流 + 会话令牌）** | ⏸ 暂停（设计已定，未动码） |
 
 ## 当前任务（M9.4 · 登录体验密码化，已完成）
 
@@ -28,6 +29,25 @@
 - [x] 侧栏删除「访问令牌」入口与 TOKEN_ICON，底部剩 暖色/暗色切换 + 退出登录；退出按钮 tooltip 改「清除已保存的密码并退出」
 - [x] 清理死代码：AccessView 的 manage 状态（唯一发送方是被删的侧栏入口）；401 提示改「未认证或密码已变更，请重新登录」
 - [x] `/login` 路由保留：401 自动拦截、退出落地、无状态直链（认证关闭时自动进入）三种路径不变
+
+## 当前任务（M9.5 · 密码→会话认证，⏸ 暂停——设计已定，未写代码）
+
+**触发**：用户裁定「安全永远第一位」，否决 M9.4 的「密码与 API_TOKEN 同值直传」作为长期方案（该方案的真实缺口：① 无爆破防护——静态头可被无限次猜解且无锁定；② 服务端明文存 API_TOKEN——compose/.env 泄露即全失守；③ 浏览器存全权永久凭据——XSS 窃取即失守）。
+
+**设计（已定稿）**：
+
+- 新环境变量 `AUTH_PASSWORD_SHA256`（服务端只存密码的 SHA-256 hex；生成：`echo -n '密码' | sha256sum`，或 PowerShell `Get-FileHash` 管道）——配置文件泄露不再泄露可用凭据
+- `API_TOKEN` 保留但语义改为**机器凭据**（ingest 外部上报用；静态 API key 明文是业界常态，类比 GitHub PAT），与人类密码分离
+- `POST /api/auth/login` {password} → 常量时间比对 SHA-256 → 签发 SecureRandom 32B hex 会话令牌（内存 ConcurrentHashMap，TTL 默认 7 天、惰性清理）→ 返回 {token, expiresAt}；容器重启 = 全部会话失效（个人工具可接受，重启后重新输密码）
+- 登录限流：全局桶 5 次失败锁 60 秒（Caddy 反代后无法取真实 IP，单用户场景全局桶即可）
+- `POST /api/auth/logout` 失效当前会话（前端退出登录时先调它再清 localStorage）
+- ApiTokenFilter 校验改为：会话令牌 ∈ 活跃集（常量时间比较）∨ machine-token 匹配；status 的 authEnabled = 密码哈希非空 ∨ machine-token 非空
+
+**AGENTS 前置修订（动码前必须先改）**：§3.2 framework 允许承载 `/api/auth/login|logout` 端点（认证机制属框架能力，与 Token 过滤器同属）；§8 认证段重写为双凭据模型；§6.3 增 `workbench.auth.password-sha256` ↔ `AUTH_PASSWORD_SHA256` 映射。
+
+**已勘点（探查结论， resume 时直接用）**：`ApiTokenProperties` 触点 = framework 的 config/filter 与 ApiTokenFilterTest、CorsApiTokenCompositionTest（重写为 AuthProperties + 组合场景）+ monitor `MonitorApiImpl`（status 的 authEnabled）与 MonitorCon…测试；前端触点 = AccessView submit（改打 login 端点，fetch 直连不走 api() 包装——401 在登录页不能触发自跳转）、http.ts 加 loginRequest 帮助函数、AppShell logout 先调 logout 端点。
+
+**注意**：生产当前未开启认证（API_TOKEN 空），暂停不影响线上；若要在 M9.5 落地前先开认证，用旧方式（直接配 API_TOKEN）即可，M9.5 落地时再迁到哈希模式。
 
 ## 任务归档（M9.2 · 开启登录验证前置，已完成）
 
