@@ -167,15 +167,15 @@
 :root {
     /*
      * 字体族三角色：
-     * body   —— 中文 UI 与正文：系统中文栈；Segoe UI 先接管拉丁，避免中文黑体里的西文观感。
+     * body   —— 中文 UI 与正文：IBM Plex Sans 负责拉丁，中文回落到系统 UI 字体。
      * display—— 标题 / 品牌 / 大数字：Chakra Petch 负责拉丁，中文回落到 UI 黑体。
-     * mono   —— 数据 / 路径 / 时间 / 元信息：Overpass Mono 负责拉丁与数字；中文回落 UI 黑体，
+     * mono   —— 数据 / 路径 / 时间 / 元信息：IBM Plex Mono 负责拉丁与数字；中文回落 UI 黑体，
      *           不再让 Windows 的 monospace 兜底走到 NSimSun（宋体），否则标签里的中文会突然变衬线。
      */
-    --font-body: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei',
-        'Noto Sans SC', 'Source Han Sans SC', system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI',
+        'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', system-ui, sans-serif;
     --font-display: 'Chakra Petch', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
-    --font-mono: 'Overpass Mono', 'SFMono-Regular', Menlo, Consolas, 'Microsoft YaHei UI', 'PingFang SC',
+    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, 'Microsoft YaHei UI', 'PingFang SC',
         'Noto Sans SC', monospace;
 
     /* 字号阶梯：11 / 12 / 13 / 14 / 16 / 20 / 26；文档阅读面 15 单列 */

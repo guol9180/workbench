@@ -341,10 +341,18 @@ Vue 3 前端整体重写为 React 19 + TypeScript（用户裁定架构可换）�
 
 ## 当前任务（M10.1 · 字体与间距复审，已完成）
 
-- [x] 字体三角色收口：正文 `--font-body`（Segoe UI 接管拉丁 + 雅黑 UI 接管中文）、展示 `--font-display`（Chakra Petch / 文档域 Georgia+宋体）、数据 `--font-mono`（Overpass Mono；中文回落雅黑 UI，修复此前落入 NSimSun 宋体的问题）
+- [x] 字体三角色收口：正文 `--font-body`、展示 `--font-display`、数据 `--font-mono`；M10.2 已将西文替换为 IBM Plex Sans / IBM Plex Mono，中文回落雅黑 UI，修复此前落入 NSimSun 宋体的问题
 - [x] 字号 7 档（`--fs-xs 11` ~ `--fs-2xl 26`）+ 阅读面 `--fs-read 15`；行高、字重、字距全部令牌化；全站 CSS 不再出现裸 `font-size` / `line-height` / `font-weight`
 - [x] 间距令牌：布局 4/8/12/16/24/32；控件内边距 6/10/12/24；图标-文字 6（小控件）/8（导航与按钮）；页面、面板、卡片、表格统一到同一节奏
 - [x] 组件细节：Button 图标-文字 8（sm 6）、Tag 4/8、Chip 28 高、Combobox 选项 8/12、输入框 12、面板 16/24；表头数字列右对齐，空心/窄屏留白复核
 - [x] 文案换行：`text-wrap: pretty + word-break: keep-all` 避免「下载量 / 全文搜索」被拆开；我的项目空态/占位符与文档欢迎语随宽度收紧
-- [x] 字体验证：CDP `CSS.getPlatformFontsForNode` 确认页面标题为雅黑 UI Bold、正文拉丁为 Segoe UI、mono 中的中文不再落到 NSimSun
+- [x] 字体验证：CDP `CSS.getPlatformFontsForNode` 确认中文不再落到 NSimSun；M10.2 进一步把西文替换为 IBM Plex Sans / IBM Plex Mono
 - [x] 布局验证：1440 与 390 均 `scrollWidth = innerWidth`（无横向溢出）；桌面/手机、明暗截图逐页复核
+
+## 当前任务（M10.2 · 英文字体与数据/文档布局复审，已完成）
+
+- [x] 英文字体：正文拉丁 IBM Plex Sans 400/500/600，数据 / 路径 / 元信息 IBM Plex Mono 400/500；移除 Overpass Mono 与 Segoe 主导；Chakra Petch 展示层保留；fontsource 自托管（CDP 实测 `IBMPlexSans-Regular` / `IBMPlexMono-Regular`）
+- [x] 我的项目数据区：展开卡跨满卡片网格；两张日曲线各 533px 并排；摘要两列与图列对齐；操作移到卡片头部右侧；图表与文字间距统一 8/16，空态文本不再挤出列外
+- [x] 文档编辑区：Vditor mount 改为 `.docp-editor` 内独立层，纸面边框/底色与留白生效；文件树收起时正文列 860→1040 并居中；大纲通过 `outline.position='right'` 固定右侧
+- [x] 文档全屏：强制覆盖视口（实测 1440×900）、不透明纸色、隐藏 AppShell 侧栏/状态条/文档条；修复全屏时侧栏、欢迎卡透出与尺寸偏小
+- [x] 同步 AGENTS 第 7 / 9.2 / 9.9 节、README 与字体依赖；`npm run build` 零错，1440/390 截图复核

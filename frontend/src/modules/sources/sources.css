@@ -319,21 +319,56 @@
 
 /* ---------- 卡片展开的数据区 ---------- */
 
+/* 展开时让数据区跨满卡片网格：两张日曲线并排也有足够的绘图宽度，
+   不再把 7 个日期压进 159px 的窄列里 */
+.src-card.is-open {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--space-4);
+}
+
+/* 展开卡片的头部左右分工：仓库/标签/采集状态在左，操作在右；
+   数据区仍横跨两列 */
+.src-card.is-open .src-card-top,
+.src-card.is-open .src-card-metrics,
+.src-card.is-open .src-card-status { grid-column: 1; }
+
+.src-card.is-open .src-card-ops {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    align-self: center;
+    justify-content: flex-end;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+}
+
+.src-card.is-open .src-detail { grid-column: 1 / -1; }
+
 .src-detail {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
     margin-top: var(--space-1);
-    padding-top: var(--space-3);
+    padding-top: var(--space-4);
     border-top: 1px solid var(--line-soft);
 }
 
 .src-detail-nums {
     grid-column: 1 / -1;
-    display: flex;
-    gap: var(--space-5);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
     color: var(--text-3);
     font-size: var(--fs-sm);
+}
+
+.src-detail-num {
+    display: flex;
+    align-items: baseline;
+    gap: var(--gap-icon-sm);
+    min-width: 0;
 }
 
 .src-detail-num b {
@@ -341,7 +376,6 @@
     font-size: var(--fs-xl);
     font-weight: var(--fw-medium);
     color: var(--text);
-    margin-right: var(--gap-icon-sm);
     font-variant-numeric: tabular-nums;
 }
 
@@ -350,7 +384,7 @@
     font-family: var(--font-mono);
     font-size: var(--fs-xs);
     letter-spacing: var(--tracking-mono);
-    margin-bottom: 4px;
+    margin-bottom: var(--space-2);
 }
 
 .src-detail-err {
@@ -369,6 +403,13 @@
     .src-form-metrics { padding-left: 0; }
     .src-cards { grid-template-columns: minmax(0, 1fr); }
     .src-detail { grid-template-columns: 1fr; }
+    .src-card.is-open { display: flex; }
+    .src-card.is-open .src-card-ops {
+        margin-top: var(--space-1);
+        padding-top: var(--space-3);
+        border-top: 1px solid var(--line-soft);
+        justify-content: flex-start;
+    }
 
     /* 折叠区窄屏分两行：标题独占一行，来源标签/状态/箭头在下一行 */
     .src-settings-head { flex-wrap: wrap; row-gap: var(--space-2); }

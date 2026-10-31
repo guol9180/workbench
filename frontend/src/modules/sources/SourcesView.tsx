@@ -323,7 +323,7 @@ function ProjectCard({
   const downloadsTotal = (downloadsQuery.data ?? []).reduce((total, point) => total + point.value, 0)
 
   return (
-    <Panel key={config.id} className="src-card">
+    <Panel key={config.id} className={'src-card' + (open ? ' is-open' : '')}>
       <div className="src-card-top">
         <StatusDot
           state={config.lastError ? 'err' : config.lastOkAt ? 'ok' : 'idle'}
@@ -382,8 +382,8 @@ function ProjectCard({
       {open && (
         <div className="src-detail">
           <div className="src-detail-nums">
-            <span className="src-detail-num"><b>{fmtInt(viewsTotal)}</b> 7 天浏览</span>
-            <span className="src-detail-num"><b>{fmtInt(downloadsTotal)}</b> 7 天下载</span>
+            <span className="src-detail-num"><b>{fmtInt(viewsTotal)}</b><span>7 天浏览</span></span>
+            <span className="src-detail-num"><b>{fmtInt(downloadsTotal)}</b><span>7 天下载</span></span>
           </div>
           <div className="src-chart">
             <div className="src-chart-head">Pages 浏览量 · 每天</div>

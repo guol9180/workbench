@@ -47,6 +47,8 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
         'list', 'ordered-list', 'check', 'quote', 'code', 'inline-code', 'link', 'table', '|',
         'undo', 'redo', '|', 'edit-mode', 'preview', 'outline', 'fullscreen',
       ],
+      // 文档树已在左侧，大纲默认从右侧抽屉展开，避免两个左栏叠在一起
+      outline: { enable: false, position: 'right' },
       toolbarConfig: { pin: true },
       input: () => {
         if (suppressDirty) return
@@ -76,5 +78,9 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
   }, [theme])
 
   // 加载反馈不在本组件：DocsView 以 boot 预览层统一覆盖（含纯文本先读），避免两层 UI
-  return <div ref={elRef} className="docp-editor" />
+  return (
+    <div className="docp-editor">
+      <div ref={elRef} className="docp-editor-mount" />
+    </div>
+  )
 }

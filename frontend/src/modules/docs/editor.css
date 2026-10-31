@@ -3,6 +3,13 @@
     flex: 1;
     min-height: 0;
     padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+}
+
+.docp-editor-mount {
+    flex: 1;
+    min-height: 0;
 }
 
 /* 纸面：编辑器从"整块白"变成画布上的一张纸，与文档域气质一致 */
@@ -13,6 +20,77 @@
     overflow: hidden;
     background: var(--s0);
     font-family: var(--font-body);
+}
+
+/* Vditor 自身把全屏类挂在 mount 上；必须压掉纸张圆角/边框与 wrapper 的留白，
+   并给出不透明底色，否则全屏时侧栏、顶部条和欢迎卡会从透明层里透出来。
+   Vditor 计算出的全屏宽高可能受页面滚动条影响（实测 1418×802），
+   所以这里强制贴住视口四边，内容区按工具栏高度铺满。 */
+.docp-editor .vditor.vditor--fullscreen {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: none !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: var(--s0) !important;
+    z-index: 90;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+/* 兜底一层不透明底：Vditor 的内容层是透明的，单纯给父级背景在部分合成路径下
+   仍会露出侧栏/状态条 */
+.docp-editor .vditor.vditor--fullscreen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: var(--s0);
+}
+
+/* 全屏时先铺一层覆盖整个视口的纸色底（含 AppShell 侧栏/状态条），
+   Vditor 自身全屏层再叠在上面；否则窄内容列两侧会露出文档域的米色底 */
+.docp:has(.vditor--fullscreen)::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 89;
+    background: var(--s0);
+}
+
+/* 全屏是编辑器的独占态：把 AppShell 侧栏/状态条和文档自己的顶部条、文件树、
+   空态卡都藏起来，只留全屏编辑器；文档画的底色也统一到纸面，避免两侧露边 */
+body:has(.vditor--fullscreen) .sidebar,
+body:has(.vditor--fullscreen) .strip,
+.docp:has(.vditor--fullscreen) .docp-bar,
+.docp:has(.vditor--fullscreen) .docp-sidebar,
+.docp:has(.vditor--fullscreen) .docp-welcome {
+    visibility: hidden;
+}
+
+body:has(.vditor--fullscreen) .shell-main,
+.docp:has(.vditor--fullscreen),
+.docp:has(.vditor--fullscreen) .docp-layout,
+.docp:has(.vditor--fullscreen) .docp-main {
+    background: var(--s0);
+}
+
+.docp-editor .vditor.vditor--fullscreen .vditor-content {
+    height: calc(100vh - 42px) !important;
+}
+
+/* 全屏时 Vditor 的内容层是透明的；把内容层也压成纸面底色，
+   否则左右两侧和状态条会从透明区域透出来 */
+.docp-editor .vditor.vditor--fullscreen .vditor-content,
+.docp-editor .vditor.vditor--fullscreen .vditor-ir,
+.docp-editor .vditor.vditor--fullscreen .vditor-wysiwyg,
+.docp-editor .vditor.vditor--fullscreen .vditor-sv {
+    background: var(--s0) !important;
 }
 
 /* 自带 light/dark 主题都是中性灰白灰黑，统一覆写关键表面 */
@@ -52,14 +130,32 @@
 }
 
 /* 阅读面：文档域特批 15px / 1.8——长文写入的可读性优先 */
-.docp-editor .vditor-reset {
+.docp-editor .vditor-ir,
+.docp-editor .vditor-wysiwyg,
+.docp-editor .vditor-sv {
+    width: 100%;
     max-width: 860px;
+    margin: 0 auto;
+}
+
+.docp-editor .vditor-reset {
+    max-width: 100%;
     margin: 0 auto;
     padding: var(--space-3) 0 56px;
     color: var(--text);
     font-family: var(--font-body);
     font-size: var(--fs-read);
     line-height: var(--lh-read);
+}
+
+/* 文件树收起后编辑区变宽：让正文列跟着用上空间，而不是把 860px 留在左侧、
+   右侧空出一大块——同时仍限制在约 70 个中文字符的舒适行长内 */
+@media (min-width: 1024px) {
+    .docp:not(.sidebar-open) .docp-editor .vditor-ir,
+    .docp:not(.sidebar-open) .docp-editor .vditor-wysiwyg,
+    .docp:not(.sidebar-open) .docp-editor .vditor-sv {
+        max-width: 1040px;
+    }
 }
 
 .docp-editor .vditor-ir .vditor-ir__node--expand,
