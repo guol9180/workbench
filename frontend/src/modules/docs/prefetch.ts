@@ -12,29 +12,29 @@
  * 用户在预载完成前就进文档页也安全：Vditor 注入同 URL 脚本，浏览器对同 URL 并发
  * 请求自动合并，不会双份下载；两个 onload 竞速由下方「已存在即不重复置 id」收敛。
  */
-function prefetchScript(src: string, id: string): void {
-  if (document.getElementById(id)) return
-  const run = () => {
-    if (document.getElementById(id)) return
+function prefetchScript(scriptUrl: string, scriptId: string): void {
+  if (document.getElementById(scriptId)) return
+  const startPrefetch = () => {
+    if (document.getElementById(scriptId)) return
     const script = document.createElement('script')
-    script.src = src
+    script.src = scriptUrl
     script.async = true
     script.onload = () => {
       // 只在尚无同 id 脚本时置 id，避免与 Vditor 自己注入的那份产生重复 id
-      if (!document.getElementById(id)) script.id = id
+      if (!document.getElementById(scriptId)) script.id = scriptId
     }
     document.head.appendChild(script)
   }
   // 空闲才下载：不与首屏渲染抢带宽；timeout 兜底保证最迟也会执行
-  window.requestIdleCallback(run, { timeout: 3000 })
+  window.requestIdleCallback(startPrefetch, { timeout: 3000 })
 }
 
 export function prefetchVditorAssets(): void {
-  const base = import.meta.env.BASE_URL + 'vendor/vditor/dist/js/'
+  const vendorBase = import.meta.env.BASE_URL + 'vendor/vditor/dist/js/'
   // Lute：全部模式初始化的必经引擎，3.7MB 是首开等待的绝对大头
-  prefetchScript(base + 'lute/lute.min.js', 'vditorLuteScript')
+  prefetchScript(vendorBase + 'lute/lute.min.js', 'vditorLuteScript')
   // 代码高亮：首个含代码块的文档渲染时才懒加载；URL 查询串须与 Vditor 请求逐字一致，
   // 否则浏览器视为不同资源，无法合并同一次下载
-  prefetchScript(base + 'highlight.js/highlight.min.js?v=11.7.0', 'vditorHljsScript')
-  prefetchScript(base + 'highlight.js/third-languages.js?v=1.0.1', 'vditorHljsThirdScript')
+  prefetchScript(vendorBase + 'highlight.js/highlight.min.js?v=11.7.0', 'vditorHljsScript')
+  prefetchScript(vendorBase + 'highlight.js/third-languages.js?v=1.0.1', 'vditorHljsThirdScript')
 }

@@ -55,6 +55,9 @@ yarn-error.log*
 
 # SDD plan workspace
 .superpowers/
-# Maven/临时构建日志
+# Maven/涓存椂鏋勫缓鏃ュ織
 *.log
 !frontend/npm-debug.log*
+
+# Agents config
+.commandcode/

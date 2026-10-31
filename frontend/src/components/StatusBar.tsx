@@ -15,7 +15,7 @@ interface Snap {
 
 export default function StatusBar() {
   const [now, setNow] = useState(() => Date.now())
-  const [snap, setSnap] = useState<Snap | null>(null)
+  const [snapshot, setSnapshot] = useState<Snap | null>(null)
   const [offline, setOffline] = useState(false)
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function StatusBar() {
       try {
         const [status, overview] = await Promise.all([monitorApi.status(), monitorApi.overview('workbench', '5m')])
         if (!alive) return
-        setSnap({ status, overview })
+        setSnapshot({ status, overview })
         setOffline(false)
       } catch {
         if (alive) setOffline(true)
@@ -41,28 +41,28 @@ export default function StatusBar() {
     }
   }, [])
 
-  const dropped = snap?.status.droppedEvents ?? 0
+  const dropped = snapshot?.status.droppedEvents ?? 0
 
   return (
     <footer className="strip">
       {offline ? (
         <span className="strip-live is-offline">
           <i className="strip-dot strip-dot-off" aria-hidden="true" />
-          后端离线——启动 workbench-server 后自动恢复
+          后端未运行，启动 workbench-server 后自动恢复。
         </span>
       ) : (
         <span className="strip-live">
           <i className="strip-dot" aria-hidden="true" />
-          workbench · {snap ? snap.overview.rps.toFixed(1) : '…'} rps
+          workbench · {snapshot ? snapshot.overview.rps.toFixed(1) : '…'} rps
         </span>
       )}
       <span className="strip-mid">
-        {snap &&
-          `err ${fmtRate(snap.overview.errRate)} · 桶 ${snap.status.memoryBuckets} · 文件 ${snap.status.dataFiles}`}
-        {dropped > 0 && <em className="strip-warn"> · 背压丢弃 {dropped}</em>}
+        {snapshot &&
+          `错误 ${fmtRate(snapshot.overview.errRate)} · 内存桶 ${snapshot.status.memoryBuckets} · 文件 ${snapshot.status.dataFiles}`}
+        {dropped > 0 && <em className="strip-warn"> · 丢弃 {dropped} 条</em>}
       </span>
       <span className="strip-right">
-        {snap ? (snap.status.authEnabled ? '认证开启' : '认证关闭') : '——'} · <span className="strip-clock">{fmtClock(now)}</span>
+        {snapshot ? (snapshot.status.authEnabled ? '认证已开' : '认证已关') : '——'} · <span className="strip-clock">{fmtClock(now)}</span>
       </span>
     </footer>
   )

@@ -14,7 +14,7 @@ let timer: ReturnType<typeof setTimeout> | null = null
 const listeners = new Set<() => void>()
 
 function emit() {
-  listeners.forEach((l) => l())
+  listeners.forEach((notifyListener) => notifyListener())
 }
 
 export function subscribeToast(listener: () => void): () => void {

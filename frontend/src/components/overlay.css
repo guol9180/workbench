@@ -4,6 +4,8 @@
     position: fixed;
     inset: 0;
     background: var(--overlay);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -14,68 +16,82 @@
 .ovl-card {
     background: var(--s0);
     border: 1px solid var(--line-strong);
-    border-radius: 8px;
-    padding: 20px;
-    width: min(420px, 92vw);
-    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    border-radius: var(--r-lg);
+    padding: var(--space-5);
+    width: min(440px, 92vw);
+    box-shadow: var(--shadow-pop);
+    animation: ovl-in var(--dur) var(--ease);
+}
+
+@keyframes ovl-in {
+    from { opacity: 0; transform: translateY(6px) scale(0.985); }
 }
 
 .ovl-title {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 12px;
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    letter-spacing: var(--tracking-display);
+    margin-bottom: var(--space-3);
 }
 
 .ovl-message {
-    font-size: 13px;
+    font-size: var(--fs-md);
+    line-height: var(--lh-copy);
     color: var(--text-2);
-    margin-bottom: 12px;
+    margin-bottom: var(--space-4);
     word-break: break-all;
     white-space: pre-wrap;
 }
 
 .ovl-input {
     width: 100%;
-    padding: 9px 11px;
+    height: 36px;
+    padding: 0 var(--space-3);
     background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: var(--r-ctl);
+    border-radius: var(--r-sm);
     color: var(--text);
-    font-size: 14px;
+    font-size: var(--fs-base);
     outline: none;
-    margin-bottom: 6px;
-    transition: border-color 0.15s;
+    margin-bottom: var(--space-2);
+    transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .ovl-input::placeholder { color: var(--text-3); }
-.ovl-input:focus { border-color: var(--accent); }
+.ovl-input:focus { border-color: var(--accent); background: var(--s0); }
 
 .ovl-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 12px;
+    gap: var(--space-2);
+    margin-top: var(--space-4);
 }
 
 .ovl-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
     border: 1px solid var(--line);
     background: transparent;
     color: var(--text-2);
-    border-radius: var(--r-ctl);
-    padding: 7px 14px;
-    font-size: 13px;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    border-radius: var(--r-sm);
+    padding: 0 var(--pad-control-x-md);
+    font-size: var(--fs-md);
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+        background var(--dur-fast) var(--ease);
 }
 
-.ovl-btn:hover { color: var(--text); border-color: var(--line-strong); }
+.ovl-btn:hover { color: var(--text); border-color: var(--line-strong); background: var(--s1); }
 
 .ovl-btn.primary {
-    background: var(--accent-dim);
-    border-color: var(--accent-border);
-    color: var(--accent);
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+    font-weight: var(--fw-semibold);
 }
 
-.ovl-btn.primary:hover { color: var(--accent-hi); border-color: var(--accent); }
+.ovl-btn.primary:hover { background: var(--accent-hi); border-color: var(--accent-hi); color: var(--accent-contrast); }
 
 .ovl-btn.danger {
     background: var(--danger-dim);
@@ -89,22 +105,31 @@
 
 .ovl-toast {
     position: fixed;
-    bottom: 44px;
+    bottom: 48px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--s1);
     border: 1px solid var(--line-strong);
     border-left: 2px solid var(--ok);
     color: var(--text);
-    padding: 10px 18px;
-    border-radius: 6px;
-    font-size: 13px;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--r-md);
+    font-size: var(--fs-md);
     z-index: 95;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--shadow-soft);
     max-width: 80vw;
+    animation: toast-in var(--dur) var(--ease);
+}
+
+@keyframes toast-in {
+    from { opacity: 0; transform: translate(-50%, 6px); }
 }
 
 .ovl-toast.error {
     border-left-color: var(--danger);
     color: var(--danger);
+}
+
+@media (max-width: 640px) {
+    .ovl-input { font-size: var(--fs-lg); }
 }

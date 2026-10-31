@@ -10,6 +10,15 @@ export type RangeKey = '5m' | '1h' | '6h' | '24h' | '7d'
 export type MetricKey = 'count' | 'avgMs' | 'errCount'
 export type SortKey = 'count' | 'err' | 'avgMs'
 
+/** 区间的人话标签：同一档位在图表、源卡片、健康表里读法一致 */
+export const RANGE_LABEL: Record<RangeKey, string> = {
+  '5m': '5 分钟',
+  '1h': '1 小时',
+  '6h': '6 小时',
+  '24h': '24 小时',
+  '7d': '7 天',
+}
+
 export interface SourceStat {
   name: string
   /** epoch 分钟：展示前 ×60000 */
@@ -59,6 +68,39 @@ export const RANGE_STEPS: Record<RangeKey, 'm' | 'h'> = {
   '6h': 'm',
   '24h': 'h',
   '7d': 'h',
+}
+
+/** 区间分钟数：与后端 TimeRange.seconds / 60 对齐（起点 = now - N，含首尾共 N+1 个分钟桶） */
+const RANGE_MINUTES: Record<RangeKey, number> = {
+  '5m': 5,
+  '1h': 60,
+  '6h': 360,
+  '24h': 1440,
+  '7d': 10080,
+}
+
+/**
+ * 把后端稀疏序列补齐成整个查询窗口的连续桶。
+ * 后端只返回「有流量的桶」，直接连点会把 2 个分钟桶拉成横跨整窗的斜线——图形会撒谎。
+ * 缺桶语义 = 该分钟无流量 = 0；小时步长按整小时对齐，与后端分组口径一致。
+ */
+export function fillSeries(points: SeriesPointData[], range: RangeKey, nowMs = Date.now()): SeriesPointData[] {
+  const hourly = RANGE_STEPS[range] === 'h'
+  const step = hourly ? 60 : 1
+  const bucketCount = Math.floor(RANGE_MINUTES[range] / step) + 1
+  const nowBucket = Math.floor(nowMs / 60_000)
+  // 桶键必须与后端口径一致：小时步长按整小时对齐，否则后端返回的 HH:00 桶全部对不上（整窗归零）
+  const align = (bucket: number) => (hourly ? bucket - (bucket % 60) : bucket)
+  // 本机时钟可能略慢于服务端：窗口末尾至少覆盖已有数据的最大桶，不丢最新点
+  const maxBucket = points.reduce((largestBucket, point) => Math.max(largestBucket, point.bucketEpoch), 0)
+  const end = Math.max(align(nowBucket), align(maxBucket))
+  const start = end - (bucketCount - 1) * step
+  const byBucket = new Map(points.map((point) => [point.bucketEpoch, point.value]))
+  const filled: SeriesPointData[] = []
+  for (let bucket = start; bucket <= end; bucket += step) {
+    filled.push({ bucketEpoch: bucket, value: byBucket.get(bucket) ?? 0 })
+  }
+  return filled
 }
 
 export const monitorApi = {

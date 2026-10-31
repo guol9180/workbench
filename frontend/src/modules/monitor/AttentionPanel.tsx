@@ -7,7 +7,8 @@
  */
 import { useNavigate } from 'react-router-dom'
 import { fmtRate } from '../../utils/format'
-import { GhostButton, StatusDot } from '../../components/ui/ui'
+import { Button, StatusDot } from '../../components/ui/ui'
+import { RANGE_LABEL } from './api'
 import type { OverviewData, RangeKey } from './api'
 import type { SourceConfigView } from '../sources/api'
 
@@ -24,10 +25,10 @@ export default function AttentionPanel({ configs, overview, source, range, onSor
 
   const items: Array<{ key: string; text: string; actionLabel: string; onAction: () => void }> = []
 
-  for (const c of configs.filter((x) => x.enabled && x.lastError).slice(0, 2)) {
+  for (const config of configs.filter((candidate) => candidate.enabled && candidate.lastError).slice(0, 2)) {
     items.push({
-      key: 'collect:' + c.id,
-      text: `采集失败：${c.repo} — ${c.lastError}`,
+      key: 'collect:' + config.id,
+      text: `${config.repo} · ${config.lastError}`,
       actionLabel: '去处理',
       onAction: () => navigate('/sources'),
     })
@@ -36,7 +37,7 @@ export default function AttentionPanel({ configs, overview, source, range, onSor
   if (overview && overview.errRate > 0.01 && overview.errCount > 0) {
     items.push({
       key: 'errrate',
-      text: `${source} 近 ${range} 错误率 ${fmtRate(overview.errRate)} 偏高`,
+      text: `${source} 近 ${RANGE_LABEL[range]} 错误率 ${fmtRate(overview.errRate)}，偏高`,
       actionLabel: '按错误排序',
       onAction: onSortByErr,
     })
@@ -51,7 +52,7 @@ export default function AttentionPanel({ configs, overview, source, range, onSor
         <div key={it.key} className="mon-attention-row">
           <StatusDot state="warn" />
           <span className="mon-attention-text">{it.text}</span>
-          <GhostButton onClick={it.onAction}>{it.actionLabel}</GhostButton>
+          <Button variant="outline" size="sm" onClick={it.onAction}>{it.actionLabel}</Button>
         </div>
       ))}
     </div>

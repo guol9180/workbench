@@ -11,7 +11,7 @@
 - **存储**：纯文件系统（文档即文件；监测时序数据为零依赖 JSONL 聚合存储），**无数据库、无缓存、无对象存储**
 - **构建**：Maven 多模块（common / framework / infrastructure / module-docs / module-monitor / server 六模块）
 - **认证**：轻量 Token（`X-API-Token` 请求头，配置式，空 = 关闭）
-- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，分域主题设计系统：明暗双主题可切换，分析域石墨+青 / 文档域暖纸感，语义令牌唯一事实源 + 共享 UI 原语；工作台首页 + 分组可折叠侧栏；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
+- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，分域主题设计系统：明暗双主题可切换，分析域石墨+青 / 文档域暖纸感，语义令牌唯一事实源 + 共享 UI 原语（PageHeader / Button / IconButton / Tag / Spinner / Combobox / Icon）；字体三角色（正文 / 展示 / 数据）+ 字号/行高/字重/字距令牌统一管理；工作台首页 + 分组可折叠侧栏；明暗切换圆形揭示；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
 
 ## 仓库结构
 

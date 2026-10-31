@@ -2,35 +2,32 @@
 import { useEffect, useRef } from 'react'
 import { useDocs } from './useDocs'
 import { currentTheme } from '../../theme'
+import { Button } from '../../components/ui/ui'
 
 export default function LocalPreview() {
   const { state, actions } = useDocs()
   const contentRef = useRef<HTMLDivElement>(null)
-  const file = state.localFile
+  const localFile = state.localFile
 
   useEffect(() => {
-    if (!file || !contentRef.current) return
-    window.Vditor.preview(contentRef.current, file.content, {
+    if (!localFile || !contentRef.current) return
+    window.Vditor.preview(contentRef.current, localFile.content, {
       cdn: import.meta.env.BASE_URL + 'vendor/vditor',
       lang: 'zh_CN',
       hljs: { lineNumber: false, style: currentTheme() === 'dark' ? 'github-dark' : 'github' },
     })
-  }, [file])
+  }, [localFile])
 
-  if (!file) return null
+  if (!localFile) return null
 
   return (
     <div className="docp-lp">
       <div className="docp-lp-bar">
-        <span className="docp-lp-title">{file.name}</span>
-        <span className="docp-lp-tip">文件仅在浏览器中打开，未上传</span>
+        <span className="docp-lp-title">{localFile.name}</span>
+        <span className="docp-lp-tip">仅在浏览器中打开，不会上传</span>
         <div className="docp-lp-actions">
-          <button className="docp-btn primary" onClick={() => void actions.importLocalFile()}>
-            导入到文档库
-          </button>
-          <button className="docp-btn" onClick={actions.hideLocalPreview}>
-            关闭
-          </button>
+          <Button variant="primary" size="sm" onClick={() => void actions.importLocalFile()}>导入到文档库</Button>
+          <Button size="sm" onClick={actions.hideLocalPreview}>关闭</Button>
         </div>
       </div>
       <div ref={contentRef} className="docp-lp-content" />

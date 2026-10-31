@@ -15,7 +15,7 @@ export function getRecent(): string[] {
 }
 
 export function pushRecent(path: string): void {
-  const list = getRecent().filter((p) => p !== path)
+  const list = getRecent().filter((docPath) => docPath !== path)
   list.unshift(path)
   localStorage.setItem(KEY, JSON.stringify(list.slice(0, 5)))
 }

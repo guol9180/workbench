@@ -6,27 +6,40 @@
     flex-direction: column;
 }
 
-/* ---------- 模块条 ---------- */
+/* ---------- 模块条：文档面包屑 + 保存状态 + 操作 ---------- */
 
 .docp-bar {
     flex: none;
-    height: 46px;
+    height: 48px;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 0 14px;
+    gap: var(--space-2);
+    padding: 0 var(--space-4);
     background: var(--s0);
     border-bottom: 1px solid var(--line);
 }
 
-.docp-menu { display: inline-flex; align-items: center; color: var(--text-2); padding: 6px 8px; }
-.docp-menu:hover { color: var(--text); }
+.docp-crumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
 
-.docp-title {
+.docp-brand {
     font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-subtitle);
     white-space: nowrap;
+}
+
+.docp-sep {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+    opacity: 0.7;
 }
 
 .docp-doc {
@@ -35,7 +48,8 @@
     gap: 6px;
     min-width: 0;
     color: var(--text-2);
-    font-size: 13px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -52,7 +66,7 @@
 .docp-save {
     flex: none;
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-3);
     white-space: nowrap;
 }
@@ -62,30 +76,11 @@
 .docp-actions {
     margin-left: auto;
     display: flex;
-    gap: 8px;
+    gap: var(--space-2);
     flex: none;
 }
 
-.docp-btn {
-    border: 1px solid var(--line);
-    background: var(--s0);
-    color: var(--text);
-    border-radius: var(--r-ctl);
-    padding: 6px 12px;
-    font-size: 13px;
-    white-space: nowrap;
-    transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.docp-btn:hover { background: var(--s1); border-color: var(--line-strong); }
-
-.docp-btn.primary {
-    background: var(--accent-dim);
-    border-color: var(--accent-border);
-    color: var(--accent);
-}
-
-.docp-btn.primary:hover { color: var(--accent-hi); border-color: var(--accent); }
+/* ---------- 文档工作区按钮使用全站 Button 原语，这里只留文件选择隐藏 ---------- */
 
 .docp-file { display: none; }
 
@@ -101,7 +96,7 @@
 /* ---------- 目录侧栏 ---------- */
 
 .docp-sidebar {
-    width: 280px;
+    width: 300px;
     flex: none;
     background: var(--s0);
     border-right: 1px solid var(--line);
@@ -117,39 +112,28 @@
 
 .docp-search {
     display: flex;
-    gap: 6px;
-    padding: 10px;
-    border-bottom: 1px solid var(--line);
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .docp-search input {
     flex: 1;
     min-width: 0;
-    padding: 7px 10px;
+    height: 32px;
+    padding: 0 var(--space-3);
     background: var(--bg);
     border: 1px solid var(--line);
-    border-radius: var(--r-ctl);
+    border-radius: var(--r-sm);
     color: var(--text);
-    font-size: 13px;
+    font-size: var(--fs-md);
     outline: none;
-    transition: border-color 0.15s;
+    transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .docp-search input::placeholder { color: var(--text-3); }
-.docp-search input:focus { border-color: var(--accent); }
-
-.docp-mini {
-    border: 1px solid var(--line);
-    background: var(--s0);
-    border-radius: var(--r-ctl);
-    padding: 4px 10px;
-    font-size: 12px;
-    color: var(--text-2);
-    transition: color 0.15s, border-color 0.15s;
-}
-
-.docp-mini:hover { color: var(--text); border-color: var(--line-strong); }
-.docp-mini.ghost { border-color: transparent; }
+.docp-search input:focus { border-color: var(--accent); background: var(--s0); }
 
 .docp-treepanel {
     flex: 1;
@@ -161,37 +145,38 @@
 .docp-treeactions {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
-    border-bottom: 1px solid var(--line);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--line-soft);
 }
 
 /* ---------- 最近打开 ---------- */
 
 .docp-recent {
-    border-bottom: 1px solid var(--line);
-    padding: 8px 6px 6px;
+    border-bottom: 1px solid var(--line-soft);
+    padding: var(--space-2);
 }
 
 .docp-recent-head {
-    font-size: 11px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-label);
     color: var(--text-3);
-    padding: 0 6px 4px;
-    letter-spacing: 0.05em;
+    padding: 0 var(--space-2) var(--space-1);
 }
 
 .docp-recent-row {
     display: block;
     width: 100%;
     text-align: left;
-    font-size: 13px;
+    font-size: var(--fs-md);
     color: var(--text-2);
-    padding: 5px 8px;
-    border-radius: var(--r-ctl);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--r-sm);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: color 0.12s, background 0.12s;
+    transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .docp-recent-row:hover { color: var(--text); background: var(--s1); }
@@ -199,33 +184,48 @@
 .docp-tree {
     flex: 1;
     overflow-y: auto;
-    padding: 6px 4px 20px;
+    padding: var(--space-2) var(--space-2) var(--space-5);
 }
 
 .docp-item { user-select: none; }
 
 .docp-row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 5px 6px;
-    border-radius: var(--r-ctl);
+    height: 30px;
+    padding: 0 8px;
+    border-radius: var(--r-sm);
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.12s;
+    transition: background var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
 }
 
 .docp-row:hover { background: var(--s1); }
 
 .docp-row.active { background: var(--accent-dim); color: var(--accent); }
 
+.docp-row.active::before {
+    content: "";
+    position: absolute;
+    left: -8px;
+    top: 7px;
+    bottom: 7px;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--accent);
+}
+
 .docp-caret {
-    width: 16px;
+    width: 14px;
+    height: 14px;
     flex: none;
-    text-align: center;
-    font-size: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: var(--text-3);
-    transition: transform 0.15s;
+    transition: transform var(--dur-fast) var(--ease);
 }
 
 .docp-caret.open { transform: rotate(90deg); }
@@ -234,38 +234,44 @@
     flex: 1;
     overflow: hidden;
     text-overflow: ellipsis;
-    font-size: 13px;
+    font-size: var(--fs-md);
 }
 
 .docp-ops {
     display: flex;
-    gap: 2px;
+    gap: 1px;
     flex: none;
     opacity: 0;
-    transition: opacity 0.12s;
+    transition: opacity var(--dur-fast) var(--ease);
 }
 
 .docp-row:hover .docp-ops,
 .docp-row:focus-within .docp-ops { opacity: 1; }
 
 .docp-op {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
     border: none;
     background: transparent;
-    border-radius: 4px;
-    font-size: 11px;
-    padding: 3px 5px;
+    border-radius: var(--r-xs);
     color: var(--text-3);
+    transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .docp-op:hover { background: var(--s2); color: var(--text); }
+.docp-op:active { transform: translateY(1px); }
 .docp-op.danger:hover { color: var(--danger); }
 
-.docp-children { margin-left: 14px; }
+.docp-children { margin-left: var(--space-4); }
 
 .docp-empty {
     color: var(--text-3);
-    font-size: 13px;
-    padding: 16px 12px;
+    font-size: var(--fs-md);
+    line-height: var(--lh-copy);
+    padding: var(--space-4) var(--space-3);
     text-align: center;
 }
 
@@ -282,37 +288,37 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px;
-    border-bottom: 1px solid var(--line);
-    font-size: 13px;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-bottom: 1px solid var(--line-soft);
+    font-size: var(--fs-md);
     color: var(--text-2);
 }
 
-.docp-hits { flex: 1; overflow-y: auto; padding: 6px; }
+.docp-hits { flex: 1; overflow-y: auto; padding: var(--space-2); }
 
-.docp-hit { padding: 8px 10px; border-radius: var(--r-ctl); cursor: pointer; transition: background 0.12s; }
+.docp-hit {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background var(--dur-fast) var(--ease);
+}
+
 .docp-hit:hover { background: var(--s1); }
 
 .docp-hit-path {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--text);
-    margin-bottom: 3px;
+    margin-bottom: var(--space-1);
     word-break: break-all;
 }
 
-.docp-hit-tag {
-    font-style: normal;
-    margin-left: 6px;
-    font-size: 11px;
-    color: var(--chart-2);
-    border: 1px solid var(--chart-2-border);
-    border-radius: 3px;
-    padding: 1px 5px;
-}
+.docp-hit-tag { margin-left: var(--space-2); }
 
 .docp-hit-snippet {
-    font-size: 12px;
+    font-size: var(--fs-sm);
+    line-height: var(--lh-body);
     color: var(--text-3);
     word-break: break-all;
     display: -webkit-box;
@@ -330,17 +336,86 @@
     min-width: 0;
     min-height: 0;
     position: relative;
-    background: var(--s0);
+    background: var(--bg);
 }
 
-/* 编辑器引擎就绪前的覆盖层：内容纯文本先读（Lute 慢链路下不再白等） */
+/* ---------- 空态入口卡 ---------- */
+
+.docp-welcome {
+    position: absolute;
+    inset: var(--space-4);
+    z-index: 4;
+    display: grid;
+    place-items: center;
+    padding: var(--space-5);
+    background: var(--s0);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    text-align: center;
+}
+
+.docp-welcome-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    max-width: 420px;
+}
+
+.docp-welcome-mark {
+    width: 48px;
+    height: 48px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 0;
+    border-radius: var(--r-md);
+    border: 1px solid var(--accent-border);
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+.docp-welcome-eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+.docp-welcome-title {
+    font-family: var(--font-display);
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-display);
+    letter-spacing: var(--tracking-display);
+    text-wrap: balance;
+}
+
+.docp-welcome-text {
+    font-size: var(--fs-md);
+    line-height: var(--lh-copy);
+    color: var(--text-2);
+}
+
+.docp-welcome-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+/* 编辑器引擎就绪前的覆盖层：与纸面同边界（内容纯文本先读，Lute 慢链路下不再白等） */
 .docp-boot {
     position: absolute;
-    inset: 0;
+    inset: var(--space-4);
     z-index: 5;
     display: flex;
     flex-direction: column;
     background: var(--s0);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
 }
 
 .docp-boot-text {
@@ -348,28 +423,28 @@
     min-height: 0;
     overflow: auto;
     margin: 0;
-    padding: 16px 20px;
+    padding: var(--space-5);
     white-space: pre-wrap;
     word-break: break-word;
     color: var(--text);
-    font-size: 15px;
-    line-height: 1.75;
-    font-family: var(--font-mono, monospace);
+    font-size: var(--fs-read);
+    line-height: var(--lh-read);
+    font-family: var(--font-body);
 }
 
 .docp-boot-hint {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 20px;
-    border-top: 1px solid var(--line);
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--line-soft);
     color: var(--text-3);
-    font-size: 12px;
+    font-size: var(--fs-sm);
 }
 
 .docp-boot-dot {
-    width: 7px;
-    height: 7px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background: var(--accent);
     animation: docp-boot-pulse 1.2s ease-in-out infinite;
@@ -405,25 +480,28 @@
     flex: none;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
     background: var(--s0);
     border-bottom: 1px solid var(--line);
     flex-wrap: wrap;
 }
 
-.docp-lp-title { font-weight: 600; font-size: 14px; word-break: break-all; }
-.docp-lp-tip { color: var(--text-3); font-size: 12px; }
-.docp-lp-actions { margin-left: auto; display: flex; gap: 8px; }
+.docp-lp-title { font-weight: var(--fw-semibold); font-size: var(--fs-base); word-break: break-all; }
+.docp-lp-tip { color: var(--text-3); font-size: var(--fs-sm); }
+.docp-lp-actions { margin-left: auto; display: flex; gap: var(--space-2); }
 
 .docp-lp-content {
     flex: 1;
     overflow-y: auto;
-    padding: 24px max(16px, calc((100% - 820px) / 2)) 60px;
+    padding: var(--space-6) clamp(var(--space-4), 5vw, 56px) 64px;
     background: var(--s0);
-    margin: 14px;
-    border-radius: 8px;
+    margin: var(--space-4);
+    border-radius: var(--r-md);
     border: 1px solid var(--line);
+    font-family: var(--font-body);
+    font-size: var(--fs-read);
+    line-height: var(--lh-read);
 }
 
 /* ---------- 拖拽遮罩 ---------- */
@@ -441,10 +519,10 @@
 .docp-drop-box {
     background: var(--s0);
     border: 1px solid var(--accent-border);
-    border-radius: 8px;
-    padding: 26px 40px;
-    font-size: 16px;
-    font-weight: 600;
+    border-radius: var(--r-md);
+    padding: var(--space-5) 40px;
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
     color: var(--accent);
 }
 
@@ -453,19 +531,20 @@
 .docp-backdrop { display: none; }
 
 @media (max-width: 768px) {
-    .docp-menu { display: inline-block; }
-    .docp-title { display: none; }
-    .docp-bar { padding: 0 6px; gap: 6px; }
-    .docp-actions .docp-btn { padding: 6px 8px; font-size: 12px; }
+    .docp-bar { padding: 0 var(--space-2); gap: var(--space-2); }
+    .docp-brand { display: none; }
+    .docp-sep { display: none; }
+    .docp-actions { gap: var(--space-1); }
+    .docp-save { display: none; }
 
     .docp-sidebar {
         position: fixed;
-        top: 46px;
+        top: 48px;
         bottom: 0;
         left: 0;
         width: min(84vw, 320px);
         transform: translateX(-100%);
-        transition: transform 0.2s ease;
+        transition: transform var(--dur) var(--ease);
         z-index: 30;
     }
 
@@ -474,7 +553,7 @@
     .docp-backdrop {
         display: block;
         position: fixed;
-        top: 46px;
+        top: 48px;
         bottom: 0;
         left: 0;
         right: 0;
@@ -482,7 +561,7 @@
         z-index: 25;
         opacity: 0;
         pointer-events: none;
-        transition: opacity 0.2s;
+        transition: opacity var(--dur) var(--ease);
     }
 
     .docp.sidebar-open .docp-backdrop { opacity: 1; pointer-events: auto; }
@@ -490,5 +569,12 @@
     /* 触屏无 hover：操作按钮常显但弱化 */
     .docp-ops { opacity: 0.55; }
 
-    .docp-lp-content { margin: 8px; padding: 14px; }
+    .docp-editor { padding: var(--space-2); }
+    .docp-boot { inset: var(--space-2); }
+    .docp-welcome { inset: var(--space-2); padding: var(--space-4); }
+    .docp-welcome-actions { flex-direction: column; width: 100%; }
+    .docp-welcome-actions .btn { width: 100%; }
+
+    .docp-lp-content { margin: var(--space-2); padding: var(--space-4) var(--space-4) 48px; }
+    .docp-search input { font-size: var(--fs-lg); }
 }

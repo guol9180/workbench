@@ -9,141 +9,239 @@
 
 /* ---------- 全局中性层 · 暗色（默认） ---------- */
 :root[data-theme='dark'] {
-    --bg: #0e1214; /* 页面底：石墨 */
-    --s0: #151b1e; /* 面板 / 侧栏 / 工具条 */
-    --s1: #1d2428; /* 悬浮 / 次级表面 */
-    --s2: #263036; /* 深表面 / 滚动条拇指 */
+    color-scheme: dark;
 
-    --text: #e6ecf0;
-    --text-2: #9aa8b2;
-    --text-3: #74828d; /* 对 s0 ≥ 4.5:1，小字标签达标 WCAG AA */
+    --bg: #0a0e0f; /* 画布：深墨 */
+    --s0: #111718; /* 面板 / 侧栏 / 工具条 */
+    --s1: #172023; /* 悬浮 / 次级表面 */
+    --s2: #1e292d; /* 深表面 / 控件槽 */
+    --s3: #27343a; /* 滚动条拇指 / 分隔强调 */
 
-    --line: #232d33;
-    --line-strong: #33414a;
+    --text: #e9eff0;
+    --text-2: #a0aeb2;
+    --text-3: #75858a; /* 对 s0 ≥ 4.5:1，小字标签达标 WCAG AA */
 
-    --ok: #4ecb8f;
-    --ok-glow: rgba(78, 203, 143, 0.7);
-    --danger: #e86054;
-    --danger-dim: rgba(232, 96, 84, 0.12);
-    --danger-border: rgba(232, 96, 84, 0.4);
-    --danger-glow: rgba(232, 96, 84, 0.7);
-    --overlay: rgba(8, 11, 12, 0.72);
+    --line: #223034;
+    --line-soft: #172124;
+    --line-strong: #35464c;
 
-    /* 分析域默认强调（暗色）：青。warn 是专职警示琥珀，与品牌色相分离 */
-    --accent: #3ec9c4;
-    --accent-hi: #6fdedb;
-    --accent-contrast: #06211f; /* 实心主按钮的文字色：亮青上用深字 */
-    --accent-dim: rgba(62, 201, 196, 0.12);
-    --accent-border: rgba(62, 201, 196, 0.4);
-    --accent-faint: rgba(62, 201, 196, 0.2);
-    --warn: #d9a13d;
-    --warn-dim: rgba(217, 161, 61, 0.12);
-    --chart-2: #7fb4e8;
-    --chart-2-border: rgba(127, 180, 232, 0.35);
+    --ok: #5bd6a0;
+    --ok-glow: rgba(91, 214, 160, 0.55);
+    --danger: #ec6f5d;
+    --danger-dim: rgba(236, 111, 93, 0.12);
+    --danger-border: rgba(236, 111, 93, 0.42);
+    --danger-glow: rgba(236, 111, 93, 0.55);
+    --overlay: rgba(5, 8, 9, 0.72);
+
+    /* 分析域默认强调（暗色）：信号青。warn 是专职警示琥珀，与品牌色相分离 */
+    --accent: #46d5c5;
+    --accent-hi: #86efe4;
+    --accent-contrast: #03201c; /* 实心主按钮的文字色：亮青上用深字 */
+    --accent-dim: rgba(70, 213, 197, 0.1);
+    --accent-border: rgba(70, 213, 197, 0.38);
+    --accent-faint: rgba(70, 213, 197, 0.2);
+    --warn: #e2a63f;
+    --warn-dim: rgba(226, 166, 63, 0.12);
+    --chart-2: #8fb8f5;
+    --chart-2-border: rgba(143, 184, 245, 0.35);
+    /* 文档域的暖色身份：首页工具卡在分析域下也能正确标识"文档" */
+    --warm: #d08a4a;
+    --warm-dim: rgba(208, 138, 74, 0.12);
+    --warm-border: rgba(208, 138, 74, 0.4);
+
+    --shadow-pop: 0 24px 64px rgba(0, 0, 0, 0.5);
+    --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.28);
+    --scrim-blur: blur(14px);
 }
 
 /* ---------- 全局中性层 · 浅色 ---------- */
 :root[data-theme='light'] {
-    --bg: #f4f6f7;
-    --s0: #ffffff;
-    --s1: #eef1f2;
-    --s2: #e2e7e9;
+    color-scheme: light;
 
-    --text: #1c262c;
-    --text-2: #4d5c66;
-    --text-3: #5f6e78; /* 对白表面 ≥ 4.5:1 */
+    --bg: #eef2f1;
+    --s0: #fbfcfb;
+    --s1: #e9eeed;
+    --s2: #dde4e2;
+    --s3: #d2dbd8;
 
-    --line: #dde4e7;
-    --line-strong: #c3ced3;
+    --text: #14201f;
+    --text-2: #4a5b58;
+    --text-3: #677773; /* 对白表面 ≥ 4.5:1 */
+
+    --line: #dae2df;
+    --line-soft: #e6ecea;
+    --line-strong: #bdcbc6;
 
     --ok: #1e7f4f;
-    --ok-glow: rgba(30, 127, 79, 0.45);
-    --danger: #c2402f;
-    --danger-dim: rgba(194, 64, 47, 0.1);
-    --danger-border: rgba(194, 64, 47, 0.4);
-    --danger-glow: rgba(194, 64, 47, 0.45);
-    --overlay: rgba(28, 38, 44, 0.45);
+    --ok-glow: rgba(30, 127, 79, 0.4);
+    --danger: #c14331;
+    --danger-dim: rgba(193, 67, 49, 0.1);
+    --danger-border: rgba(193, 67, 49, 0.38);
+    --danger-glow: rgba(193, 67, 49, 0.4);
+    --overlay: rgba(20, 32, 31, 0.42);
 
     /* 分析域默认强调（浅色）：深青（对白底 ≥ 4.5:1） */
-    --accent: #0e7f7a;
-    --accent-hi: #0a6662;
+    --accent: #0c7f76;
+    --accent-hi: #086862;
     --accent-contrast: #ffffff;
-    --accent-dim: rgba(14, 127, 122, 0.1);
-    --accent-border: rgba(14, 127, 122, 0.35);
-    --accent-faint: rgba(14, 127, 122, 0.16);
+    --accent-dim: rgba(12, 127, 118, 0.09);
+    --accent-border: rgba(12, 127, 118, 0.34);
+    --accent-faint: rgba(12, 127, 118, 0.16);
     --warn: #8a6116;
     --warn-dim: rgba(138, 97, 22, 0.1);
     --chart-2: #2f6db3;
     --chart-2-border: rgba(47, 109, 179, 0.35);
+    --warm: #b4632e;
+    --warm-dim: rgba(180, 99, 46, 0.1);
+    --warm-border: rgba(180, 99, 46, 0.35);
+
+    --shadow-pop: 0 24px 64px rgba(20, 32, 31, 0.18);
+    --shadow-soft: 0 10px 30px rgba(20, 32, 31, 0.1);
+    --scrim-blur: blur(14px);
 }
 
 /* ---------- 域强调层 · 文档域（暖纸感，明暗各一套） ---------- */
 [data-domain='docs'] {
     --r-ctl: 8px; /* 纸感用更软的圆角 */
     /* display 换衬线：文档域的标题气质从"仪表"切到"书卷" */
-    --font-display: Georgia, 'Times New Roman', 'Songti SC', 'SimSun', serif;
+    --font-display: Georgia, 'Times New Roman', 'Songti SC', 'Noto Serif SC', 'Source Han Serif SC', 'SimSun', serif;
 }
 
 :root[data-theme='light'] [data-domain='docs'] {
-    --bg: #faf6ef; /* 米白纸 */
+    --bg: #f7f2e8; /* 米白纸 */
     --s0: #fffdf8;
-    --s1: #f3ede1;
-    --s2: #eae2d2;
-    --text: #2f2a24;
-    --text-2: #5d554a;
-    --text-3: #6e6557;
-    --line: #e7dfd0;
-    --line-strong: #d3c7b0;
+    --s1: #f1eadb;
+    --s2: #e7ddc9;
+    --s3: #ded1b8;
+    --text: #2c2720;
+    --text-2: #5c5346;
+    --text-3: #7a6f5d;
+    --line: #e6ddcc;
+    --line-soft: #efe8da;
+    --line-strong: #d2c4aa;
     --ok: #3e7d4e;
     --danger: #b3402e;
     --danger-dim: rgba(179, 64, 46, 0.1);
-    --overlay: rgba(47, 42, 36, 0.4);
-    --accent: #b4632e; /* 赭棕 */
-    --accent-hi: #97511f;
-    --accent-contrast: #fff8f0;
-    --accent-dim: rgba(180, 99, 46, 0.1);
-    --accent-border: rgba(180, 99, 46, 0.35);
-    --accent-faint: rgba(180, 99, 46, 0.16);
+    --overlay: rgba(44, 39, 32, 0.4);
+    --accent: #a9612c; /* 赭棕 */
+    --accent-hi: #8d4d1e;
+    --accent-contrast: #fff9f1;
+    --accent-dim: rgba(169, 97, 44, 0.1);
+    --accent-border: rgba(169, 97, 44, 0.34);
+    --accent-faint: rgba(169, 97, 44, 0.16);
     --warn: #8a6116;
     --warn-dim: rgba(138, 97, 22, 0.1);
-    --chart-2: #7a6a4f;
-    --chart-2-border: rgba(122, 106, 79, 0.35);
+    --chart-2: #726146;
+    --chart-2-border: rgba(114, 97, 70, 0.35);
 }
 
 :root[data-theme='dark'] [data-domain='docs'] {
-    --bg: #1d1813; /* 牛皮纸 */
-    --s0: #262019;
-    --s1: #302820;
-    --s2: #3a3128;
-    --text: #e8e0d2;
-    --text-2: #b3a893;
-    --text-3: #8d8271;
-    --line: #332b22;
-    --line-strong: #4a3e30;
-    --ok: #6fbe8a;
-    --danger: #e07b6e;
-    --danger-dim: rgba(224, 123, 110, 0.12);
-    --overlay: rgba(18, 14, 10, 0.72);
-    --accent: #d08a4a; /* 琥珀棕 */
-    --accent-hi: #e2a66a;
-    --accent-contrast: #241505;
-    --accent-dim: rgba(208, 138, 74, 0.12);
-    --accent-border: rgba(208, 138, 74, 0.4);
-    --accent-faint: rgba(208, 138, 74, 0.2);
-    --warn: #d9a13d;
-    --warn-dim: rgba(217, 161, 61, 0.12);
-    --chart-2: #a89a7e;
-    --chart-2-border: rgba(168, 154, 126, 0.35);
+    --bg: #1b1712; /* 牛皮纸 */
+    --s0: #241f18;
+    --s1: #2c261d;
+    --s2: #352e23;
+    --s3: #3f372a;
+    --text: #ebe3d4;
+    --text-2: #b8ac97;
+    --text-3: #8f8471;
+    --line: #332c22;
+    --line-soft: #29231b;
+    --line-strong: #4c4032;
+    --ok: #74c28d;
+    --danger: #e58a7c;
+    --danger-dim: rgba(229, 138, 124, 0.12);
+    --overlay: rgba(16, 12, 8, 0.72);
+    --accent: #d59152; /* 琥珀棕 */
+    --accent-hi: #e8b07c;
+    --accent-contrast: #20140a;
+    --accent-dim: rgba(213, 145, 82, 0.12);
+    --accent-border: rgba(213, 145, 82, 0.38);
+    --accent-faint: rgba(213, 145, 82, 0.2);
+    --warn: #e0b054;
+    --warn-dim: rgba(224, 176, 84, 0.12);
+    --chart-2: #b0a184;
+    --chart-2-border: rgba(176, 161, 132, 0.35);
 }
 
-/* ---------- 字体与骨架尺寸（域可覆盖 display / 圆角） ---------- */
+/* ---------- 字体、排版、骨架尺寸与动效（域可覆盖 display / 圆角） ---------- */
 :root {
-    --font-display: 'Chakra Petch', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    --font-mono: 'Overpass Mono', 'JetBrains Mono', Consolas, monospace;
-    --font-body: 'PingFang SC', 'MiSans', 'HarmonyOS Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+    /*
+     * 字体族三角色：
+     * body   —— 中文 UI 与正文：系统中文栈；Segoe UI 先接管拉丁，避免中文黑体里的西文观感。
+     * display—— 标题 / 品牌 / 大数字：Chakra Petch 负责拉丁，中文回落到 UI 黑体。
+     * mono   —— 数据 / 路径 / 时间 / 元信息：Overpass Mono 负责拉丁与数字；中文回落 UI 黑体，
+     *           不再让 Windows 的 monospace 兜底走到 NSimSun（宋体），否则标签里的中文会突然变衬线。
+     */
+    --font-body: 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei UI', 'Microsoft YaHei',
+        'Noto Sans SC', 'Source Han Sans SC', system-ui, sans-serif;
+    --font-display: 'Chakra Petch', 'Segoe UI', 'PingFang SC', 'Microsoft YaHei UI', 'Microsoft YaHei', sans-serif;
+    --font-mono: 'Overpass Mono', 'SFMono-Regular', Menlo, Consolas, 'Microsoft YaHei UI', 'PingFang SC',
+        'Noto Sans SC', monospace;
 
-    --sidebar-w: 208px;
-    --sidebar-w-collapsed: 56px;
-    --strip-h: 30px;
+    /* 字号阶梯：11 / 12 / 13 / 14 / 16 / 20 / 26；文档阅读面 15 单列 */
+    --fs-xs: 11px;
+    --fs-sm: 12px;
+    --fs-md: 13px;
+    --fs-base: 14px;
+    --fs-read: 15px;
+    --fs-lg: 16px;
+    --fs-xl: 20px;
+    --fs-2xl: 26px;
+
+    /* 行高：控件 / 展示 / 紧凑 / 标题 / 正文 / 说明 / 长文 */
+    --lh-none: 1;
+    --lh-display: 1.15;
+    --lh-tight: 1.2;
+    --lh-heading: 1.3;
+    --lh-body: 1.6;
+    --lh-copy: 1.7;
+    --lh-read: 1.8;
+
+    /* 字重：界面只用四档，避免 550/650 这类随手值 */
+    --fw-regular: 400;
+    --fw-medium: 500;
+    --fw-semibold: 600;
+
+    /* 字距：展示字、标题、眉标、品牌、大写小标签各自一档 */
+    --tracking-tight: -0.01em;
+    --tracking-display: 0.01em;
+    --tracking-subtitle: 0.02em;
+    --tracking-title: 0.03em;
+    --tracking-mono: 0.04em;
+    --tracking-brand: 0.05em;
+    --tracking-caption: 0.08em;
+    --tracking-label: 0.12em;
+    --tracking-wide: 0.16em;
+
+    --sidebar-w: 216px;
+    --sidebar-w-collapsed: 60px;
+    --strip-h: 32px;
+
+    /* 间距：布局走 4 / 8 / 12 / 16 / 24 / 32；控件内部另设 6 / 10 两档 */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --gap-icon-sm: 6px;
+    --gap-icon: 8px;
+    --pad-control-y: 6px;
+    --pad-control-x: 10px;
+    --pad-control-x-md: 12px;
+    --pad-control-x-lg: 24px;
+
+    /* 圆角阶梯：控件 6 / 面板 10 / 浮层 14，避免每处随手写 */
+    --r-xs: 4px;
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+    --r-pill: 999px;
     --r-ctl: 6px;
+
+    /* 动效：只走 transform/opacity，统一减速曲线；reduced-motion 全局熄灭 */
+    --dur-fast: 120ms;
+    --dur: 180ms;
+    --dur-slow: 260ms;
+    --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }

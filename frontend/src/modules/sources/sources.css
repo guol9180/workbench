@@ -1,227 +1,293 @@
-/* 数据源页：接入表单 → 折叠的令牌设置 → 已接入源卡片列表。
-   视觉原语（panel/ghost-btn/dot/input）来自 components/ui，这里只写布局与页特有件 */
+/* 我的项目页：接入表单 → 折叠的令牌设置 → 已接入项目卡片。
+   视觉原语（panel/btn/tag/dot/input）来自 components/ui，这里只写布局与页特有件 */
 
 .src {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 18px 22px 26px;
+    padding: var(--space-6) var(--space-6) var(--space-5);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--space-4);
 }
 
-.src-head {
+/* 页头右侧：令牌配置状态 */
+.src-token-status {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-icon-sm);
+    height: 30px;
+    padding: 0 var(--space-3);
+    border: 1px solid var(--line);
+    border-radius: var(--r-pill);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+    white-space: nowrap;
+}
+
+.src-token-status.ok { color: var(--text-2); }
+
+/* ---------- 面板眉标（接入 / 设置两个区块共用） ---------- */
+
+.src-panel-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--gap-icon);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+.src-panel-eyebrow::before {
+    content: "";
+    width: 12px;
+    height: 1px;
+    background: var(--accent);
+    opacity: 0.8;
+}
+
+.src-panel-head {
     display: flex;
     align-items: baseline;
-    gap: 14px;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
 }
 
-.src-title {
+.src-panel-hint { font-size: var(--fs-sm); color: var(--text-3); }
+
+/* ---------- 令牌引导卡 ---------- */
+
+.src-guide {
+    padding: var(--space-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.src-guide-title {
     font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-display);
+    text-wrap: balance;
 }
 
-.src-sub { font-size: 13px; color: var(--text-3); }
+.src-guide-text {
+    color: var(--text-2);
+    font-size: var(--fs-md);
+    line-height: var(--lh-copy);
+    max-width: 72ch;
+}
+
+/* 三步按 01/02/03 标号：顺序是真实操作顺序 */
+.src-guide-steps {
+    counter-reset: step;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-1);
+}
+
+.src-guide-steps li {
+    counter-increment: step;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    font-size: var(--fs-md);
+    line-height: var(--lh-body);
+    color: var(--text-2);
+}
+
+.src-guide-steps li::before {
+    content: "0" counter(step);
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--accent-border);
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+}
+
+/* ---------- 令牌输入行 ---------- */
+
+.src-token-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: var(--space-1);
+}
+
+.src-token-input {
+    flex: 1;
+    min-width: 240px;
+    font-family: var(--font-mono);
+}
+
+.src-token-note {
+    flex: 1;
+    min-width: 240px;
+    font-size: var(--fs-sm);
+    color: var(--text-3);
+    line-height: var(--lh-body);
+}
 
 /* ---------- 接入表单 ---------- */
 
-.src-form { padding: 14px 16px; }
+.src-form {
+    padding: var(--space-4);
+}
 
 .src-form-grid {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: var(--space-3);
 }
 
+.src-form .field { align-items: center; }
+.src-form .field-label { width: 120px; }
 .src-form-repo { flex: 1; }
 
-.src-form-row {
+.src-form-metrics {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--space-2);
+    padding-left: calc(120px + var(--space-3));
     flex-wrap: wrap;
 }
 
-.src-checks { display: flex; gap: 8px; flex-wrap: wrap; }
-
-.src-check {
+.src-metric-chip {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 13px;
-    color: var(--text-2);
+    gap: var(--gap-icon-sm);
+    height: 30px;
+    padding: 0 var(--space-3);
     border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 5px 12px;
+    border-radius: var(--r-pill);
+    color: var(--text-2);
+    font-size: var(--fs-sm);
     cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease),
+        background var(--dur-fast) var(--ease);
 }
 
-.src-check input { accent-color: var(--accent); margin: 0; }
-.src-check.on { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+.src-metric-chip:hover { border-color: var(--line-strong); }
+.src-metric-chip.on { color: var(--accent); border-color: var(--accent-border); background: var(--accent-dim); }
+.src-metric-chip input { accent-color: var(--accent); margin: 0; }
 
-.src-switch {
-    display: inline-flex;
+.src-form-ops {
+    display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--text-2);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 5px 12px;
-    transition: color 0.15s, border-color 0.15s;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-top: var(--space-4);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--line-soft);
 }
 
-.src-switch-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--text-3);
-    transition: background 0.15s;
-}
-
-.src-switch.on { color: var(--ok); border-color: var(--ok); }
-.src-switch.on .src-switch-dot { background: var(--ok); box-shadow: 0 0 5px var(--ok-glow); }
-
-.src-btn {
-    flex: none;
-    margin-left: auto;
-    background: var(--accent);
-    color: var(--accent-contrast);
-    border: 1px solid var(--accent);
-    border-radius: var(--r-ctl);
-    padding: 7px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    transition: opacity 0.15s;
-}
-
-.src-btn:hover { opacity: 0.9; }
-.src-btn:disabled { opacity: 0.45; cursor: default; }
-
-.src-note {
-    margin-top: 10px;
-    font-size: 12px;
-    color: var(--text-3);
-    line-height: 1.6;
-}
+.src-repos-note { color: var(--text-3); font-size: var(--fs-sm); }
 
 /* ---------- 接入设置（折叠区） ---------- */
 
-.src-settings { overflow: hidden; }
+.src-settings {
+    background: var(--s0);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+}
 
-.src-settings-summary {
+.src-settings-head {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 11px 16px;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
     cursor: pointer;
     list-style: none;
     user-select: none;
 }
 
-.src-settings-summary::-webkit-details-marker { display: none; }
+.src-settings-head::-webkit-details-marker { display: none; }
 
-.src-settings-summary::after {
-    content: "";
+.src-settings-caret {
     margin-left: auto;
-    width: 7px;
-    height: 7px;
-    border-right: 1.5px solid var(--text-3);
-    border-bottom: 1.5px solid var(--text-3);
-    transform: rotate(45deg);
-    transition: transform 0.15s;
+    color: var(--text-3);
+    transition: transform var(--dur) var(--ease);
 }
 
-.src-settings[open] .src-settings-summary::after { transform: rotate(225deg); }
+.src-settings[open] .src-settings-caret { transform: rotate(180deg); }
 
 .src-settings-title {
     font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--fs-md);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
     color: var(--text-2);
 }
 
 .src-settings-state {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 12px;
+    gap: var(--gap-icon-sm);
     font-family: var(--font-mono);
+    font-size: var(--fs-xs);
     color: var(--text-3);
 }
 
 .src-settings-body {
-    padding: 4px 16px 14px;
-    border-top: 1px solid var(--line);
+    padding: var(--space-1) var(--space-4) var(--space-4);
+    border-top: 1px solid var(--line-soft);
 }
 
-.src-token-row {
+/* ---------- 已接入项目 ---------- */
+
+.src-list { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.src-list-head {
     display: flex;
-    align-items: center;
-    gap: 10px;
-    padding-top: 12px;
-    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+    padding: 0 var(--space-1);
 }
-
-.src-token-input { flex: 1; min-width: 220px; font-family: var(--font-mono); }
-
-.src-token-note {
-    flex: 1;
-    min-width: 220px;
-    font-size: 12px;
-    color: var(--text-3);
-    line-height: 1.6;
-}
-
-/* ---------- 标签（指标 / 来源 / 停用） ---------- */
-
-.src-tag {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-3);
-    border: 1px solid var(--line);
-    border-radius: 4px;
-    padding: 1px 7px;
-    white-space: nowrap;
-}
-
-.src-tag.off { color: var(--warn); border-color: var(--warn); }
-
-/* ---------- 已接入源卡片列表 ---------- */
-
-.src-list { display: flex; flex-direction: column; gap: 10px; }
-
-.src-list-head { padding: 2px 2px 0; }
 
 .src-list-title {
     font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-title);
     color: var(--text-2);
 }
 
+.src-list-hint { font-size: var(--fs-sm); color: var(--text-3); }
+
 .src-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 12px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-3);
 }
 
 .src-card {
-    padding: 13px 15px;
+    padding: var(--space-4);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-2);
 }
 
-.src-card-top { display: flex; align-items: center; gap: 8px; }
+.src-card-top { display: flex; align-items: center; gap: var(--space-2); }
 
 .src-repo {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: var(--fs-base);
     color: var(--text);
     min-width: 0;
     overflow: hidden;
@@ -232,9 +298,9 @@
 .src-card-metrics { display: flex; gap: 6px; flex-wrap: wrap; }
 
 .src-card-status {
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--text-3);
-    line-height: 1.5;
+    line-height: var(--lh-body);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -244,98 +310,69 @@
 
 .src-card-ops {
     display: flex;
-    gap: 8px;
-    margin-top: 2px;
-    padding-top: 8px;
-    border-top: 1px solid var(--line);
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line-soft);
 }
 
-@media (max-width: 768px) {
-    .src { padding: 12px 14px 18px; }
-    .src-head { flex-direction: column; gap: 4px; }
-}
+/* ---------- 卡片展开的数据区 ---------- */
 
-/* ---------- 我的项目页（M9.9）：令牌引导卡 + 项目数据展开区 ---------- */
-
-.src-guide {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.src-guide-title { font-size: 16px; color: var(--text); }
-
-.src-guide-text { color: var(--text-2); font-size: 13px; line-height: 1.7; }
-
-.src-guide-steps {
-    margin: 0;
-    padding-left: 18px;
-    color: var(--text-3);
-    font-size: 12px;
-    line-height: 1.9;
-}
-
-.src-form-metrics {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    align-self: end;
-    padding-bottom: 4px;
-}
-
-.src-metric-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    color: var(--text-2);
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.src-metric-chip.on { border-color: var(--accent); color: var(--text); }
-
-.src-metric-chip input { accent-color: var(--accent); }
-
-.src-form-ops {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 4px;
-}
-
-.src-repos-note { color: var(--text-3); font-size: 12px; }
-
-/* 项目数据展开区：两张日粒度柱图并列（窄屏回落纵向） */
 .src-detail {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid var(--line);
+    gap: var(--space-3);
+    margin-top: var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line-soft);
 }
 
 .src-detail-nums {
     grid-column: 1 / -1;
     display: flex;
-    gap: 20px;
+    gap: var(--space-5);
     color: var(--text-3);
-    font-size: 12px;
+    font-size: var(--fs-sm);
 }
 
-.src-detail-num b { color: var(--text); font-weight: 600; margin-right: 4px; }
+.src-detail-num b {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-medium);
+    color: var(--text);
+    margin-right: var(--gap-icon-sm);
+    font-variant-numeric: tabular-nums;
+}
 
-.src-chart-head { color: var(--text-3); font-size: 12px; margin-bottom: 4px; }
+.src-chart-head {
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    letter-spacing: var(--tracking-mono);
+    margin-bottom: 4px;
+}
 
 .src-detail-err {
     grid-column: 1 / -1;
     color: var(--danger);
-    font-size: 12px;
+    font-size: var(--fs-sm);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
+    .src { padding: var(--space-4) var(--space-4) var(--space-5); gap: var(--space-4); }
+    .src .page-head { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+    .src .page-head-actions { width: 100%; }
+    .src-form { padding: var(--space-4); }
+    .src-form .field { align-items: stretch; flex-direction: column; gap: var(--space-2); }
+    .src-form .field-label { width: auto; }
+    .src-form-metrics { padding-left: 0; }
+    .src-cards { grid-template-columns: minmax(0, 1fr); }
     .src-detail { grid-template-columns: 1fr; }
+
+    /* 折叠区窄屏分两行：标题独占一行，来源标签/状态/箭头在下一行 */
+    .src-settings-head { flex-wrap: wrap; row-gap: var(--space-2); }
+    .src-settings-title { flex: 1 0 100%; white-space: nowrap; }
+    .src-settings-caret { order: 3; }
+    .src-settings-state { margin-left: 0; }
 }

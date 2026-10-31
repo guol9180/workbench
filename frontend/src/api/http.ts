@@ -34,27 +34,27 @@ export type ProbeResult = 'open' | 'locked' | 'offline'
  */
 export async function loginRequest(password: string): Promise<LoginResult> {
   try {
-    const res = await fetch(BASE + '/api/auth/login', {
+    const response = await fetch(BASE + '/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password }),
     })
-    if (res.ok) {
-      const body = (await res.json()) as { code: number; data: { token: string } | null; message: string | null }
+    if (response.ok) {
+      const body = (await response.json()) as { code: number; data: { token: string } | null; message: string | null }
       if (body.code === 0 && body.data?.token) {
         setToken(body.data.token)
         return { ok: true, message: '' }
       }
-      return { ok: false, message: body.message || '登录失败' }
+      return { ok: false, message: body.message || '登录失败。' }
     }
-    if (res.status === 401) return { ok: false, message: '密码不正确——请核对后重试' }
-    if (res.status === 429) {
-      const body = (await res.json().catch(() => null)) as { message?: string } | null
-      return { ok: false, message: body?.message ?? '尝试次数过多，请稍后再试' }
+    if (response.status === 401) return { ok: false, message: '密码不正确，请重试。' }
+    if (response.status === 429) {
+      const body = (await response.json().catch(() => null)) as { message?: string } | null
+      return { ok: false, message: body?.message ?? '尝试次数过多，请稍后再试。' }
     }
-    return { ok: false, message: '登录失败，请稍后再试' }
+    return { ok: false, message: '登录失败，请稍后再试。' }
   } catch {
-    return { ok: false, message: '后端无响应或返回异常——请确认 workbench-server 已启动' }
+    return { ok: false, message: '后端无响应，请确认 workbench-server 已启动。' }
   }
 }
 
@@ -76,10 +76,10 @@ export async function logoutRequest(): Promise<void> {
 export async function probeStatus(): Promise<ProbeResult> {
   try {
     const token = getToken()
-    const res = await fetch(BASE + '/api/monitor/status', {
+    const response = await fetch(BASE + '/api/monitor/status', {
       headers: token ? { 'X-API-Token': token } : {},
     })
-    return res.status === 401 ? 'locked' : 'open'
+    return response.status === 401 ? 'locked' : 'open'
   } catch {
     return 'offline'
   }
@@ -93,19 +93,19 @@ export async function api<T = unknown>(url: string, options: RequestInit = {}): 
   const token = getToken()
   if (token) headers['X-API-Token'] = token
 
-  const res = await fetch(BASE + url, { ...options, headers })
-  if (res.status === 401) {
+  const response = await fetch(BASE + url, { ...options, headers })
+  if (response.status === 401) {
     setToken(null)
     // hash 路由：直接改 hash 触发路由切换，避免引入 router 依赖
     location.hash = '#/login'
-    throw new ApiError('未认证或密码已变更，请重新登录')
+    throw new ApiError('登录已失效，请重新登录。')
   }
   // 非 JSON 响应（离线代理错误页/空响应）不能把解析异常原文抛给用户
   let body: { message: string; code: number; data: T }
   try {
-    body = (await res.json()) as { message: string; code: number; data: T }
+    body = (await response.json()) as { message: string; code: number; data: T }
   } catch {
-    throw new ApiError('后端无响应或返回异常——请确认 workbench-server 已启动')
+    throw new ApiError('后端无响应，请确认 workbench-server 已启动。')
   }
   if (body.code !== 0) throw new ApiError(body.message || '操作失败')
   return body.data

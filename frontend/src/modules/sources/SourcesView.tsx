@@ -15,21 +15,21 @@ import PulseChart from '../../components/PulseChart'
 import { fmtClock, fmtInt, fmtMD } from '../../utils/format'
 import { toast } from '../../ui/toast'
 import { showConfirm } from '../../ui/dialog'
-import { EmptyState, Field, GhostButton, Panel, StatusDot } from '../../components/ui/ui'
+import { Button, Combobox, EmptyState, Field, Icon, PageHeader, Panel, Spinner, StatusDot, Tag } from '../../components/ui/ui'
 import './sources.css'
 
 const ALL_METRICS: SourceMetric[] = ['pages', 'downloads']
 
 /** epoch 分钟序列 → 图表视图模型 */
-function toPoints(data: SeriesPointData[] | null): Array<{ t: number; v: number }> {
-  return (data ?? []).map((p) => ({ t: minutesToMs(p.bucketEpoch), v: p.value }))
+function toPoints(data: SeriesPointData[] | null): Array<{ timestamp: number; value: number }> {
+  return (data ?? []).map((point) => ({ timestamp: minutesToMs(point.bucketEpoch), value: point.value }))
 }
 
 export default function SourcesView() {
-  const configs = usePolling(() => sourcesApi.list(), 'source-configs', { intervalMs: 20_000 })
+  const configsQuery = usePolling(() => sourcesApi.list(), 'source-configs', { intervalMs: 20_000 })
   // GitHub token 配置状态：驱动引导卡与接入区（配没配由服务端判定，这里只有布尔位）
-  const statusQ = usePolling(() => monitorApi.status(), 'status', { intervalMs: 30_000 })
-  const tokenSource = statusQ.data?.githubTokenSource ?? null
+  const statusQuery = usePolling(() => monitorApi.status(), 'status', { intervalMs: 30_000 })
+  const tokenSource = statusQuery.data?.githubTokenSource ?? null
   const tokenReady = tokenSource != null
   const [repo, setRepo] = useState('')
   const [metrics, setMetrics] = useState<SourceMetric[]>(ALL_METRICS)
@@ -44,7 +44,7 @@ export default function SourcesView() {
   const [reloadTick, setReloadTick] = useState(0)
   const reload = () => setReloadTick((t) => t + 1)
   useEffect(() => {
-    configs.reload()
+    configsQuery.reload()
     // eslint 挂载一次语义：reload 是 setState 包装，引用稳定
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reloadTick])
@@ -56,22 +56,22 @@ export default function SourcesView() {
       await action()
       toast(done)
       reload()
-    } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), true)
+    } catch (error) {
+      toast(error instanceof Error ? error.message : String(error), true)
     } finally {
       setBusy(false)
     }
   }
 
-  async function addSource(e: FormEvent) {
-    e.preventDefault()
-    const trimmed = repo.trim()
-    if (!trimmed || busy) return
-    const input: SourceConfigInput = { type: 'github', repo: trimmed, enabled: true, metrics }
+  async function addSource(event: FormEvent) {
+    event.preventDefault()
+    const trimmedRepo = repo.trim()
+    if (!trimmedRepo || busy) return
+    const input: SourceConfigInput = { type: 'github', repo: trimmedRepo, enabled: true, metrics }
     await run(async () => {
       await sourcesApi.create(input)
       setRepo('')
-    }, '已接入——等待下一次采集或点「立即采集」')
+    }, '已接入。等下一次采集，或点「立即采集」。')
   }
 
   async function loadRepos() {
@@ -80,104 +80,120 @@ export default function SourcesView() {
     try {
       const list = await sourcesApi.listGithubRepos()
       setRepos(list)
-      if (list.length === 0) toast('令牌可见的仓库为空——检查令牌权限或所属账号', true)
-    } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), true)
+      if (list.length === 0) toast('令牌没有返回可见仓库，请检查权限或账号归属。', true)
+    } catch (error) {
+      toast(error instanceof Error ? error.message : String(error), true)
     } finally {
       setReposLoading(false)
     }
   }
 
-  function toggleMetrics(key: SourceMetric) {
-    setMetrics((m) => (m.includes(key) ? m.filter((k) => k !== key) : [...m, key]))
+  function toggleMetrics(metricKey: SourceMetric) {
+    setMetrics((currentMetrics) =>
+      currentMetrics.includes(metricKey)
+        ? currentMetrics.filter((candidate) => candidate !== metricKey)
+        : [...currentMetrics, metricKey],
+    )
   }
 
-  async function collect(c: SourceConfigView) {
+  async function collect(config: SourceConfigView) {
     await run(async () => {
-      const result = await sourcesApi.collect(c.id)
+      const result = await sourcesApi.collect(config.id)
       if (!result.ok) throw new Error(result.error ?? '采集失败')
-    }, '采集完成')
+    }, '采集完成。')
   }
 
   /** 保存 token 后立即采集全部启用源：配置到数据可用，一次点击闭环 */
   async function saveToken() {
-    const value = tokenInput.trim()
-    if (busy || !value) return
+    const tokenValue = tokenInput.trim()
+    if (busy || !tokenValue) return
     await run(async () => {
-      await sourcesApi.setGithubToken(value)
+      await sourcesApi.setGithubToken(tokenValue)
       setTokenInput('')
       setEditingToken(false)
       const failures: string[] = []
-      for (const c of await sourcesApi.list()) {
-        if (!c.enabled) continue
-        const r = await sourcesApi.collect(c.id)
-        if (!r.ok) failures.push(c.repo + '：' + (r.error ?? '失败'))
+      for (const config of await sourcesApi.list()) {
+        if (!config.enabled) continue
+        const result = await sourcesApi.collect(config.id)
+        if (!result.ok) failures.push(config.repo + '：' + (result.error ?? '失败'))
       }
       if (failures.length > 0) throw new Error(failures.join('；'))
-      statusQ.reload()
-    }, '已保存并完成采集')
+      statusQuery.reload()
+    }, '令牌已保存，并完成一轮采集。')
   }
 
   async function clearToken() {
     await run(async () => {
       await sourcesApi.clearGithubToken()
       setRepos(null)
-      statusQ.reload()
-    }, '已清除——回落环境变量 GITHUB_TOKEN（如设置）')
+      statusQuery.reload()
+    }, '令牌已清除，会回落到环境变量 GITHUB_TOKEN（如果已设置）。')
   }
 
   return (
     <div className="src">
-      <header className="src-head">
-        <h1 className="src-title">我的项目</h1>
-        <span className="src-sub">统计你放在 GitHub 上的项目——Pages 流量与 Release 下载量，数据在卡片里直接看</span>
-      </header>
+      <PageHeader
+        eyebrow="项目 / GitHub"
+        title="我的项目"
+        desc="接入 GitHub 仓库，Pages 流量与 Release 下载量集中在这里。"
+      >
+        <span className={'src-token-status' + (tokenReady ? ' ok' : '')}>
+          <StatusDot state={tokenReady ? 'ok' : 'warn'} />
+          {tokenReady ? '令牌已就绪' : '未配置令牌'}
+        </span>
+      </PageHeader>
 
       {!tokenReady && (
         <Panel className="src-guide">
-          <h2 className="src-guide-title">先配置一次 GitHub 令牌</h2>
+          <span className="src-panel-eyebrow">Setup / Token</span>
+          <h2 className="src-guide-title">先配置 GitHub 令牌</h2>
           <p className="src-guide-text">
-            项目数据需要 GitHub 只读令牌（PAT）才能拉取：Pages 流量与 Release 下载量都走官方接口。
-            令牌只保存在你的服务器本地（sources.json），任何接口都不回显。
+            Pages 流量和 Release 下载量都要走 GitHub 官方接口，所以这里需要一个只读令牌。
+            令牌只保存在本机服务器的 sources.json 中，接口不会返回它。
           </p>
           <ol className="src-guide-steps">
             <li>GitHub → Settings → Developer settings → Personal access tokens</li>
-            <li>建议 classic token，勾选 repo 读取权限（traffic 接口对 Fine-grained token 常见 403 限制）</li>
-            <li>粘贴到下方保存——立即生效并自动采集已接入的项目</li>
+            <li>创建一个 classic token，勾选 repo 读取权限。traffic 接口对 fine-grained token 常返回 403。</li>
+            <li>粘贴到下方保存。生效后会自动采集已接入的项目。</li>
           </ol>
           <div className="src-token-row">
             <input
               className="input src-token-input"
               type="password"
               value={tokenInput}
-              placeholder="粘贴只读 PAT（ghp_… / github_pat_…）"
-              onChange={(e) => setTokenInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && void saveToken()}
+              placeholder="粘贴 PAT，ghp_ 或 github_pat_ 开头"
+              onChange={(event) => setTokenInput(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && void saveToken()}
             />
-            <button className="src-btn primary" disabled={busy || !tokenInput.trim()} onClick={() => void saveToken()}>
-              保存并开始
-            </button>
+            <Button variant="primary" disabled={busy || !tokenInput.trim()} onClick={() => void saveToken()}>
+              {busy ? <><Spinner size={12} />处理中…</> : '保存并采集'}
+            </Button>
           </div>
         </Panel>
       )}
 
       {tokenReady && (
         <Panel className="src-form">
+          <div className="src-panel-head">
+            <span className="src-panel-eyebrow">Connect / Repository</span>
+            <span className="src-panel-hint">从下拉选择，或直接输入 owner/name</span>
+          </div>
           <form onSubmit={addSource}>
             <div className="src-form-grid">
-              <Field label="仓库（owner/name）">
-                <input
-                  className="input src-form-repo"
+              <Field label="仓库">
+                <Combobox
+                  className="src-form-repo"
                   value={repo}
-                  list="src-repo-options"
-                  placeholder="从下拉选择你的仓库，或手动输入 owner/name"
-                  onChange={(e) => setRepo(e.target.value)}
+                  onChange={setRepo}
+                  options={repos ?? []}
+                  ariaLabel="仓库"
+                  placeholder="owner/name，或从列表选择"
+                  emptyText={
+                    repos == null
+                      ? '尚未拉取仓库列表。点下方按钮，或直接输入 owner/name。'
+                      : '没有匹配的仓库。'
+                  }
                 />
-                <datalist id="src-repo-options">
-                  {(repos ?? []).map((r) => (
-                    <option key={r} value={r} />
-                  ))}
-                </datalist>
               </Field>
               <div className="src-form-metrics" role="group" aria-label="采集指标">
                 {(
@@ -185,26 +201,35 @@ export default function SourcesView() {
                     { key: 'pages', label: 'Pages 流量' },
                     { key: 'downloads', label: 'Release 下载量' },
                   ] as Array<{ key: SourceMetric; label: string }>
-                ).map((m) => (
-                  <label key={m.key} className={'src-metric-chip' + (metrics.includes(m.key) ? ' on' : '')}>
+                ).map((metricOption) => (
+                  <label
+                    key={metricOption.key}
+                    className={'src-metric-chip' + (metrics.includes(metricOption.key) ? ' on' : '')}
+                  >
                     <input
                       type="checkbox"
-                      checked={metrics.includes(m.key)}
-                      onChange={() => toggleMetrics(m.key)}
+                      checked={metrics.includes(metricOption.key)}
+                      onChange={() => toggleMetrics(metricOption.key)}
                     />
-                    {m.label}
+                    {metricOption.label}
                   </label>
                 ))}
               </div>
             </div>
             <div className="src-form-ops">
-              <button className="src-btn primary" disabled={busy || !repo.trim()}>
-                接入项目
-              </button>
-              <GhostButton plain disabled={reposLoading} onClick={() => void loadRepos()}>
-                {reposLoading ? '拉取中…' : repos == null ? '拉取我的仓库列表' : '刷新仓库列表'}
-              </GhostButton>
-              {repos != null && <span className="src-repos-note">共 {repos.length} 个可见仓库</span>}
+              <Button type="submit" variant="primary" disabled={busy || !repo.trim()}>
+                {busy ? <><Spinner size={12} />处理中…</> : '接入项目'}
+              </Button>
+              <Button size="sm" disabled={reposLoading} onClick={() => void loadRepos()}>
+                {reposLoading ? (
+                  <><Spinner size={12} />正在拉取…</>
+                ) : repos == null ? (
+                  '拉取我的仓库列表'
+                ) : (
+                  '刷新仓库列表'
+                )}
+              </Button>
+              {repos != null && <span className="src-repos-note">能看到 {repos.length} 个仓库</span>}
             </div>
           </form>
         </Panel>
@@ -214,11 +239,12 @@ export default function SourcesView() {
         <details className="src-settings">
           <summary className="src-settings-head">
             <span className="src-settings-title">接入设置 · GitHub 令牌</span>
-            {tokenSource && <span className="src-tag">来源：{tokenSource === 'page' ? '本页保存' : '环境变量'}</span>}
+            {tokenSource && <Tag>来源：{tokenSource === 'page' ? '本页保存' : '环境变量'}</Tag>}
             <span className="src-settings-state">
               <StatusDot state="ok" />
-              采集就绪
+              采集正常
             </span>
+            <Icon name="chevron-down" size={14} className="src-settings-caret" />
           </summary>
           <div className="src-settings-body">
             {editingToken && (
@@ -227,23 +253,23 @@ export default function SourcesView() {
                   className="input src-token-input"
                   type="password"
                   value={tokenInput}
-                  placeholder="粘贴只读 PAT（ghp_… / github_pat_…），仅存本机服务端"
-                  onChange={(e) => setTokenInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && void saveToken()}
+                  placeholder="粘贴 PAT，只存在本机服务端"
+                  onChange={(event) => setTokenInput(event.target.value)}
+                  onKeyDown={(event) => event.key === 'Enter' && void saveToken()}
                 />
-                <button className="src-btn" disabled={busy || !tokenInput.trim()} onClick={() => void saveToken()}>
-                  保存并采集
-                </button>
-                <GhostButton plain onClick={() => { setEditingToken(false); setTokenInput('') }}>
+                <Button variant="primary" disabled={busy || !tokenInput.trim()} onClick={() => void saveToken()}>
+                  {busy ? <><Spinner size={12} />处理中…</> : '保存并采集'}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => { setEditingToken(false); setTokenInput('') }}>
                   取消
-                </GhostButton>
+                </Button>
               </div>
             )}
             {!editingToken && (
               <div className="src-token-row">
-                <span className="src-token-note">更换后立即生效并自动采集全部已启用项目；清除则回落环境变量 GITHUB_TOKEN（如已设置）。</span>
-                <GhostButton plain onClick={() => setEditingToken(true)}>更换</GhostButton>
-                <GhostButton plain danger disabled={busy} onClick={() => void clearToken()}>清除</GhostButton>
+                <span className="src-token-note">换了会立即生效，并自动采集所有启用项目。清除后回落到环境变量 GITHUB_TOKEN（如果设了）。</span>
+                <Button variant="ghost" size="sm" onClick={() => setEditingToken(true)}>更换</Button>
+                <Button variant="danger" size="sm" disabled={busy} onClick={() => void clearToken()}>清除</Button>
               </div>
             )}
           </div>
@@ -252,16 +278,17 @@ export default function SourcesView() {
 
       <section className="src-list">
         <header className="src-list-head">
-          <span className="src-list-title">已接入 {configs.data?.length ?? 0} 个项目</span>
+          <span className="src-list-title">已接入 {configsQuery.data?.length ?? 0} 个项目</span>
+          <span className="src-list-hint">展开卡片查看每天的曲线</span>
         </header>
         <div className="src-cards">
-          {(configs.data ?? []).map((c) => (
-            <ProjectCard key={c.id} config={c} busy={busy} onCollect={collect} run={run} />
+          {(configsQuery.data ?? []).map((config) => (
+            <ProjectCard key={config.id} config={config} busy={busy} onCollect={collect} run={run} />
           ))}
         </div>
-        {configs.data?.length === 0 && (
+        {configsQuery.data?.length === 0 && (
           <EmptyState>
-            {tokenReady ? '还没有接入任何项目——用上方表单接入第一个 GitHub 仓库' : '配置令牌后即可接入你的 GitHub 项目'}
+            {tokenReady ? '还没有接入项目。用上面的表单接第一个仓库。' : '配好令牌后，就能接第一个项目了。'}
           </EmptyState>
         )}
       </section>
@@ -284,16 +311,16 @@ function ProjectCard({
   const [open, setOpen] = useState(false)
   const source = 'github/' + config.repo
   // 展开才取数：卡片列表本身不背图表流量；日粒度数据 60s 轮询足够
-  const viewsQ = usePolling(() => monitorApi.series(source, 'count', '7d', 'views'), 'pv|' + config.id, {
+  const viewsQuery = usePolling(() => monitorApi.series(source, 'count', '7d', 'views'), 'pv|' + config.id, {
     enabled: open,
     intervalMs: 60_000,
   })
-  const dlQ = usePolling(() => monitorApi.series(source, 'count', '7d', 'downloads'), 'pd|' + config.id, {
+  const downloadsQuery = usePolling(() => monitorApi.series(source, 'count', '7d', 'downloads'), 'pd|' + config.id, {
     enabled: open,
     intervalMs: 60_000,
   })
-  const viewsTotal = (viewsQ.data ?? []).reduce((s, p) => s + p.value, 0)
-  const dlTotal = (dlQ.data ?? []).reduce((s, p) => s + p.value, 0)
+  const viewsTotal = (viewsQuery.data ?? []).reduce((total, point) => total + point.value, 0)
+  const downloadsTotal = (downloadsQuery.data ?? []).reduce((total, point) => total + point.value, 0)
 
   return (
     <Panel key={config.id} className="src-card">
@@ -303,81 +330,85 @@ function ProjectCard({
           title={config.lastError ?? ''}
         />
         <span className="src-repo">{config.repo}</span>
-        {!config.enabled && <span className="src-tag off">已停用</span>}
+        {!config.enabled && <Tag tone="warn">已停用</Tag>}
       </div>
       <div className="src-card-metrics">
-        {config.metrics.map((m) => (
-          <span key={m} className="src-tag">{m}</span>
+        {config.metrics.map((metric) => (
+          <Tag key={metric}>
+            {metric === 'pages' ? 'Pages 流量' : 'Release 下载量'}
+          </Tag>
         ))}
       </div>
       <div className="src-card-status">
         {config.lastError
           ? config.lastError
           : config.lastOkAt
-            ? '上次成功 ' + fmtClock(config.lastOkAt) + (config.lastDay ? ' · 数据至 ' + config.lastDay : '')
+            ? '上次成功 ' + fmtClock(config.lastOkAt) + (config.lastDay ? ' · 数据到 ' + config.lastDay : '')
             : '尚未采集'}
       </div>
       <div className="src-card-ops">
-        <GhostButton plain onClick={() => setOpen(!open)}>
+        <Button size="sm" onClick={() => setOpen(!open)}>
           {open ? '收起数据' : '查看数据'}
-        </GhostButton>
-        <GhostButton plain disabled={busy} onClick={() => void onCollect(config)}>立即采集</GhostButton>
-        <GhostButton
-          plain
+        </Button>
+        <Button size="sm" disabled={busy} onClick={() => void onCollect(config)}>立即采集</Button>
+        <Button
+          size="sm"
           disabled={busy}
-          onClick={() => void run(() => sourcesApi.update(config.id, { type: config.type, repo: config.repo, enabled: !config.enabled, metrics: config.metrics as SourceMetric[] }), config.enabled ? '已停用' : '已启用')}
+          onClick={() => void run(() => sourcesApi.update(config.id, { type: config.type, repo: config.repo, enabled: !config.enabled, metrics: config.metrics as SourceMetric[] }), config.enabled ? '已停用。' : '已启用。')}
         >
           {config.enabled ? '停用' : '启用'}
-        </GhostButton>
-        <GhostButton
-          plain
-          danger
+        </Button>
+        <Button
+          variant="danger"
+          size="sm"
           disabled={busy}
           onClick={() => {
             // 破坏性操作必须二次确认：删除立即停采集，不可恢复
             void (async () => {
-              const yes = await showConfirm({
-                title: '删除确认',
-                message: '确定删除「' + config.repo + '」？接入立即停止，历史数据将按保留策略自然过期。',
+              const confirmed = await showConfirm({
+                title: '确认删除？',
+                message: '删除「' + config.repo + '」后会立即停止采集。历史数据会按保留策略自然过期。',
                 confirmText: '删除',
                 danger: true,
               })
-              if (yes) await run(() => sourcesApi.remove(config.id), '已删除（历史数据将按保留策略过期）')
+              if (confirmed) await run(() => sourcesApi.remove(config.id), '已删除。历史数据会按保留策略过期。')
             })()
           }}
         >
           删除
-        </GhostButton>
+        </Button>
       </div>
 
       {open && (
         <div className="src-detail">
           <div className="src-detail-nums">
-            <span className="src-detail-num"><b>{fmtInt(viewsTotal)}</b> 浏览（7d）</span>
-            <span className="src-detail-num"><b>{fmtInt(dlTotal)}</b> 下载增量（7d）</span>
+            <span className="src-detail-num"><b>{fmtInt(viewsTotal)}</b> 7 天浏览</span>
+            <span className="src-detail-num"><b>{fmtInt(downloadsTotal)}</b> 7 天下载</span>
           </div>
           <div className="src-chart">
-            <div className="src-chart-head">Pages 浏览量 · 日</div>
+            <div className="src-chart-head">Pages 浏览量 · 每天</div>
             <PulseChart
-              points={toPoints(viewsQ.data)}
+              points={toPoints(viewsQuery.data)}
               variant="bars"
               formatValue={fmtInt}
               formatTime={fmtMD}
               height={180}
+              emptyText="还没有数据。采集完成后，这里会按天出现柱子。"
             />
           </div>
           <div className="src-chart">
-            <div className="src-chart-head">Release 下载量 · 日增量</div>
+            <div className="src-chart-head">Release 下载量 · 每天新增</div>
             <PulseChart
-              points={toPoints(dlQ.data)}
+              points={toPoints(downloadsQuery.data)}
               variant="bars"
               formatValue={fmtInt}
               formatTime={fmtMD}
               height={180}
+              emptyText="还没有数据。采集完成后，这里会按天出现柱子。"
             />
           </div>
-          {(viewsQ.error || dlQ.error) && (
-            <div className="src-detail-err">{viewsQ.error ?? dlQ.error}</div>
+          {(viewsQuery.error || downloadsQuery.error) && (
+            <div className="src-detail-err">{viewsQuery.error ?? downloadsQuery.error}</div>
           )}
         </div>
       )}

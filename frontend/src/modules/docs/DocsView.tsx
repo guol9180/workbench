@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isEditorReady, onEditorReady } from './editor'
 import { DocsProvider, useDocs } from './useDocs'
+import { Button, Icon, IconButton } from '../../components/ui/ui'
 import Sidebar from './Sidebar'
 import VditorEditor from './VditorEditor'
 import LocalPreview from './LocalPreview'
@@ -54,23 +55,23 @@ function DocsWorkspace() {
   }
 
   useEffect(() => {
-    function onKeydown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault()
+    function onKeydown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && (event.key === 's' || event.key === 'S')) {
+        event.preventDefault()
         void actions.saveDoc()
       }
-      if (e.key === 'Escape' && state.localFile) {
+      if (event.key === 'Escape' && state.localFile) {
         actions.hideLocalPreview()
       }
     }
-    function onBeforeUnload(e: BeforeUnloadEvent) {
+    function onBeforeUnload(event: BeforeUnloadEvent) {
       if (state.dirty) {
-        e.preventDefault()
-        e.returnValue = ''
+        event.preventDefault()
+        event.returnValue = ''
       }
     }
-    function onDragEnter(e: DragEvent) {
-      if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) {
+    function onDragEnter(event: DragEvent) {
+      if (event.dataTransfer && [...event.dataTransfer.types].includes('Files')) {
         dragDepth.current++
         setDropActive(true)
       }
@@ -79,15 +80,15 @@ function DocsWorkspace() {
       dragDepth.current = Math.max(0, dragDepth.current - 1)
       if (dragDepth.current === 0) setDropActive(false)
     }
-    function onDragOver(e: DragEvent) {
-      e.preventDefault()
+    function onDragOver(event: DragEvent) {
+      event.preventDefault()
     }
-    function onDrop(e: DragEvent) {
-      e.preventDefault()
+    function onDrop(event: DragEvent) {
+      event.preventDefault()
       dragDepth.current = 0
       setDropActive(false)
-      if (e.dataTransfer && e.dataTransfer.files.length > 0) {
-        void actions.openLocalFile(e.dataTransfer.files[0])
+      if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+        void actions.openLocalFile(event.dataTransfer.files[0])
       }
     }
     window.addEventListener('keydown', onKeydown)
@@ -113,7 +114,7 @@ function DocsWorkspace() {
       ? '保存中…'
       : state.saveStatus === 'ok'
         ? state.savedAt
-          ? '已自动保存 ' + state.savedAt
+          ? '已保存 ' + state.savedAt
           : '已保存'
         : state.saveStatus === 'error'
           ? '自动保存失败'
@@ -123,52 +124,47 @@ function DocsWorkspace() {
     <div className={'docp' + (state.sidebarOpen ? ' sidebar-open' : '')}>
       <header className="docp-bar">
         {/* 文件树收放全由用户手动控制（openDoc 不再自动收起）；收/放图标+提示语双态区分 */}
-        <button
-          className="docp-menu"
-          title={state.sidebarOpen ? '收起目录' : '展开目录'}
+        <IconButton
+          label={state.sidebarOpen ? '收起目录' : '展开目录'}
           onClick={() => actions.setSidebarOpen(!state.sidebarOpen)}
         >
-          {state.sidebarOpen ? (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
+          <Icon name={state.sidebarOpen ? 'close' : 'menu'} size={16} />
+        </IconButton>
+        <div className="docp-crumb">
+          <span className="docp-brand">文档</span>
+          <span className="docp-sep" aria-hidden="true">/</span>
+          <span className="docp-doc" title={state.currentPath}>
+            {state.currentPath || '还没打开文档'}
+            {state.dirty && <i className="docp-dirty" title="还没保存" />}
+          </span>
+          {saveStatusText && (
+            <span className={'docp-save' + (state.saveStatus === 'error' ? ' err' : '')}>{saveStatusText}</span>
           )}
-        </button>
-        <span className="docp-title">文档</span>
-        <span className="docp-doc" title={state.currentPath}>
-          {state.currentPath || '未打开文档'}
-          {state.dirty && <i className="docp-dirty" title="未保存改动" />}
-        </span>
-        {saveStatusText && (
-          <span className={'docp-save' + (state.saveStatus === 'error' ? ' err' : '')}>{saveStatusText}</span>
-        )}
+        </div>
         <div className="docp-actions">
-          <button className="docp-btn primary" title="Ctrl+S" onClick={() => void actions.saveDoc()}>
-            保存
-          </button>
-          <button className="docp-btn" title="打开/创建今日工作日志" onClick={() => void actions.openToday()}>
-            今日工作
-          </button>
-          <button
-            className="docp-btn"
-            title="选择本地 .md 文件在浏览器中预览"
+          {state.currentPath && (
+            <Button variant="primary" size="sm" title="Ctrl+S" onClick={() => void actions.saveDoc()}>保存</Button>
+          )}
+          <Button variant="ghost" size="sm" title="打开或新建今天的日志" onClick={() => void actions.openToday()}>
+            <Icon name="clock" size={14} />今日日志
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            title="选择本地 Markdown 文件在浏览器中预览"
             onClick={() => fileInput.current?.click()}
           >
-            打开本地文件
-          </button>
+            <Icon name="file" size={14} />打开本地文件
+          </Button>
         </div>
         <input
           ref={fileInput}
           type="file"
           accept=".md,.markdown,.txt"
           className="docp-file"
-          onChange={(e) => {
-            void actions.openLocalFile(e.target.files?.[0])
-            e.target.value = ''
+          onChange={(event) => {
+            void actions.openLocalFile(event.target.files?.[0])
+            event.target.value = ''
           }}
         />
       </header>
@@ -178,6 +174,28 @@ function DocsWorkspace() {
         <Sidebar />
         <main className="docp-main">
           <VditorEditor onInput={onEditorInput} />
+          {/* 空态：没有打开文档时给一张真正的入口卡，而不是只留编辑器 placeholder */}
+          {!state.currentPath && !state.localFile && (
+            <div className="docp-welcome">
+              <div className="docp-welcome-inner">
+                <span className="docp-welcome-mark" aria-hidden="true"><Icon name="file" size={22} /></span>
+                <span className="docp-welcome-eyebrow">Docs / Workspace</span>
+                <h2 className="docp-welcome-title">从一页空白开始</h2>
+                <p className="docp-welcome-text">
+                  在左侧选择文档，或新建一篇；也可以拖入本地 Markdown 文件预览。
+                </p>
+                <div className="docp-welcome-actions">
+                  <Button variant="primary" onClick={() => void actions.newFile('')}>
+                    <Icon name="file-plus" size={14} />新建文档
+                  </Button>
+                  <Button onClick={() => void actions.openToday()}><Icon name="clock" size={14} />今日日志</Button>
+                  <Button variant="ghost" onClick={() => fileInput.current?.click()}>
+                    <Icon name="file" size={14} />打开本地文件
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
           {/* 只在「已打开文档且引擎未就绪」时覆盖：未打开文档时让 Vditor 骨架
               （工具栏+placeholder，无需 Lute 即渲染）直接可见，避免整片空白 */}
           {!editorReady && state.currentPath && (
@@ -185,7 +203,7 @@ function DocsWorkspace() {
               <pre className="docp-boot-text">{state.savedContent}</pre>
               <div className="docp-boot-hint">
                 <i className="docp-boot-dot" />
-                编辑器引擎加载中——已先展示纯文本，就绪后自动进入编辑
+                编辑器还在加载，先展示纯文本，就绪后自动切换。
               </div>
             </div>
           )}
@@ -195,7 +213,7 @@ function DocsWorkspace() {
 
       {dropActive && (
         <div className="docp-drop">
-          <div className="docp-drop-box">松开以预览 Markdown 文件</div>
+          <div className="docp-drop-box">松开鼠标，预览这个 Markdown 文件</div>
         </div>
       )}
     </div>

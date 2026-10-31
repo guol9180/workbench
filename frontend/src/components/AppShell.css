@@ -12,7 +12,7 @@
 
 .shell.collapsed { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
 
-/* ---------- 侧栏 ---------- */
+/* ---------- 侧栏：控制台纵轨 ---------- */
 
 .sidebar {
     grid-area: side;
@@ -20,8 +20,8 @@
     border-right: 1px solid var(--line);
     display: flex;
     flex-direction: column;
-    padding: 12px 10px;
-    gap: 4px;
+    padding: var(--space-3);
+    gap: var(--space-1);
     min-width: 0;
     overflow: hidden;
 }
@@ -29,41 +29,76 @@
 .side-brand {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 4px 8px 16px;
+    gap: var(--space-2);
+    padding: 0 var(--space-1) var(--space-4);
+    margin-bottom: var(--space-3);
+    border-bottom: 1px solid var(--line-soft);
     white-space: nowrap;
 }
 
-.side-collapse {
-    flex: none;
-    margin-left: auto;
-    width: 24px;
-    height: 24px;
-    display: grid;
-    place-items: center;
-    border-radius: var(--r-ctl);
-    color: var(--text-3);
-    transition: color 0.15s, background 0.15s;
+.side-brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
 }
 
-.side-collapse:hover { color: var(--text); background: var(--s1); }
+.side-caption {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-tight);
+    letter-spacing: var(--tracking-caption);
+    text-transform: uppercase;
+    color: var(--text-3);
+}
+
+/* 品牌方印：与强调色同一笔意的小色块，让侧栏顶部有落点 */
+.side-mark {
+    flex: none;
+    width: 30px;
+    height: 30px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--r-sm);
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-border);
+    color: var(--accent);
+}
 
 .side-wordmark {
     font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-brand);
 }
 
-.side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; min-height: 0; overflow-y: auto; }
+.side-collapse { margin-left: auto; }
 
-.side-group { display: flex; flex-direction: column; gap: 2px; margin-top: 12px; }
+.side-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.side-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: var(--space-4);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line-soft);
+}
 
 .side-group-name {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-3);
-    letter-spacing: 0.08em;
-    padding: 2px 10px 4px;
+    letter-spacing: var(--tracking-label);
+    padding: 0 var(--space-2) var(--space-1);
     white-space: nowrap;
 }
 
@@ -71,13 +106,13 @@
     position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--gap-icon);
     height: 36px;
-    padding: 0 10px;
-    border-radius: var(--r-ctl);
+    padding: 0 var(--space-2);
+    border-radius: var(--r-sm);
     color: var(--text-2);
     white-space: nowrap;
-    transition: color 0.15s, background 0.15s;
+    transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .side-item:hover { color: var(--text); background: var(--s1); }
@@ -87,36 +122,38 @@
 .side-item.active::before {
     content: "";
     position: absolute;
-    left: -10px;
+    left: 0;
     top: 8px;
     bottom: 8px;
-    width: 2px;
+    width: 3px;
+    border-radius: 0 2px 2px 0;
     background: var(--accent);
-    border-radius: 1px;
 }
 
-.side-item-label { font-size: 13px; }
+.side-item-label { font-size: var(--fs-md); }
 
 .side-foot {
     display: flex;
     flex-direction: column;
     gap: 2px;
-    border-top: 1px solid var(--line);
-    padding-top: 8px;
+    border-top: 1px solid var(--line-soft);
+    padding-top: var(--space-2);
 }
 
-.side-foot .side-item { width: 100%; }
+.side-foot .side-item { width: 100%; height: 36px; }
 
-/* 折叠态：只留图标，字标/分组名退场 */
+/* 折叠态：只留图标，字标/副标/分组名退场 */
 .collapsed .side-wordmark,
+.collapsed .side-brand-text,
 .collapsed .side-group-name,
 .collapsed .side-item-label { display: none; }
 
-.collapsed .sidebar { padding: 12px 8px; }
-.collapsed .side-brand { flex-direction: column; gap: 8px; padding-left: 0; padding-right: 0; }
+.collapsed .sidebar { padding: var(--space-3) var(--space-2); }
+.collapsed .side-brand { flex-direction: column; gap: var(--space-2); padding: 0 0 var(--space-4); }
 .collapsed .side-collapse { margin-left: 0; }
 .collapsed .side-item { justify-content: center; padding: 0; }
-.collapsed .side-item.active::before { left: -8px; }
+.collapsed .side-item.active::before { left: 0; }
+.collapsed .side-group { margin-top: var(--space-3); padding-top: var(--space-3); }
 
 /* 退出登录：悬停转危险色，与普通导航区分 */
 .side-logout:hover { color: var(--danger); background: var(--danger-dim); }
@@ -129,7 +166,6 @@
     min-height: 0;
     overflow: auto;
     background: var(--bg);
-    transition: background 0.15s;
 }
 
 /* 域主题由 tokens.css 的 [data-domain] 块接管，这里只负责把底色铺满 */
@@ -137,12 +173,12 @@
     grid-area: strip;
     display: flex;
     align-items: center;
-    gap: 16px;
-    padding: 0 14px;
+    gap: var(--space-5);
+    padding: 0 var(--space-4);
     background: var(--s0);
     border-top: 1px solid var(--line);
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-3);
     white-space: nowrap;
     overflow: hidden;
@@ -151,7 +187,7 @@
 .strip-live {
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--gap-icon-sm);
     color: var(--text-2);
 }
 
@@ -182,11 +218,12 @@
 
 @media (max-width: 768px) {
     .shell, .shell.collapsed { grid-template-columns: var(--sidebar-w-collapsed) 1fr; }
-    .side-wordmark, .side-group-name, .side-item-label { display: none; }
+    .side-wordmark, .side-brand-text, .side-group-name, .side-item-label { display: none; }
     .strip-mid { display: none; }
-    .sidebar { padding: 12px 8px; }
-    .side-brand { flex-direction: column; gap: 8px; padding-left: 0; padding-right: 0; }
+    .sidebar { padding: var(--space-3) var(--space-2); }
+    .side-brand { flex-direction: column; gap: var(--space-2); padding: 0 0 var(--space-4); }
     .side-collapse { margin-left: 0; }
     .side-item { justify-content: center; padding: 0; }
-    .side-item.active::before { left: -8px; }
+    .side-item.active::before { left: 0; }
+    .side-group { margin-top: var(--space-3); padding-top: var(--space-3); }
 }

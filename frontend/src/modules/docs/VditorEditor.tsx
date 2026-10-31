@@ -19,10 +19,10 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
   })
 
   useEffect(() => {
-    const el = elRef.current
-    if (!el) return
+    const mountElement = elRef.current
+    if (!mountElement) return
     let suppressDirty = false
-    const handle = {
+    const editorHandle = {
       getValue: () => vditor?.getValue() ?? '',
       setValue: (text: string | null | undefined) => {
         if (!vditor) return
@@ -33,14 +33,14 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
         }, 0)
       },
     }
-    const vditor = new window.Vditor(el, {
+    const vditor = new window.Vditor(mountElement, {
       cdn: import.meta.env.BASE_URL + 'vendor/vditor',
       lang: 'zh_CN',
       mode: 'ir',
       theme,
       height: '100%',
       cache: { enable: false },
-      placeholder: '选择左侧文档开始编辑，或点击「今日工作」新建日志…',
+      placeholder: '从左侧选择一篇开始，或点「今日日志」写今天的记录…',
       preview: { hljs: { lineNumber: false, style: theme === 'dark' ? 'github-dark' : 'github' } },
       toolbar: [
         'headings', 'bold', 'italic', 'strike', '|',
@@ -52,10 +52,10 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
         if (suppressDirty) return
         onInputRef.current()
       },
-      after: () => markEditorReady(handle),
+      after: () => markEditorReady(editorHandle),
     })
     vditorRef.current = vditor
-    attachEditor(handle)
+    attachEditor(editorHandle)
     return () => {
       attachEditor(null)
       vditor.destroy()
@@ -67,9 +67,9 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
 
   // 热切换优先走实例 API（不丢编辑内容）；vendored 实现差异时静默放弃，重建路径兜底
   useEffect(() => {
-    const inst = vditorRef.current as unknown as { setTheme?: (t: string) => void } | null
+    const vditorInstance = vditorRef.current as unknown as { setTheme?: (nextTheme: string) => void } | null
     try {
-      inst?.setTheme?.(theme)
+      vditorInstance?.setTheme?.(theme)
     } catch {
       // vendored setTheme 行为差异可忽略：重建路径已保证最终一致
     }

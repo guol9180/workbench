@@ -3,60 +3,99 @@
 .mon {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 18px 22px 26px;
+    padding: var(--space-6) var(--space-6) var(--space-5);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: var(--space-4);
 }
 
-.mon-head {
+/* ---------- 源：单源信息行 / 多源卡片（见 .mon-cards） ---------- */
+
+.mon-source {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: var(--space-2);
+    min-width: 0;
 }
 
-.mon-title {
-    font-family: var(--font-display);
-    font-size: 20px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-}
-
-/* ---------- 源切换 ---------- */
-
-.mon-sources {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.mon-sources-label { font-size: 12px; color: var(--text-3); }
-
-.mon-updated {
-    margin-left: auto;
+.mon-source-name {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-md);
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.mon-source-meta {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
     color: var(--text-3);
 }
 
+.mon-source-seen {
+    margin-left: auto;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+}
+
+.mon-updated {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+}
+
+.mon-updated.is-busy { color: var(--accent); }
+
 /* ---------- 主图 ---------- */
 
-.mon-hero { padding: 0 6px 0; }
+.mon-hero {
+    padding: 0;
+    overflow: hidden;
+}
 
-/* 主图头部：指标切换（描迹颜色随之切换） */
+/* 主图头部：指标切换（描迹颜色随之切换）+ 右侧刷新时刻 */
 .mon-hero-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 10px 0;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4) 0;
+}
+
+.mon-hero-title-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+.mon-hero-tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
 }
 
 .mon-hero-title {
     font-family: var(--font-display);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    font-size: var(--fs-md);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-title);
     color: var(--text-2);
+}
+
+.mon-hero-window {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--text-3);
+    white-space: nowrap;
 }
 
 /* ---------- 读数排：发丝线分栏，不做卡片 ---------- */
@@ -65,28 +104,30 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     border-top: 1px solid var(--line);
+    margin-top: 2px;
 }
 
 .mon-readout {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    padding: 10px 18px;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4);
     border-left: 1px solid var(--line);
+    min-width: 0;
 }
 
-.mon-readout:first-child { border-left: none; padding-left: 2px; }
+.mon-readout:first-child { border-left: none; }
 
 .mon-num {
     font-family: var(--font-mono);
-    font-size: 26px;
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    font-size: var(--fs-2xl);
+    font-weight: var(--fw-medium);
+    letter-spacing: var(--tracking-tight);
     font-variant-numeric: tabular-nums;
-    line-height: 1.15;
+    line-height: var(--lh-display);
 }
 
-.mon-label { font-size: 12px; color: var(--text-3); }
+.mon-label { font-size: var(--fs-sm); color: var(--text-3); }
 
 .mon-label-row {
     display: flex;
@@ -98,7 +139,7 @@
 /* 环比小注：后半段 vs 前半程 */
 .mon-delta {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-3);
 }
 
@@ -110,19 +151,19 @@
 .mon-attention {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--space-2);
 }
 
 .mon-attention-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 14px;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     background: var(--s0);
     border: 1px solid var(--line);
     border-left: 2px solid var(--warn);
-    border-radius: 6px;
-    font-size: 13px;
+    border-radius: var(--r-sm);
+    font-size: var(--fs-md);
     color: var(--text-2);
 }
 
@@ -137,27 +178,34 @@
 
 .mon-ledger { overflow-x: auto; }
 
-/* 台账 5 列实际需要约 560px：右栏再窄也横向滚动，绝不无声裁切数据 */
+/* 台账 5 列需要约 560px：通栏下自然排布，窄屏保底横向滚动而不是压缩读数 */
 .mon-table { min-width: 560px; }
 
-/* ---------- 宽屏双栏：主图+读数居左，端点台账居右；<1024px 回落纵向 ---------- */
+/* ---------- 主体：主图在上、端点台账通栏在下 ----------
+   时间序列吃满宽度才能看清描迹；台账五列也要通栏才不必横向滚动。
+   右栏窄版曾把均延/P95 挤出可视区，数据看得见优先于版式对称。 */
 
 .mon-body {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
 }
 
-@media (min-width: 1024px) {
-    .mon-body {
-        grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-        align-items: start;
-    }
-
-    .mon-body > .mon-ledger { position: sticky; top: 12px; }
+/* 切换源/区间/指标时：旧帧压暗但留在原位，新数据到达后一次性替换。
+   头部（标题/同步中提示/分段器）不压暗，保持可读。 */
+.mon-body .pulse,
+.mon-body .mon-readouts,
+.mon-body .mon-ledger {
+    transition: opacity var(--dur) var(--ease);
 }
 
-/* 大屏放宽容器：右栏拿到约 470px，多数情况下表格无需滚动 */
+.mon-body.is-switching .pulse,
+.mon-body.is-switching .mon-readouts,
+.mon-body.is-switching .mon-ledger {
+    opacity: 0.55;
+}
+
+/* 超大屏收窄边距，避免读数被拉得过散 */
 @media (min-width: 1440px) {
     .mon { max-width: 1320px; }
 }
@@ -166,53 +214,46 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    padding: var(--space-3) var(--space-4);
     border-bottom: 1px solid var(--line);
 }
 
 .mon-ledger-title {
     font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 600;
-    letter-spacing: 0.03em;
+    font-size: var(--fs-base);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-title);
     color: var(--text-2);
+    white-space: nowrap;
 }
-
-.mon-sorts { display: flex; gap: 2px; }
-
-.mon-sort {
-    font-size: 12px;
-    color: var(--text-3);
-    padding: 4px 9px;
-    border-radius: 4px;
-    transition: color 0.15s, background 0.15s;
-}
-
-.mon-sort:hover { color: var(--text-2); }
-.mon-sort.active { color: var(--accent); background: var(--accent-dim); }
 
 .mon-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 13px;
+    font-size: var(--fs-md);
 }
 
 .mon-table th {
     text-align: left;
-    font-weight: 400;
-    font-size: 11px;
+    font-weight: var(--fw-regular);
+    font-size: var(--fs-xs);
+    line-height: var(--lh-heading);
     color: var(--text-3);
-    padding: 8px 16px;
+    padding: var(--space-2) var(--space-4);
     border-bottom: 1px solid var(--line);
 }
 
 .mon-table td {
-    padding: 9px 16px;
-    border-bottom: 1px solid rgba(30, 40, 57, 0.55);
+    padding: var(--space-2) var(--space-4);
+    line-height: var(--lh-heading);
+    border-bottom: 1px solid var(--line);
 }
 
 .mon-table tbody tr:last-child td { border-bottom: none; }
-.mon-table tbody tr { transition: background 0.12s; }
+.mon-table tbody tr { transition: background var(--dur-fast) var(--ease); }
 .mon-table tbody tr:hover { background: var(--s1); }
 
 .mon-table .num {
@@ -223,10 +264,10 @@
 
 .mon-ep {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: var(--fs-md);
 }
 
-/* 请求列：暗琥珀底条表达量级占比，数字浮在其上 */
+/* 请求列：强调色淡底条表达量级占比，数字浮在其上 */
 .mon-count-cell { position: relative; }
 
 .mon-count {
@@ -236,7 +277,10 @@
     transform: translateY(-50%);
     height: 16px;
     max-width: 100%;
-    background: linear-gradient(90deg, transparent, var(--accent-faint));
+    background: var(--accent-faint);
+    /* 用遮罩做渐隐而不是渐变背景：颜色随主题过渡，不会在明暗切换时整条瞬跳 */
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000);
+    mask-image: linear-gradient(90deg, transparent, #000);
     border-radius: 2px;
     pointer-events: none;
 }
@@ -249,28 +293,28 @@
 .mon-table-empty {
     text-align: center;
     color: var(--text-3);
-    font-size: 13px;
+    font-size: var(--fs-md);
     padding: 22px 16px;
 }
 
-/* ---------- 全局态势卡片行 ---------- */
+/* ---------- 多源切换卡片（单源不渲染，见 SourceCards） ---------- */
 
 .mon-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-    gap: 10px;
+    gap: var(--space-2);
 }
 
 .mon-card {
     text-align: left;
     background: var(--s0);
     border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 10px 13px;
+    border-radius: var(--r-sm);
+    padding: var(--space-2) var(--space-3);
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    transition: border-color 0.15s, background 0.15s;
+    gap: var(--space-1);
+    transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
 }
 
 .mon-card:hover { background: var(--s1); border-color: var(--line-strong); }
@@ -283,7 +327,7 @@
 .mon-card-top {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: var(--space-2);
 }
 
 .mon-card-dot {
@@ -299,31 +343,26 @@
 
 .mon-card-name {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--text-2);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.mon-card-win {
-    margin-left: auto;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-3);
-}
+.mon-card-win { margin-left: auto; }
 
 .mon-card-num {
     font-family: var(--font-mono);
-    font-size: 20px;
-    font-weight: 500;
+    font-size: var(--fs-xl);
+    font-weight: var(--fw-medium);
     font-variant-numeric: tabular-nums;
-    line-height: 1.1;
+    line-height: var(--lh-display);
 }
 
 .mon-card-sub {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-3);
 }
 
@@ -331,26 +370,27 @@
 
 /* ---------- 首次使用引导（空态即门） ---------- */
 
-.mon-guide { padding: 20px 22px 22px; }
+.mon-guide { padding: var(--space-5); }
 
 .mon-guide-title {
     font-family: var(--font-display);
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    margin-bottom: 16px;
+    font-size: var(--fs-lg);
+    font-weight: var(--fw-semibold);
+    line-height: var(--lh-heading);
+    letter-spacing: var(--tracking-subtitle);
+    margin-bottom: var(--space-4);
 }
 
 .mon-guide-steps {
     list-style: none;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: var(--space-4);
 }
 
 .mon-guide-steps li {
     display: flex;
-    gap: 12px;
+    gap: var(--space-3);
     align-items: flex-start;
 }
 
@@ -364,29 +404,29 @@
     background: var(--accent-dim);
     color: var(--accent);
     font-family: var(--font-mono);
-    font-size: 12px;
-    font-weight: 500;
+    font-size: var(--fs-sm);
+    font-weight: var(--fw-medium);
 }
 
 .mon-guide-steps b {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: var(--fs-md);
+    font-weight: var(--fw-semibold);
     display: block;
-    margin-bottom: 3px;
+    margin-bottom: var(--space-1);
 }
 
 .mon-guide-steps p {
-    font-size: 13px;
+    font-size: var(--fs-md);
     color: var(--text-2);
-    margin-bottom: 5px;
+    margin-bottom: var(--space-2);
 }
 
 .mon-guide-link {
-    font-size: 13px;
+    font-size: var(--fs-md);
     color: var(--accent);
     border-bottom: 1px solid var(--accent-border);
     padding-bottom: 1px;
-    transition: color 0.15s, border-color 0.15s;
+    transition: color var(--dur-fast) var(--ease), border-color var(--dur-fast) var(--ease);
 }
 
 .mon-guide-link:hover { color: var(--accent-hi); border-color: var(--accent); }
@@ -394,15 +434,49 @@
 /* ---------- 移动端 ---------- */
 
 @media (max-width: 768px) {
-    .mon { padding: 12px 14px 18px; }
+    .mon { padding: var(--space-4) var(--space-4) var(--space-5); gap: var(--space-4); }
+
+    .mon .page-head { flex-direction: column; align-items: stretch; gap: var(--space-3); }
+    .mon .page-head-actions { width: 100%; }
+    .mon .page-head-actions .seg { display: flex; width: 100%; }
+    .mon .page-head-actions .seg-item { flex: 1; text-align: center; }
+
+    .mon-source-meta { display: none; }
+    .mon-source-seen { font-size: var(--fs-xs); }
+
+    /* 注意条允许换行：窄屏不把原因截成「错误率…」 */
+    .mon-attention-row { align-items: flex-start; flex-wrap: wrap; }
+    .mon-attention-text { flex: 1; white-space: normal; overflow: visible; text-overflow: clip; }
+    .mon-attention-row .btn { margin-left: auto; }
+
+    .mon-hero-head { padding: var(--space-3) var(--space-4) 0; }
+    .mon-hero-tools { width: 100%; justify-content: space-between; }
+    .mon-hero-tools .seg { display: flex; width: 100%; }
+    .mon-hero-tools .seg-item { flex: 1; text-align: center; }
+    .mon-updated { display: none; }
 
     .mon-readouts {
         grid-template-columns: repeat(2, 1fr);
-        row-gap: 6px;
+        row-gap: var(--space-2);
     }
 
-    .mon-readout:nth-child(3) { border-left: none; padding-left: 2px; }
-    .mon-updated { display: none; }
+    .mon-readout { padding: var(--space-3) var(--space-4); }
+    .mon-readout:first-child { padding-left: var(--space-4); }
+    .mon-readout:nth-child(3) { border-left: none; padding-left: var(--space-4); }
+
+    /* 窄屏收起 P95，保留端点/请求/错误/均延四列，避免整表横向滚动 */
+    .mon-table { min-width: 0; }
+    .mon-table th:nth-child(5),
+    .mon-table td:nth-child(5) { display: none; }
+    .mon-table th, .mon-table td { padding: var(--space-2) var(--space-3); }
+    .mon-ep { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
     .mon-ledger { overflow-x: auto; }
+}
+
+/* 手机竖屏：端点台账只留端点/请求/错误三列 */
+@media (max-width: 480px) {
+    .mon-table th:nth-child(4),
+    .mon-table td:nth-child(4) { display: none; }
+    .mon-ep { max-width: 160px; }
 }

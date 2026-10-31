@@ -37,5 +37,5 @@ export const docsApi = {
   rename: (from: string, to: string) =>
     api<void>('/api/docs/rename', { method: 'POST', body: JSON.stringify({ from, to }) }),
   remove: (path: string) => api<void>('/api/docs/resource?path=' + encodeURIComponent(path), { method: 'DELETE' }),
-  search: (q: string) => api<SearchHit[]>('/api/docs/search?q=' + encodeURIComponent(q)),
+  search: (query: string) => api<SearchHit[]>('/api/docs/search?q=' + encodeURIComponent(query)),
 }

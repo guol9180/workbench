@@ -10,7 +10,12 @@ import './styles/tokens.css'
 import './styles/base.css'
 import './components/ui/ui.css'
 import App from './App'
+import { initTheme } from './theme'
 import { prefetchVditorAssets } from './modules/docs/prefetch'
+
+// 主题必须在任何路由渲染前落到 <html>：登录页在 AppShell 之外，
+// 若只由骨架初始化，从空状态直达 /login 时所有语义令牌都会是空值（整页无样式）。
+initTheme()
 
 createRoot(document.getElementById('root')!).render(
   // 不用 StrictMode：开发期「挂载→卸载→再挂载」会让 vendored Vditor 在半初始化态被

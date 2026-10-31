@@ -1,5 +1,6 @@
 /** 文件树（递归）：目录折叠展开、行内操作（新建/重命名/删除）hover 浮现 */
 import { useDocs } from './useDocs'
+import { Icon } from '../../components/ui/ui'
 import type { DocNode } from './api'
 
 export default function DocTree({ nodes }: { nodes: DocNode[] }) {
@@ -8,33 +9,67 @@ export default function DocTree({ nodes }: { nodes: DocNode[] }) {
   return (
     <>
       {nodes.map((node) => {
-        const isDir = node.type === 'dir'
-        const isOpen = isDir && state.expanded.has(node.path)
+        const isDirectory = node.type === 'dir'
+        const isOpen = isDirectory && state.expanded.has(node.path)
         return (
           <div key={node.path} className="docp-item">
             <div
               className={'docp-row' + (node.path === state.currentPath ? ' active' : '')}
               title={node.path}
-              onClick={() => (isDir ? actions.toggleDir(node) : void actions.openDoc(node.path))}
+              onClick={() => (isDirectory ? actions.toggleDir(node) : void actions.openDoc(node.path))}
             >
-              <span className={'docp-caret' + (isOpen ? ' open' : '')}>{isDir ? '▶' : ''}</span>
+              <span className={'docp-caret' + (isOpen ? ' open' : '')}>
+                {isDirectory && <Icon name="chevron-right" size={12} />}
+              </span>
               <span className="docp-name">{node.name}</span>
               <span className="docp-ops">
-                {isDir && (
+                {isDirectory && (
                   <>
-                    <button className="docp-op" title="在此新建文档" onClick={(e) => { e.stopPropagation(); void actions.newFile(node.path) }}>
-                      +文
+                    <button
+                      className="docp-op"
+                      title="在这里新建文档"
+                      aria-label="在这里新建文档"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        void actions.newFile(node.path)
+                      }}
+                    >
+                      <Icon name="file-plus" size={13} />
                     </button>
-                    <button className="docp-op" title="在此新建文件夹" onClick={(e) => { e.stopPropagation(); void actions.newDir(node.path) }}>
-                      +夹
+                    <button
+                      className="docp-op"
+                      title="在这里新建文件夹"
+                      aria-label="在这里新建文件夹"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        void actions.newDir(node.path)
+                      }}
+                    >
+                      <Icon name="folder-plus" size={13} />
                     </button>
                   </>
                 )}
-                <button className="docp-op" title="重命名" onClick={(e) => { e.stopPropagation(); void actions.renameNode(node) }}>
-                  改名
+                <button
+                  className="docp-op"
+                  title="重命名"
+                  aria-label="重命名"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void actions.renameNode(node)
+                  }}
+                >
+                  <Icon name="pencil" size={13} />
                 </button>
-                <button className="docp-op danger" title="删除" onClick={(e) => { e.stopPropagation(); void actions.deleteNode(node) }}>
-                  删除
+                <button
+                  className="docp-op danger"
+                  title="删除"
+                  aria-label="删除"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    void actions.deleteNode(node)
+                  }}
+                >
+                  <Icon name="trash" size={13} />
                 </button>
               </span>
             </div>

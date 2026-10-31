@@ -1,18 +1,19 @@
 /**
  * 工作台首页：统一门面，消解"多个小应用硬粘在一起"的割裂感。
- * - 工具卡片区：每个业务模块一张卡（域色点 + 一句话 + 快捷入口），后续新工具 = 加一张卡
- * - 健康摘要条：所有监测源的状态一行看完，异常源排前，点击去概览深潜
+ * - 工具卡片区：每个业务模块一张卡（图标 + 一句话 + 域标签），后续新工具 = 加一张卡
+ * - 全局健康：所有监测源的状态一张表看完，异常源排前；点击去对应页面深潜
  * - 最近文档：最近打开 3 篇直达（经 location.state 交给文档页打开）
  */
 import { useEffect, useRef, useState } from 'react'
+import type { ReactElement } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { monitorApi } from '../monitor/api'
-import type { OverviewData, RangeKey } from '../monitor/api'
+import { minutesToMs, monitorApi, RANGE_LABEL } from '../monitor/api'
+import type { MonitorStatusData, OverviewData, RangeKey } from '../monitor/api'
+import { usePolling } from '../monitor/useMonitor'
 import { fmtClock, fmtHM, fmtInt, fmtRate } from '../../utils/format'
-import { minutesToMs } from '../monitor/api'
 import { getRecent } from '../docs/recent'
 import { baseName } from '../docs/util'
-import { Panel, StatusDot } from '../../components/ui/ui'
+import { Button, EmptyState, Icon, PageHeader, Panel, StatusDot, Tag } from '../../components/ui/ui'
 import './home.css'
 
 interface HealthRow {
@@ -33,7 +34,7 @@ function useHealth(): HealthRow[] {
     const load = async () => {
       try {
         const sources = await monitorApi.sources()
-        const names = sources.map((s) => s.name)
+        const names = sources.map((source) => source.name)
         namesRef.current = names
         if (alive) setNamesKey(names.join('|'))
         if (names.length === 0) {
@@ -41,10 +42,15 @@ function useHealth(): HealthRow[] {
           return
         }
         const list = await Promise.all(
-          sources.map(async (s) => {
-            const name = s.name
+          sources.map(async (source) => {
+            const name = source.name
             const win: RangeKey = name.startsWith('github/') ? '7d' : '1h'
-            return { name, win, lastSeenMinute: s.lastSeenMinute, overview: await monitorApi.overview(name, win) }
+            return {
+              name,
+              win,
+              lastSeenMinute: source.lastSeenMinute,
+              overview: await monitorApi.overview(name, win),
+            }
           }),
         )
         if (alive) setRows(list)
@@ -64,14 +70,30 @@ function useHealth(): HealthRow[] {
 
   useEffect(() => {
     // namesKey 变化即重排：异常源（错误率 >1%）排最前，其余按名称稳定排序
-    setRows((prev) => [...prev].sort((a, b) => {
-      const bad = (r: HealthRow) => (r.overview.errRate > 0.01 ? 1 : 0)
-      if (bad(b) !== bad(a)) return bad(b) - bad(a)
-      return a.name.localeCompare(b.name)
-    }))
+    setRows((previousRows) =>
+      [...previousRows].sort((leftRow, rightRow) => {
+        const isBadRow = (row: HealthRow) => row.overview.errRate > 0.01
+        if (isBadRow(rightRow) !== isBadRow(leftRow)) return isBadRow(rightRow) ? -1 : 1
+        return leftRow.name.localeCompare(rightRow.name)
+      }),
+    )
   }, [namesKey])
 
   return rows
+}
+
+interface PulseSnapshot {
+  status: MonitorStatusData | null
+  overview: OverviewData | null
+}
+
+/** 系统脉搏：存储规模 + workbench 近 5m 速率；失败时保留旧值，页面不闪 */
+function usePulse(): PulseSnapshot {
+  const statusQuery = usePolling(monitorApi.status, 'home-status', { intervalMs: 20_000 })
+  const overviewQuery = usePolling(() => monitorApi.overview('workbench', '5m'), 'home-pulse', {
+    intervalMs: 15_000,
+  })
+  return { status: statusQuery.data, overview: overviewQuery.data }
 }
 
 function greeting(hour: number): string {
@@ -82,30 +104,52 @@ function greeting(hour: number): string {
   return '晚上好'
 }
 
-const TOOLS = [
+/** 窄屏简称：github/owner/name 只留仓库名（owner 相同，前缀没有信息量） */
+function shortSourceName(sourceName: string): string {
+  if (!sourceName.startsWith('github/')) return sourceName
+  return sourceName.split('/').slice(-1)[0]
+}
+
+
+
+const TOOLS: Array<{
+  to: string
+  name: string
+  tag: string
+  domain: 'analysis' | 'docs'
+  desc: string
+  icon: ReactElement
+}> = [
   {
     to: '/monitor',
     name: '概览',
-    domain: 'analysis' as const,
-    desc: 'API 流量态势、延迟描迹与端点遥测台账',
+    tag: '监测',
+    domain: 'analysis',
+    desc: '流量、延迟、端点，一屏看完。',
+    icon: <Icon name="pulse" />,
   },
   {
     to: '/docs',
     name: '文档',
-    domain: 'docs' as const,
-    desc: '在线 Markdown 写作：目录树、全文搜索、自动保存',
+    tag: '写作',
+    domain: 'docs',
+    desc: 'Markdown 写作、自动保存、全文搜索。',
+    icon: <Icon name="docs" />,
   },
   {
     to: '/sources',
     name: '我的项目',
-    domain: 'analysis' as const,
-    desc: '你放在 GitHub 上的项目：Pages 流量与 Release 下载量统计',
+    tag: '统计',
+    domain: 'analysis',
+    desc: 'GitHub 项目的 Pages 流量与 Release 下载量。',
+    icon: <Icon name="projects" />,
   },
 ]
 
 export default function HomeView() {
   const navigate = useNavigate()
   const health = useHealth()
+  const pulse = usePulse()
   const [now, setNow] = useState(() => new Date())
   const recent = getRecent().slice(0, 3)
 
@@ -114,79 +158,157 @@ export default function HomeView() {
     return () => window.clearInterval(timer)
   }, [])
 
+  const dateText = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
+  const weekdayText = now.toLocaleDateString('zh-CN', { weekday: 'long' })
+
   return (
     <div className="home">
-      <header className="home-head">
-        <div>
-          <h1 className="home-title">{greeting(now.getHours())}，工作台</h1>
-          <p className="home-sub">
-            {now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })} · 随时
-            <kbd className="home-kbd">Ctrl K</kbd> 跳转或搜文档
-          </p>
-        </div>
-        <span className="home-clock">{fmtClock(now.getTime())}</span>
-      </header>
+      <PageHeader
+        eyebrow="工作台 / Workbench"
+        title={greeting(now.getHours())}
+        desc={
+          <>
+            {dateText} · {weekdayText} · <kbd>Ctrl K</kbd> 跳转或搜索
+          </>
+        }
+      >
+        <span className="home-clock">
+          <i className="dot ok" aria-hidden="true" />
+          {fmtClock(now.getTime())}
+        </span>
+      </PageHeader>
 
-      <div className="home-tools">
-        {TOOLS.map((t) => (
-          <button key={t.to} className="home-tool panel" onClick={() => navigate(t.to)}>
-            <span className="home-tool-top">
-              <i className={'home-tool-domain d-' + t.domain} aria-hidden="true" />
-              <span className="home-tool-name">{t.name}</span>
-              <span className="home-tool-arrow" aria-hidden="true">→</span>
+      <section className="home-tools" aria-label="工具">
+        {TOOLS.map((tool) => (
+          <button key={tool.to} className="home-tool panel" onClick={() => navigate(tool.to)}>
+            <span className={'home-tool-mark d-' + tool.domain}>{tool.icon}</span>
+            <span className="home-tool-body">
+              <span className="home-tool-top">
+                <span className="home-tool-name">{tool.name}</span>
+                <Tag>{tool.tag}</Tag>
+              </span>
+              <span className="home-tool-desc">{tool.desc}</span>
             </span>
-            <span className="home-tool-desc">{t.desc}</span>
+            <Icon name="arrow-right" size={16} className="home-tool-arrow" />
           </button>
         ))}
+      </section>
+
+      <div className="home-lower">
+        <Panel className="home-health">
+          <header className="home-panel-head">
+            <span className="home-panel-title">全局健康</span>
+            <Tag>{health.length} 个源</Tag>
+            <Button variant="ghost" size="sm" className="home-panel-more" onClick={() => navigate('/monitor')}>
+              看细节 <Icon name="arrow-right" size={14} />
+            </Button>
+          </header>
+
+          {health.length === 0 ? (
+            <EmptyState>还没有监测源。打开一篇文档或调用任意接口，之后会在这里开始记录。</EmptyState>
+          ) : (
+            <div className="home-rows">
+              <div className="home-row home-row-head" aria-hidden="true">
+                <span />
+                <span>源</span>
+                <span className="num">范围</span>
+                <span className="num">请求</span>
+                <span className="num">错误率</span>
+                <span className="num">最近活跃</span>
+              </div>
+              {health.map((row) => {
+                const isBad = row.overview.errRate > 0.01
+                const isRepo = row.name.startsWith('github/')
+                return (
+                  <button
+                    key={row.name}
+                    className="home-row"
+                    title={'近 ' + RANGE_LABEL[row.win] + ' · ' + row.name}
+                    onClick={() => navigate(isRepo ? '/sources' : '/monitor')}
+                  >
+                    <StatusDot state={isBad ? 'err' : 'ok'} />
+                    <span className="home-row-name">
+                      <span className="home-row-name-full">{row.name}</span>
+                      <span className="home-row-name-short">{shortSourceName(row.name)}</span>
+                    </span>
+                    <span className="home-row-win">{RANGE_LABEL[row.win]}</span>
+                    <span className="home-row-num">{fmtInt(row.overview.count)}</span>
+                    <span className={'home-row-num' + (isBad ? ' bad' : '')}>{fmtRate(row.overview.errRate)}</span>
+                    <span className="home-row-seen">{fmtHM(minutesToMs(row.lastSeenMinute))}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </Panel>
+
+        <Panel className="home-recent">
+          <header className="home-panel-head">
+            <span className="home-panel-title">最近文档</span>
+            <Button variant="ghost" size="sm" className="home-panel-more" onClick={() => navigate('/docs')}>
+              去写文档 <Icon name="arrow-right" size={14} />
+            </Button>
+          </header>
+
+          {recent.length === 0 ? (
+            <EmptyState>最近没有打开过的文档。去写一篇。</EmptyState>
+          ) : (
+            <div className="home-docs">
+              {recent.map((docPath) => (
+                <button
+                  key={docPath}
+                  className="home-doc-row"
+                  title={docPath}
+                  onClick={() => navigate('/docs', { state: { openDoc: docPath } })}
+                >
+                  <span className="home-doc-icon"><Icon name="file" size={16} /></span>
+                  <span className="home-doc-name">{baseName(docPath)}</span>
+                  <span className="home-doc-path">{docPath}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </Panel>
       </div>
 
-      {health.length > 0 && (
-        <Panel className="home-health">
-          <header className="home-health-head">
-            <span className="home-health-title">全局健康</span>
-            <button className="home-health-more" onClick={() => navigate('/monitor')}>
-              去概览 →
-            </button>
-          </header>
-          <div className="home-health-rows">
-            {health.map((r) => {
-              const bad = r.overview.errRate > 0.01
-              return (
-                <button key={r.name} className="home-health-row" title={'近 ' + r.win} onClick={() => navigate('/monitor')}>
-                  <StatusDot state={bad ? 'err' : 'ok'} />
-                  <span className="home-health-name">{r.name}</span>
-                  <span className="home-health-num">{fmtInt(r.overview.count)}</span>
-                  <span className={'home-health-err' + (bad ? ' bad' : '')}>{fmtRate(r.overview.errRate)}</span>
-                  <span className="home-health-seen" title="最后活跃">{fmtHM(minutesToMs(r.lastSeenMinute))}</span>
-                </button>
-              )
-            })}
+      <Panel className="home-pulse">
+        <header className="home-panel-head">
+          <span className="home-panel-title">系统脉搏</span>
+          <Tag>workbench · 近 5 分钟</Tag>
+        </header>
+        <div className="home-pulse-grid">
+          <div className="home-pulse-cell">
+            <span className="home-pulse-num">{pulse.overview ? pulse.overview.rps.toFixed(1) : '—'}</span>
+            <span className="home-pulse-label">每秒请求</span>
           </div>
-        </Panel>
-      )}
-
-      {recent.length > 0 && (
-        <Panel className="home-recent">
-          <header className="home-health-head">
-            <span className="home-health-title">最近文档</span>
-            <button className="home-health-more" onClick={() => navigate('/docs')}>
-              打开文档 →
-            </button>
-          </header>
-          <div className="home-recent-rows">
-            {recent.map((p) => (
-              <button
-                key={p}
-                className="home-recent-row"
-                title={p}
-                onClick={() => navigate('/docs', { state: { openDoc: p } })}
-              >
-                {baseName(p)}
-              </button>
-            ))}
+          <div className="home-pulse-cell">
+            <span className="home-pulse-num">{pulse.overview ? fmtRate(pulse.overview.errRate) : '—'}</span>
+            <span className="home-pulse-label">错误率</span>
           </div>
-        </Panel>
-      )}
+          <div className="home-pulse-cell">
+            <span className="home-pulse-num">{pulse.status ? fmtInt(pulse.status.memoryBuckets) : '—'}</span>
+            <span className="home-pulse-label">内存桶</span>
+          </div>
+          <div className="home-pulse-cell">
+            <span className="home-pulse-num">{pulse.status ? fmtInt(pulse.status.dataFiles) : '—'}</span>
+            <span className="home-pulse-label">数据文件</span>
+          </div>
+        </div>
+        <div className="home-pulse-foot">
+          {pulse.status ? (
+            <>
+              <span>认证{pulse.status.authEnabled ? '已开' : '已关'}</span>
+              <span className={pulse.status.droppedEvents > 0 ? 'warn' : undefined}>
+                {pulse.status.droppedEvents > 0
+                  ? '有 ' + fmtInt(pulse.status.droppedEvents) + ' 条数据被丢弃'
+                  : '没有丢弃数据'}
+              </span>
+            </>
+          ) : (
+            <span>后端离线，数据暂停更新</span>
+          )}
+        </div>
+      </Panel>
     </div>
   )
 }

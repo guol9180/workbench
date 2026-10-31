@@ -2,14 +2,14 @@
 
 /** 相对路径的父目录（根目录返回空串） */
 export function parentOf(path: string): string {
-  const i = path.lastIndexOf('/')
-  return i < 0 ? '' : path.substring(0, i)
+  const slashIndex = path.lastIndexOf('/')
+  return slashIndex < 0 ? '' : path.substring(0, slashIndex)
 }
 
 /** 相对路径的最后一段 */
 export function baseName(path: string): string {
-  const i = path.lastIndexOf('/')
-  return i < 0 ? path : path.substring(i + 1)
+  const slashIndex = path.lastIndexOf('/')
+  return slashIndex < 0 ? path : path.substring(slashIndex + 1)
 }
 
 /** 文件名是否为允许的文档扩展名（与后端白名单一致） */
@@ -17,20 +17,20 @@ export function extAllowed(name: string): boolean {
   return /\.(md|markdown|txt)$/i.test(name)
 }
 
-function pad2(n: number): string {
-  return String(n).padStart(2, '0')
+function padTwoDigits(value: number): string {
+  return String(value).padStart(2, '0')
 }
 
 /** 今日工作日志路径：日志/YYYY-MM/YYYY-MM-DD.md */
 export function todayLogPath(now = new Date()): string {
-  const month = now.getFullYear() + '-' + pad2(now.getMonth() + 1)
-  return '日志/' + month + '/' + month + '-' + pad2(now.getDate()) + '.md'
+  const month = now.getFullYear() + '-' + padTwoDigits(now.getMonth() + 1)
+  return '日志/' + month + '/' + month + '-' + padTwoDigits(now.getDate()) + '.md'
 }
 
 /** 今日工作日志初始模板 */
 export function todayLogTemplate(now = new Date()): string {
-  const title = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate()) + ' 工作日志'
-  return '# ' + title + '\n\n## 今日工作\n\n- \n\n## 问题与备注\n\n- \n'
+  const title = now.getFullYear() + '-' + padTwoDigits(now.getMonth() + 1) + '-' + padTwoDigits(now.getDate()) + ' 工作日志'
+  return '# ' + title + '\n\n## 今天做了什么\n\n- \n\n## 卡住的地方 / 备注\n\n- \n'
 }
 
 /** 读取本地文本文件（utf-8），FileReader 的 Promise 封装 */

@@ -7,6 +7,11 @@ import { useEffect, useRef, useState } from 'react'
 
 export interface PollState<T> {
   data: T | null
+  /**
+   * data 所属的 key。key 变化后、新数据到达前仍保持旧 key——
+   * 消费方据此区分「正常刷新」与「切换了查询条件、数据已过期」，避免旧数据套新窗口。
+   */
+  dataKey: string | null
   error: string | null
   /** 首次取数完成前 true；此后刷新不再置 true，避免图表闪烁 */
   loading: boolean
@@ -26,6 +31,7 @@ export function usePolling<T>(fetcher: () => Promise<T>, key: string, opts: Opts
   const intervalMs = opts.intervalMs ?? 15_000
 
   const [data, setData] = useState<T | null>(null)
+  const [dataKey, setDataKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(enabled)
   const [updatedAt, setUpdatedAt] = useState<number | null>(null)
@@ -45,14 +51,15 @@ export function usePolling<T>(fetcher: () => Promise<T>, key: string, opts: Opts
     let alive = true
     const run = async () => {
       try {
-        const d = await fetcherRef.current()
+        const payload = await fetcherRef.current()
         if (!alive) return
-        setData(d)
+        setData(payload)
+        setDataKey(key)
         setError(null)
         setUpdatedAt(Date.now())
-      } catch (e) {
+      } catch (error) {
         if (!alive) return
-        setError(e instanceof Error ? e.message : String(e))
+        setError(error instanceof Error ? error.message : String(error))
       } finally {
         if (alive) setLoading(false)
       }
@@ -71,5 +78,5 @@ export function usePolling<T>(fetcher: () => Promise<T>, key: string, opts: Opts
 
   const reload = () => setTick((t) => t + 1)
 
-  return { data, error, loading, updatedAt, reload }
+  return { data, dataKey, error, loading, updatedAt, reload }
 }

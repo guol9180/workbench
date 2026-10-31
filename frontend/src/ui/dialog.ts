@@ -26,7 +26,7 @@ export interface DialogState {
   danger: boolean
 }
 
-const initial: DialogState = {
+const initialDialogState: DialogState = {
   visible: false,
   title: '',
   message: '',
@@ -37,12 +37,12 @@ const initial: DialogState = {
   danger: false,
 }
 
-let state: DialogState = initial
-let resolver: ((v: string | boolean | null) => void) | null = null
+let state: DialogState = initialDialogState
+let resolver: ((result: string | boolean | null) => void) | null = null
 const listeners = new Set<() => void>()
 
 function emit() {
-  listeners.forEach((l) => l())
+  listeners.forEach((notifyListener) => notifyListener())
 }
 
 export function subscribeDialog(listener: () => void): () => void {
@@ -54,16 +54,16 @@ export function getDialogState(): DialogState {
   return state
 }
 
-export function showDialog(opts: DialogOptions): Promise<string | boolean | null> {
+export function showDialog(options: DialogOptions): Promise<string | boolean | null> {
   state = {
     visible: true,
-    title: opts.title,
-    message: opts.message ?? '',
-    showInput: !!opts.input,
-    value: opts.value ?? '',
-    placeholder: opts.placeholder ?? '',
-    confirmText: opts.confirmText ?? '确定',
-    danger: !!opts.danger,
+    title: options.title,
+    message: options.message ?? '',
+    showInput: !!options.input,
+    value: options.value ?? '',
+    placeholder: options.placeholder ?? '',
+    confirmText: options.confirmText ?? '确定',
+    danger: !!options.danger,
   }
   emit()
   return new Promise((resolve) => {
@@ -71,8 +71,8 @@ export function showDialog(opts: DialogOptions): Promise<string | boolean | null
   })
 }
 
-export async function showConfirm(opts: Omit<DialogOptions, 'input' | 'value' | 'placeholder'>): Promise<boolean> {
-  return !!(await showDialog({ ...opts, confirmText: opts.confirmText ?? '确定' }))
+export async function showConfirm(options: Omit<DialogOptions, 'input' | 'value' | 'placeholder'>): Promise<boolean> {
+  return !!(await showDialog({ ...options, confirmText: options.confirmText ?? '确定' }))
 }
 
 export function dialogOk(): void {

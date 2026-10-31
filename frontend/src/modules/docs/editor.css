@@ -1,14 +1,18 @@
-/** Vditor 主题对齐：编辑器表面统一压到语义令牌上，明暗随域主题自适应 */
+/** Vditor 主题对齐：编辑器表面统一压到语义令牌上，明暗与文档域随主题自适应 */
 .docp-editor {
     flex: 1;
     min-height: 0;
+    padding: var(--space-4);
 }
 
+/* 纸面：编辑器从"整块白"变成画布上的一张纸，与文档域气质一致 */
 .docp-editor .vditor {
     height: 100%;
-    border-radius: 0;
-    border: none;
+    border-radius: var(--r-md);
+    border: 1px solid var(--line);
+    overflow: hidden;
     background: var(--s0);
+    font-family: var(--font-body);
 }
 
 /* 自带 light/dark 主题都是中性灰白灰黑，统一覆写关键表面 */
@@ -19,38 +23,95 @@
     color: var(--text);
 }
 
+/* 工具栏：压成一条安静的仪器条，不在阅读面上抢注意力 */
 .docp-editor .vditor-toolbar {
+    height: 42px;
+    padding: 0 var(--space-4);
     background: var(--s0);
-    border-bottom: 1px solid var(--line);
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    align-items: center;
 }
+
+.docp-editor .vditor-toolbar__item {
+    color: var(--text-2);
+    border-radius: var(--r-xs);
+    transition: color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+
+.docp-editor .vditor-toolbar__item:hover { color: var(--text); background: var(--s1); }
+.docp-editor .vditor-toolbar__item--current { color: var(--accent); background: var(--accent-dim); }
+.docp-editor .vditor-toolbar__divider { background: var(--line); opacity: 0.8; }
 
 .docp-editor .vditor-panel,
 .docp-editor .vditor-hint {
     background: var(--s1);
     border-color: var(--line-strong);
     color: var(--text);
+    border-radius: var(--r-sm);
 }
 
-/* IR 编辑区：阅读面特批排版（15px / 1.75 行高）——不占 UI 字号标尺，理由：长文写入可读性 */
-.docp-editor .vditor-ir .vditor-ir__node--expand,
+/* 阅读面：文档域特批 15px / 1.8——长文写入的可读性优先 */
 .docp-editor .vditor-reset {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: var(--space-3) 0 56px;
     color: var(--text);
-    font-size: 15px;
-    line-height: 1.75;
+    font-family: var(--font-body);
+    font-size: var(--fs-read);
+    line-height: var(--lh-read);
 }
+
+.docp-editor .vditor-ir .vditor-ir__node--expand,
+.docp-editor .vditor-ir .vditor-reset { color: var(--text); }
+
+.docp-editor .vditor-reset h1,
+.docp-editor .vditor-reset h2,
+.docp-editor .vditor-reset h3,
+.docp-editor .vditor-reset h4 {
+    color: var(--text);
+    font-family: var(--font-display);
+    letter-spacing: var(--tracking-display);
+}
+
+.docp-editor .vditor-reset h1 { font-size: var(--fs-2xl); line-height: var(--lh-display); }
+.docp-editor .vditor-reset h2 { font-size: var(--fs-xl); line-height: var(--lh-display); }
+.docp-editor .vditor-reset h3 { font-size: var(--fs-lg); line-height: var(--lh-heading); }
+.docp-editor .vditor-reset h4 { font-size: var(--fs-base); line-height: var(--lh-heading); }
 
 .docp-editor .vditor-reset a { color: var(--accent); }
-.docp-editor .vditor-reset code { background: var(--s1); }
-.docp-editor .vditor-reset pre { background: var(--bg); }
-.docp-editor .vditor-reset blockquote { border-left-color: var(--line-strong); color: var(--text-2); }
-.docp-editor .vditor-reset h1, .docp-editor .vditor-reset h2,
-.docp-editor .vditor-reset h3, .docp-editor .vditor-reset h4 {
-    color: var(--text);
+
+.docp-editor .vditor-reset code {
+    background: var(--s1);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-xs);
+    padding: 1px 5px;
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
 }
+
+.docp-editor .vditor-reset pre {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 14px 16px;
+}
+
+.docp-editor .vditor-reset pre code { background: transparent; border: none; padding: 0; font-size: var(--fs-md); }
+
+.docp-editor .vditor-reset blockquote {
+    border-left: 2px solid var(--line-strong);
+    color: var(--text-2);
+    padding-left: 14px;
+}
+
+.docp-editor .vditor-reset table { border-color: var(--line); }
+.docp-editor .vditor-reset th, .docp-editor .vditor-reset td { border-color: var(--line); }
 
 .docp-editor .vditor-ir__node .vditor-ir__marker { color: var(--text-3); }
 .docp-editor .vditor-ir .vditor-ir__marker--heading { color: var(--accent); }
-.docp-editor .vditor-ir .vditor-ir__marker--pre code { background: transparent; }
+.docp-editor .vditor-ir .vditor-ir__marker--pre code { background: transparent; border: none; }
 
 /* 大纲面板 */
-.docp-editor .vditor-outline { background: var(--s1); }
+.docp-editor .vditor-outline { background: var(--s1); border-left-color: var(--line); }
+.docp-editor .vditor-outline li { color: var(--text-2); }

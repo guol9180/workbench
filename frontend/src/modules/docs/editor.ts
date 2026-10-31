@@ -28,24 +28,24 @@ export function markEditorReady(instance: EditorHandle): void {
   if (instance !== editor) return
   ready = true
   if (pendingValue !== null) {
-    const text = pendingValue
+    const pendingText = pendingValue
     pendingValue = null
-    editor!.setValue(text)
+    editor!.setValue(pendingText)
   }
   // 先补写再通知：监听方（文档页预览层卸载）看到 ready 时内容已就位
-  for (const cb of readyListeners) cb()
+  for (const listener of readyListeners) listener()
   readyListeners.clear()
 }
 
 /** 订阅编辑器就绪（已就绪则同步回调）；返回退订函数供 effect cleanup */
-export function onEditorReady(cb: () => void): () => void {
+export function onEditorReady(listener: () => void): () => void {
   if (ready) {
-    cb()
+    listener()
     return () => {}
   }
-  readyListeners.add(cb)
+  readyListeners.add(listener)
   return () => {
-    readyListeners.delete(cb)
+    readyListeners.delete(listener)
   }
 }
 

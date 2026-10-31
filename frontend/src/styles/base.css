@@ -4,27 +4,117 @@ html, body, #root { height: 100%; }
 
 body {
     font-family: var(--font-body);
-    font-size: 14px;
+    font-size: var(--fs-base);
+    line-height: var(--lh-body);
+    font-variant-numeric: tabular-nums;
     color: var(--text);
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
     /* 应用是满屏骨架，滚动只发生在面板内部 */
     overflow: hidden;
 }
 
-button { font-family: inherit; color: inherit; background: none; border: none; cursor: pointer; }
-input, textarea { font-family: inherit; }
+button {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+input, textarea, select { font-family: inherit; color: inherit; }
 a { color: inherit; text-decoration: none; }
 
-::selection { background: var(--accent-faint); }
+::selection { background: var(--accent-faint); color: var(--text); }
 
-:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+/* 焦点环：键盘用户的可见边界，2px + 2px 偏移；鼠标点击不出现 */
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--r-xs);
+}
 
-/* 细滚动条：暗色面板内不突兀 */
-*::-webkit-scrollbar { width: 8px; height: 8px; }
-*::-webkit-scrollbar-thumb { background: var(--s2); border-radius: 4px; }
-*::-webkit-scrollbar-thumb:hover { background: var(--line-strong); }
+/* 细滚动条：面板内不喧宾夺主；轨道透明，拇指在深浅主题下都够对比 */
+* { scrollbar-width: thin; scrollbar-color: var(--s3) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb {
+    background: var(--s3);
+    border-radius: var(--r-pill);
+    border: 3px solid transparent;
+    background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover { background: var(--line-strong); background-clip: content-box; }
 *::-webkit-scrollbar-track { background: transparent; }
+
+kbd {
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    color: var(--text-2);
+    border: 1px solid var(--line);
+    border-bottom-color: var(--line-strong);
+    border-radius: var(--r-xs);
+    padding: 1px 6px;
+    background: var(--s1);
+}
+
+/* 页面入场：路由切换只给一次轻微上浮，不反复打扰正在看的页面 */
+@keyframes page-rise {
+    from { opacity: 0; transform: translateY(4px); }
+}
+
+.home,
+.mon,
+.src {
+    animation: page-rise 240ms var(--ease) both;
+}
+
+.docp {
+    animation: page-fade 180ms var(--ease) both;
+}
+
+@keyframes page-fade {
+    from { opacity: 0; }
+}
+
+/* 明暗切换（首选）：圆形揭示。旧画面保持不动，新主题从点击处扩散覆盖，
+   全程不混色——避免交叉淡化把明暗两帧平均成中灰。 */
+::view-transition-old(root) {
+    animation: none;
+}
+
+::view-transition-new(root) {
+    animation: theme-reveal 380ms var(--ease);
+}
+
+@keyframes theme-reveal {
+    from {
+        clip-path: circle(0px at var(--theme-origin-x, 50%) var(--theme-origin-y, 50%));
+    }
+    to {
+        clip-path: circle(var(--theme-reveal-radius, 150vmax) at var(--theme-origin-x, 50%) var(--theme-origin-y, 50%));
+    }
+}
+
+/* 明暗切换（回退）：theme.ts 临时挂 .theme-switching，让所有表面同节奏换色。
+   只在切换瞬间存在 260ms；结束后移除，避免把常驻 hover/transition 规则覆盖掉。 */
+html.theme-switching,
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+    transition:
+        background-color 220ms var(--ease),
+        color 220ms var(--ease),
+        border-color 220ms var(--ease),
+        box-shadow 220ms var(--ease),
+        fill 220ms var(--ease),
+        stroke 220ms var(--ease),
+        stop-color 220ms var(--ease),
+        outline-color 220ms var(--ease) !important;
+}
 
 /* 动效总开关：系统要求减少动效时，一切动画即时完成（含描迹绘线与状态灯呼吸） */
 @media (prefers-reduced-motion: reduce) {
@@ -32,5 +122,6 @@ a { color: inherit; text-decoration: none; }
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

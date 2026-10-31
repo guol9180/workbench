@@ -15,7 +15,7 @@
 .pulse-axis {
     fill: var(--text-3);
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
 }
 
 .pulse-trace {
@@ -48,25 +48,31 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 5px 10px;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-3);
     background: var(--s1);
     border: 1px solid var(--line-strong);
-    border-radius: 4px;
+    border-radius: var(--r-xs);
     pointer-events: none;
     white-space: nowrap;
+    animation: pulse-tip-in var(--dur-fast) var(--ease) both;
+}
+
+@keyframes pulse-tip-in {
+    from { opacity: 0; transform: translate(-50%, 2px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .pulse-tip-v {
     font-family: var(--font-mono);
-    font-size: 13px;
-    font-weight: 500;
+    font-size: var(--fs-md);
+    font-weight: var(--fw-medium);
     color: var(--accent);
 }
 
 .pulse-tip-t {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--text-3);
 }
 
@@ -76,5 +82,6 @@
     display: grid;
     place-content: center;
     color: var(--text-3);
-    font-size: 13px;
+    font-size: var(--fs-md);
+    pointer-events: none;
 }

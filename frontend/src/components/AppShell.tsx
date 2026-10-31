@@ -5,11 +5,13 @@
  * - 骨架不掺任何业务语义；各模块自带头部条
  */
 import { useEffect, useState } from 'react'
-import type { ReactElement } from 'react'
+import type { MouseEvent, ReactElement } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { logoutRequest, setToken } from '../api/http'
 import StatusBar from './StatusBar'
-import { initTheme, setTheme, type Theme } from '../theme'
+import { Icon } from './ui/Icon'
+import { IconButton } from './ui/ui'
+import { currentTheme, setTheme, type Theme } from '../theme'
 import './AppShell.css'
 
 const COLLAPSE_KEY = 'wb-rail-collapsed'
@@ -20,16 +22,12 @@ interface NavItem {
   icon: ReactElement
 }
 
-const w = (d: string): ReactElement => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-    <path d={d} stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
-)
+
 
 const HOME: NavItem = {
   to: '/home',
   label: '首页',
-  icon: w('M4 11 12 4l8 7M6.5 9.5V20h11V9.5'),
+  icon: <Icon name="home" />,
 }
 const GROUPS: Array<{ name: string; items: NavItem[] }> = [
   {
@@ -38,30 +36,20 @@ const GROUPS: Array<{ name: string; items: NavItem[] }> = [
       {
         to: '/monitor',
         label: '概览',
-        icon: (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <polyline
-              points="2,12 7,12 9.5,6 14.5,18 17,12 22,12"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        ),
+        icon: <Icon name="pulse" />,
       },
-      { to: '/sources', label: '我的项目', icon: w('M12 3c4.4 0 8 1.25 8 2.8v12.4c0 1.55-3.6 2.8-8 2.8s-8-1.25-8-2.8V5.8C4 4.25 7.6 3 12 3Zm-8 2.8c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8M4 12c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8') },
+      { to: '/sources', label: '我的项目', icon: <Icon name="projects" /> },
     ],
   },
   {
     name: '工具',
     items: [
-      { to: '/docs', label: '文档', icon: w('M7 2.5h7l4 4V21.5H7zM14 2.5v4h4M10 12.5h5M10 16h5') },
+      { to: '/docs', label: '文档', icon: <Icon name="docs" /> },
     ],
   },
 ]
 
-const LOGOUT_ICON = w('M13 4h5v16h-5M9.5 8l-4 4 4 4M5.5 12H16')
+const LOGOUT_ICON = <Icon name="logout" />
 
 export default function AppShell() {
   const location = useLocation()
@@ -70,15 +58,16 @@ export default function AppShell() {
   const domain = location.pathname.startsWith('/docs') ? 'docs' : 'analysis'
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
-  const [theme, setThemeState] = useState<Theme>(() => initTheme())
+  const [theme, setThemeState] = useState<Theme>(() => currentTheme())
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
   }, [collapsed])
 
-  function toggleTheme() {
+  function toggleTheme(event: MouseEvent<HTMLButtonElement>) {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(next)
+    // 以点击位置为圆心做圆形揭示，明暗切换不经过中灰
+    setTheme(next, { x: event.clientX, y: event.clientY })
     setThemeState(next)
   }
 
@@ -92,10 +81,10 @@ export default function AppShell() {
 
   const itemCls = (active: boolean) => 'side-item' + (active ? ' active' : '')
 
-  const renderItem = (it: NavItem) => (
-    <NavLink key={it.to} to={it.to} title={it.label} className={({ isActive }) => itemCls(isActive)}>
-      {it.icon}
-      <span className="side-item-label">{it.label}</span>
+  const renderItem = (navItem: NavItem) => (
+    <NavLink key={navItem.to} to={navItem.to} title={navItem.label} className={({ isActive }) => itemCls(isActive)}>
+      {navItem.icon}
+      <span className="side-item-label">{navItem.label}</span>
     </NavLink>
   )
 
@@ -103,40 +92,41 @@ export default function AppShell() {
     <div className={'shell' + (collapsed ? ' collapsed' : '')}>
       <aside className="sidebar">
         <div className="side-brand">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
-            <polyline
-              points="3,7 7.5,17 12,9.5 16.5,17 21,7"
-              stroke="var(--accent)"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          <span className="side-wordmark">工作台</span>
-          <button
+          <span className="side-mark">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
+              <polyline
+                points="3,7 7.5,17 12,9.5 16.5,17 21,7"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </span>
+          <span className="side-brand-text">
+            <span className="side-wordmark">工作台</span>
+            <span className="side-caption">Personal Console</span>
+          </span>
+          <IconButton
             className="side-collapse"
-            title={collapsed ? '展开侧栏' : '收起侧栏'}
+            size="sm"
+            label={collapsed ? '展开侧栏' : '收起侧栏'}
             onClick={() => setCollapsed(!collapsed)}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              aria-hidden="true"
+            <Icon
+              name="chevron-left"
+              size={16}
               style={{ transform: collapsed ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }}
-            >
-              <path d="M14 6.5 8.5 12l5.5 5.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
+            />
+          </IconButton>
         </div>
 
         <nav className="side-nav">
           {renderItem(HOME)}
-          {GROUPS.map((g) => (
-            <div key={g.name} className="side-group">
-              <div className="side-group-name">{g.name}</div>
-              {g.items.map(renderItem)}
+          {GROUPS.map((group) => (
+            <div key={group.name} className="side-group">
+              <div className="side-group-name">{group.name}</div>
+              {group.items.map(renderItem)}
             </div>
           ))}
         </nav>
@@ -147,19 +137,10 @@ export default function AppShell() {
             title={theme === 'dark' ? '切到浅色' : '切到暗色'}
             onClick={toggleTheme}
           >
-            {theme === 'dark' ? (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.6" />
-                <path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5 5l1.7 1.7M17.3 17.3 19 19M19 5l-1.7 1.7M6.7 17.3 5 19" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="M20 13.5A8 8 0 0 1 10.5 4 8 8 0 1 0 20 13.5Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-              </svg>
-            )}
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
             <span className="side-item-label">{theme === 'dark' ? '浅色模式' : '暗色模式'}</span>
           </button>
-          <button className="side-item side-logout" title="清除已保存的密码并退出" onClick={() => void logout()}>
+          <button className="side-item side-logout" title="退出当前登录" onClick={() => void logout()}>
             {LOGOUT_ICON}
             <span className="side-item-label">退出登录</span>
           </button>

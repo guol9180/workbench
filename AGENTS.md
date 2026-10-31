@@ -17,6 +17,8 @@
 3. **代码质量优先（项目追加）**：对代码质量要求高——凡能通过合理的设计模式或算法优化提升清晰度、健壮性与性能处，积极实践；但必须服务于当下真实需求，拒绝炫技式、无收益的抽象。每处抽象都要能回答「它解决了什么已发生的问题」。
 4. **注释质量（项目追加）**：注释要规范且易懂，以「帮助下一次阅读的人真正理解代码」为标准；具体要求见下节「注释规范」，与代码同等对待——注释缺失或过时视为未完成。
 5. **数据边界（项目追加）**：前端演示/测试允许自造 mock 数据（仅存在于组件与前端状态，不落盘）；禁止未经同意向任何持久层（时序存储、文档库、配置等）写入数据——包括模拟 ingest 上报、伪造外部源、创建样例文档；接入真实外部数据源属于架构级动作，必须先征得同意并说明形态。未经同意写入的数据视为事故，发现即清除。
+6. **命名规范（项目追加）**：变量、函数、类型、文件命名必须完整表意，禁止 `a` / `b` / `x` / `tmp` / `data1` / `foo` 这类随意或简陋命名——**局部变量同样适用，作用域小不是豁免理由**；衡量标尺 = 读者不需要回看实现与上下文，就能判断这个变量承载什么。缩写只接受领域通用词（如 `url`、`id`、`request`），循环索引用 `index`、`pointIndex` 这类可读名，不得用单字母；Boolean 走 `is/has/can` 前缀，集合用复数名。
+7. **组件与图标统一（项目追加）**：常用 UI 必须复用 `components/ui` 原语（PageHeader / Button / IconButton / Tag / Spinner / Segmented / Chip / Panel / Banner / Field / EmptyState），图标只能来自 `components/ui/Icon.tsx`——禁止页面内联手写 SVG（品牌 logo 除外）、禁止另造按钮/标签/加载态观感。交互至少覆盖 hover / active / focus-visible / disabled / loading，动效统一使用 `--dur-fast` / `--dur` / `--ease` 并尊重 `prefers-reduced-motion`；新增常用件先入 `components/ui`，再在页面使用。
 
 ---
 
@@ -259,14 +261,18 @@ React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端�
    - **明暗双主题**：默认跟随 `prefers-color-scheme`（无系统偏好取暗色），侧栏手动切换并记忆（`src/theme.ts` 唯一读写口）；`prefers-reduced-motion` 全局熄灭动效。
    - **域只换主区气质**：AppShell 按路由把 `data-domain` 挂在主区，侧栏与底部状态条保持中性骨架；未来新工具可在 analysis/docs 之外定义自己的域主题块。
    - **警示色独立**：`--warn`（琥珀黄）专职警示，与品牌强调色色相分离，禁止用强调色表达警告。
-   - **标尺**：字号 7 档（11/12/13/14/16/20/26；文档编辑区阅读面特批 15px/1.75）、间距 4/8/12/16/24 节奏；text-3 两主题对表面 ≥4.5:1（WCAG AA）。
-3. **组件原语**：Panel / Segmented / Chip / GhostButton / StatusDot / Banner / Field / EmptyState（`components/ui/`）是共享视觉件的唯一来源；模块 CSS 只写布局与域特有样式，禁止复制原语观感。
+   - **字体三角色**：`--font-body` 中文 UI 与正文（Segoe UI 接管拉丁，PingFang / 微软雅黑 UI 接管中文）；`--font-display` 标题 / 品牌 / 大数字（Chakra Petch，中文回落黑体）；`--font-mono` 数据 / 路径 / 时间 / 元信息（Overpass Mono，中文回落雅黑 UI，禁止落到 NSimSun 宋体）。
+   - **字号与排版**：字号 7 档 `--fs-xs 11 / --fs-sm 12 / --fs-md 13 / --fs-base 14 / --fs-lg 16 / --fs-xl 20 / --fs-2xl 26`，文档阅读面 `--fs-read 15`；行高 `--lh-none / display / tight / heading / body / copy / read`；字重只用 400 / 500 / 600；字距走 `--tracking-*`。页面禁止写裸 `font-size` / `line-height` / `font-weight`。
+   - **间距**：布局走 4 / 8 / 12 / 16 / 24 / 32（`--space-1..6`）；控件内边距 6 / 10 / 12 / 24；图标-文字 6（小控件）/ 8（导航与按钮）；卡片与面板 16 / 24；text-3 两主题对表面 ≥4.5:1（WCAG AA）。
+3. **组件原语**：Panel / PageHeader / Button / IconButton / Tag / Spinner / Segmented / Chip / StatusDot / Banner / Field / EmptyState（`components/ui/`）是共享视觉件的唯一来源；图标统一取 `components/ui/Icon.tsx`；模块 CSS 只写布局与域特有样式，禁止复制原语观感（通用规范第 7 条）。
 4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」（概览=API 自监测态势，我的项目=GitHub 项目流量与下载量），折叠钮在 logo 行且记忆折叠态，底部为 暖色/暗色切换 与 退出登录（清除本机密码并回登录页，带 loggedOut 状态防认证关闭时自动回跳）；登录页无侧栏入口——401 自动拦截与退出落地已覆盖全部到达路径，手动入口冗余；导航条目不加装饰性标记（M9.7 裁定：域色点因易被误读为状态提示而删除），未来新增工具 = 首页加一卡 + 侧栏加一条。
 5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
 6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
 7. **认证流（M9.5 会话模型）**：登录页以「密码」呈现——密码经 `POST /api/auth/login` 换取会话令牌（SecureRandom 32B、内存态、默认 7 天过期），浏览器以 `X-API-Token: <会话令牌>` 携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」先调 `/api/auth/logout` 失效服务端会话再清本地；密码只在登录瞬间出现，浏览器存的是可过期会话令牌。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。
 8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
 9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）。Lute（3.7MB）与 hljs 由 `modules/docs/prefetch.ts` 应用空闲时预执行（index.html 另有 preload 提前并行下载）——Pages 对大文件免 gzip 且跨境链路慢（实测 3.7MB 下载 215s），预载按 id 握手（onload 后补 id，镜像 Vditor 加载器去重行为）；**仅当「已打开文档且引擎未就绪」**才显示 `docp-boot` 纯文本预览层（数据 = openDoc 已有的 savedContent），未打开文档时必须让 Vditor 骨架（工具栏+placeholder，无需 Lute 即渲染）直接可见——覆盖无内容的场景曾被实测为「整页发白」回归。
+10. **概览页版式（M9.10）**：自上而下 = 页头（标题/副题 + 区间）→ 源上下文 → 流量描迹 + 四读数 → 端点台账通栏。源上下文是**唯一**源选择入口：单源收敛为信息行（不给点了没反应的卡片），多源才是可选卡片；卡片/选择状态与概览的源集合必须同源（`github/*` 在概览过滤，属「我的项目」）。图表数据由 `monitor/api.ts` 的 `fillSeries` 按 range 补齐整窗（缺桶 = 0），禁止把稀疏桶拉成全窗斜线——图形不得撒谎。台账通栏保证五列（端点/请求/错误/延迟/P95）无需横向滚动；窄屏按 768/480 两级收起 P95、延迟。
+11. **页面细节与文案（M10）**：页面只组合 `components/ui` 原语，图标统一取 `Icon.tsx`；常规交互动效统一 120–240ms 的 `--dur-fast/--dur/--ease`（主题圆形揭示与加载旋转另行固定时长），页面进入只做一次轻微上浮，加载态用 `Spinner`，不用零散 CSS 动画。明暗切换用圆形揭示（`theme.ts` 以点击坐标为圆心，View Transitions，回退颜色过渡），避免交叉淡化造成的中灰闪屏；主题初始化在 `main.tsx`（登录页在 AppShell 之外，直达 `/login` 也必须有令牌）。文案直给、具体、可行动，**有活人感但不过度口语化**：空态说清「这里能干什么」，错误给下一步，避免「吧/了/呢」堆叠、网络俚语、反问句与营销腔。
 
 ---
 

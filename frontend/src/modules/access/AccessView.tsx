@@ -9,6 +9,7 @@ import type { CSSProperties, FormEvent, MouseEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { getToken, loginRequest, probeStatus } from '../../api/http'
 import { initLoginScene } from './loginScene'
+import { Button, Spinner } from '../../components/ui/ui'
 import './access.css'
 
 export default function AccessView() {
@@ -17,7 +18,7 @@ export default function AccessView() {
   // 「已退出」态：侧栏退出登录带状态进来时，open 探测不自动回跳（否则认证关闭会原地弹回首页）
   const loggedOut = useRef((location.state as { loggedOut?: boolean } | null)?.loggedOut === true)
   const [phase, setPhase] = useState<'probing' | 'locked' | 'offline' | 'open'>('probing')
-  const [value, setValue] = useState('')
+  const [passwordInput, setPasswordInput] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [shaking, setShaking] = useState(false)
@@ -53,17 +54,17 @@ export default function AccessView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps —— 探测与场景只在进页时发生一次
   }, [])
 
-  const nx = useRef(0)
-  const ny = useRef(0)
+  const normalizedX = useRef(0)
+  const normalizedY = useRef(0)
   const [tiltStyle, setTiltStyle] = useState<CSSProperties>({})
 
-  function onMouseMove(e: MouseEvent<HTMLDivElement>) {
+  function onMouseMove(event: MouseEvent<HTMLDivElement>) {
     if (!tiltEnabled.current) return
-    nx.current = (e.clientX / window.innerWidth) * 2 - 1
-    ny.current = (e.clientY / window.innerHeight) * 2 - 1
+    normalizedX.current = (event.clientX / window.innerWidth) * 2 - 1
+    normalizedY.current = (event.clientY / window.innerHeight) * 2 - 1
     setTiltStyle({
-      '--rx': (-ny.current * 4).toFixed(2) + 'deg',
-      '--ry': (nx.current * 6).toFixed(2) + 'deg',
+      '--rx': (-normalizedY.current * 4).toFixed(2) + 'deg',
+      '--ry': (normalizedX.current * 6).toFixed(2) + 'deg',
     } as CSSProperties)
   }
 
@@ -72,10 +73,15 @@ export default function AccessView() {
     requestAnimationFrame(() => setShaking(true))
   }
 
-  async function submit(e: FormEvent) {
-    e.preventDefault()
-    const password = value.trim()
-    if (!password || busy) return
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (busy) return
+    const password = passwordInput.trim()
+    if (!password) {
+      setError('请输入密码')
+      shake()
+      return
+    }
     setBusy(true)
     setError('')
     const result = await loginRequest(password)
@@ -99,7 +105,8 @@ export default function AccessView() {
       <div className="acc-stage">
         <div className="acc-tilt" style={tiltStyle}>
           <div className={'acc-card' + (shaking ? ' shake' : '')} onAnimationEnd={() => setShaking(false)}>
-            <svg className="acc-mark" width="40" height="40" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
+            <span className="acc-eyebrow">Private Workbench</span>
+            <svg className="acc-mark" width="36" height="36" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
               <polyline
                 points="3,7 7.5,17 12,9.5 16.5,17 21,7"
                 stroke="var(--accent)"
@@ -109,34 +116,35 @@ export default function AccessView() {
               />
             </svg>
             <h1 className="acc-title">工作台</h1>
-            <p className="acc-sub">流量观测 · 文档 · 工具——你的个人后台</p>
+            <p className="acc-sub">流量、文档与工具，都在这一个后台。</p>
 
-            {phase === 'probing' && <p className="acc-note">正在探测后端…</p>}
+            {phase === 'probing' && <p className="acc-note">正在连接后端…</p>}
 
             {phase === 'open' && (
               <div className="acc-offline">
                 <p>
                   {/* phase=open 只可能来自 loggedOut：无状态直链会被探测自动接回首页 */}
-                  已退出登录。当前后端未开启认证。
+                  已退出登录。后端未开启认证，可以直接回到工作台。
                 </p>
-                <button className="acc-btn" onClick={() => navigate('/home', { replace: true })}>
-                  重新进入工作台
-                </button>
+                <Button variant="primary" size="lg" onClick={() => navigate('/home', { replace: true })}>
+                  回到工作台
+                </Button>
               </div>
             )}
 
             {phase === 'offline' && (
               <div className="acc-offline">
-                <p>后端连不上。</p>
-                <button
-                  className="acc-btn"
+                <p>后端无响应。确认服务已启动后重试。</p>
+                <Button
+                  variant="primary"
+                  size="lg"
                   onClick={() => {
                     setPhase('probing')
                     void probe()
                   }}
                 >
                   重试
-                </button>
+                </Button>
               </div>
             )}
 
@@ -144,22 +152,27 @@ export default function AccessView() {
               <form className="acc-form" onSubmit={submit}>
                 <input
                   ref={inputRef}
-                  value={value}
+                  value={passwordInput}
                   className="acc-input"
                   type="password"
                   placeholder="请输入登录密码"
                   autoComplete="current-password"
-                  onChange={(e) => setValue(e.target.value)}
+                  onChange={(event) => {
+                    setPasswordInput(event.target.value)
+                    if (error) setError('')
+                  }}
                 />
                 {error && <p className="acc-error">{error}</p>}
-                <button className="acc-btn" type="submit" disabled={busy || !value.trim()}>
-                  {busy ? '验证中…' : '进入'}
-                </button>
+                <Button variant="primary" size="lg" type="submit" disabled={busy} className="acc-submit">
+                  {busy ? <><Spinner size={12} />验证中…</> : '进入'}
+                </Button>
               </form>
             )}
 
             <p className="acc-hint">
-              {getToken() ? '本地已保存密码，失效后需重新输入。' : '密码仅保存在本机浏览器，不发往别处。'}
+              {getToken()
+                ? '登录状态保存在这台浏览器中，失效后需重新输入密码。'
+                : '密码仅用于换取登录状态，不会发送到其他位置。'}
             </p>
           </div>
         </div>

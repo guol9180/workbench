@@ -19,10 +19,10 @@ interface Item {
 }
 
 const PAGES: Array<{ label: string; sub: string; path: string }> = [
-  { label: '打开首页', sub: '页面', path: '/home' },
-  { label: '打开概览', sub: '页面', path: '/monitor' },
-  { label: '打开文档', sub: '页面', path: '/docs' },
-  { label: '打开数据源', sub: '页面', path: '/sources' },
+  { label: '回首页', sub: '页面', path: '/home' },
+  { label: '看概览', sub: '页面', path: '/monitor' },
+  { label: '写文档', sub: '页面', path: '/docs' },
+  { label: '我的项目', sub: '页面', path: '/sources' },
 ]
 
 export default function CommandPalette() {
@@ -30,23 +30,23 @@ export default function CommandPalette() {
   const location = useLocation()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [hits, setHits] = useState<SearchHit[] | null>(null)
-  const [sel, setSel] = useState(0)
+  const [searchHits, setSearchHits] = useState<SearchHit[] | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
   function openPalette() {
     setQuery('')
-    setHits(null)
-    setSel(0)
+    setSearchHits(null)
+    setSelectedIndex(0)
     setOpen(true)
     setTimeout(() => inputRef.current?.focus(), 30)
   }
 
   useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
-        e.preventDefault()
+    function onKey(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && (event.key === 'k' || event.key === 'K')) {
+        event.preventDefault()
         if (open) {
           setOpen(false)
         } else {
@@ -63,57 +63,57 @@ export default function CommandPalette() {
   useEffect(() => {
     if (!open) {
       setQuery('')
-      setHits(null)
-      setSel(0)
+      setSearchHits(null)
+      setSelectedIndex(0)
     }
   }, [open])
 
   // 搜索防抖：250ms 内不再输入才发请求（docs search 上限 100，取前 12 条展示）
   useEffect(() => {
     if (!open) return
-    const q = query.trim()
-    if (!q) {
-      setHits(null)
+    const searchQuery = query.trim()
+    if (!searchQuery) {
+      setSearchHits(null)
       return
     }
     const timer = setTimeout(() => {
       void docsApi
-        .search(q)
-        .then((r) => setHits(r.slice(0, 12)))
-        .catch(() => setHits([]))
+        .search(searchQuery)
+        .then((foundHits) => setSearchHits(foundHits.slice(0, 12)))
+        .catch(() => setSearchHits([]))
     }, 250)
     return () => clearTimeout(timer)
   }, [query, open])
 
   const staticItems = useMemo<Item[]>(
     () =>
-      PAGES.filter((p) => p.path !== location.pathname)
-        .filter((p) => !query || p.label.includes(query.trim()))
-        .map((p) => ({
-          id: 'page:' + p.path,
-          label: p.label,
-          sub: p.sub,
-          run: () => navigate(p.path),
+      PAGES.filter((page) => page.path !== location.pathname)
+        .filter((page) => !query || page.label.includes(query.trim()))
+        .map((page) => ({
+          id: 'page:' + page.path,
+          label: page.label,
+          sub: page.sub,
+          run: () => navigate(page.path),
         })),
     [query, location.pathname, navigate],
   )
 
   const docItems = useMemo<Item[]>(
     () =>
-      (hits ?? []).map((h) => ({
-        id: 'doc:' + h.path,
-        label: h.path,
-        sub: h.snippet || '文档',
-        run: () => navigate('/docs', { state: { openDoc: h.path } }),
+      (searchHits ?? []).map((hit) => ({
+        id: 'doc:' + hit.path,
+        label: hit.path,
+        sub: hit.snippet || '文档',
+        run: () => navigate('/docs', { state: { openDoc: hit.path } }),
       })),
-    [hits, navigate],
+    [searchHits, navigate],
   )
 
   const items = useMemo(() => [...staticItems, ...docItems], [staticItems, docItems])
 
   useEffect(() => {
-    setSel(0)
-  }, [query, hits])
+    setSelectedIndex(0)
+  }, [query, searchHits])
 
   function close() {
     setOpen(false)
@@ -125,19 +125,19 @@ export default function CommandPalette() {
     item.run()
   }
 
-  function onInputKey(e: ReactKeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Escape') {
-      e.preventDefault()
+  function onInputKey(event: ReactKeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
       close()
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      setSel((s) => Math.min(items.length - 1, s + 1))
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      setSel((s) => Math.max(0, s - 1))
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      runItem(items[sel])
+    } else if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      setSelectedIndex((currentIndex) => Math.min(items.length - 1, currentIndex + 1))
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      setSelectedIndex((currentIndex) => Math.max(0, currentIndex - 1))
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
+      runItem(items[selectedIndex])
     }
   }
 
@@ -145,44 +145,44 @@ export default function CommandPalette() {
   useEffect(() => {
     const el = listRef.current?.querySelector('.cmdk-item.active')
     el?.scrollIntoView({ block: 'nearest' })
-  }, [sel])
+  }, [selectedIndex])
 
   if (!open) return null
 
   return (
     <div className="cmdk-overlay" onMouseDown={close}>
-      <div className="cmdk" onMouseDown={(e) => e.stopPropagation()}>
+      <div className="cmdk" onMouseDown={(event) => event.stopPropagation()}>
         <input
           ref={inputRef}
           className="cmdk-input"
           value={query}
-          placeholder="搜索文档，或跳转到页面…"
-          onChange={(e) => setQuery(e.target.value)}
+          placeholder="搜文档，或直接跳页面…"
+          onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onInputKey}
         />
         <div className="cmdk-list" ref={listRef}>
-          {staticItems.map((item, i) => (
+          {staticItems.map((item, index) => (
             <button
               key={item.id}
-              className={'cmdk-item' + (i === sel ? ' active' : '')}
-              onMouseEnter={() => setSel(i)}
+              className={'cmdk-item' + (index === selectedIndex ? ' active' : '')}
+              onMouseEnter={() => setSelectedIndex(index)}
               onClick={() => runItem(item)}
             >
               <span className="cmdk-item-label">{item.label}</span>
               <span className="cmdk-item-sub">{item.sub}</span>
             </button>
           ))}
-          {query.trim() && hits === null && <div className="cmdk-note">搜索中…</div>}
-          {query.trim() && hits?.length === 0 && staticItems.length === 0 && (
+          {query.trim() && searchHits === null && <div className="cmdk-note">搜索中…</div>}
+          {query.trim() && searchHits?.length === 0 && staticItems.length === 0 && (
             <div className="cmdk-note">没有匹配的文档</div>
           )}
-          {docItems.map((item, i) => {
-            const idx = staticItems.length + i
+          {docItems.map((item, index) => {
+            const itemIndex = staticItems.length + index
             return (
               <button
                 key={item.id}
-                className={'cmdk-item' + (idx === sel ? ' active' : '')}
-                onMouseEnter={() => setSel(idx)}
+                className={'cmdk-item' + (itemIndex === selectedIndex ? ' active' : '')}
+                onMouseEnter={() => setSelectedIndex(itemIndex)}
                 onClick={() => runItem(item)}
               >
                 <span className="cmdk-item-label">{item.label}</span>

@@ -1,144 +1,152 @@
 /**
  * 接入页 Canvas 粒子景深场（旧 loginScene.js 的 TS 移植，重调色为观测站色板）。
- * - 粒子分三档景深 z∈[0.2,1]：尺寸/透明度/漂浮速度随 z 变化，双圆绘制（光晕+内核），不用 shadowBlur
- * - 鼠标视差：归一化坐标经 lerp 弹性缓动，粒子按 z×14px 偏移；粗指针设备（触屏）不启用
+ * - 粒子分三档景深 depth∈[0.2,1]：尺寸/透明度/漂浮速度随 depth 变化，双圆绘制（光晕+内核），不用 shadowBlur
+ * - 鼠标视差：归一化坐标经 lerp 弹性缓动，粒子按 depth×14px 偏移；粗指针设备（触屏）不启用
  * - prefers-reduced-motion 只画静态一帧；document.hidden 暂停 RAF；返回清理函数，卸载时调用
  */
 
 // 分析域色板：青为主、冰蓝点缀，与全站强调色一致
-const COLORS = ['#3ec9c4', '#6fdedb', '#7fb4e8']
-const PARALLAX = 14 // 鼠标视差最大位移(px，乘以景深 z)
+const PARTICLE_COLORS = ['#46d5c5', '#86efe4', '#8fb8f5']
+const PARALLAX_DISTANCE = 14 // 鼠标视差最大位移(px，乘以景深)
 
 interface Particle {
-  x: number
-  y: number
-  z: number
-  r: number
-  vy: number
-  tw: number
+  positionX: number
+  positionY: number
+  depth: number
+  radius: number
+  riseSpeed: number
+  twinkleRate: number
   phase: number
   color: string
 }
 
-function rand(min: number, max: number): number {
+function randomBetween(min: number, max: number): number {
   return min + Math.random() * (max - min)
 }
 
-function withAlpha(hex: string, alpha: number): string {
-  // hex 形如 #e8a33d；拼 rgba 避免 ctx.globalAlpha 逐粒子状态切换
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `rgba(${r},${g},${b},${alpha.toFixed(3)})`
+function withAlpha(hexColor: string, alpha: number): string {
+  // hex 形如 #e8a33d；拼 rgba 避免 context.globalAlpha 逐粒子状态切换
+  const red = parseInt(hexColor.slice(1, 3), 16)
+  const green = parseInt(hexColor.slice(3, 5), 16)
+  const blue = parseInt(hexColor.slice(5, 7), 16)
+  return `rgba(${red},${green},${blue},${alpha.toFixed(3)})`
 }
 
 export function initLoginScene(canvas: HTMLCanvasElement): () => void {
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return () => {}
+  const canvasContext = canvas.getContext('2d')
+  if (!canvasContext) return () => {}
+  const context: CanvasRenderingContext2D = canvasContext
 
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const coarse = window.matchMedia('(pointer: coarse)').matches
-  const mobile = window.matchMedia('(max-width: 768px)').matches
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches
+  const smallViewport = window.matchMedia('(max-width: 768px)').matches
 
-  let width = 0
-  let height = 0
-  let raf = 0
+  let viewportWidth = 0
+  let viewportHeight = 0
+  let animationFrameId = 0
   let disposed = false
 
-  // 粒子：x/y 像素坐标，z 景深，r 内核半径，vy 上升速度，tw 闪烁频率，phase 相位
+  // 粒子：positionX/positionY 像素坐标，depth 景深，radius 内核半径，
+  // riseSpeed 上升速度，twinkleRate 闪烁频率，phase 相位
   const particles: Particle[] = []
-  function spawn(initial: boolean): Particle {
-    const z = rand(0.2, 1)
+
+  function spawnParticle(initial: boolean): Particle {
+    const depth = randomBetween(0.2, 1)
     return {
-      x: rand(0, width),
-      y: initial ? rand(0, height) : height + rand(6, 30),
-      z,
-      r: 0.7 + z * 1.8,
-      vy: 0.06 + z * 0.22,
-      tw: rand(0.6, 1.6),
-      phase: rand(0, Math.PI * 2),
-      color: COLORS[(Math.random() * COLORS.length) | 0],
+      positionX: randomBetween(0, viewportWidth),
+      positionY: initial ? randomBetween(0, viewportHeight) : viewportHeight + randomBetween(6, 30),
+      depth,
+      radius: 0.7 + depth * 1.8,
+      riseSpeed: 0.06 + depth * 0.22,
+      twinkleRate: randomBetween(0.6, 1.6),
+      phase: randomBetween(0, Math.PI * 2),
+      color: PARTICLE_COLORS[(Math.random() * PARTICLE_COLORS.length) | 0],
     }
   }
 
-  // 鼠标视差：target 是目标值，pos 每帧向 target 缓动
-  const target = { x: 0, y: 0 }
-  const pos = { x: 0, y: 0 }
-  function onMouseMove(e: MouseEvent) {
-    target.x = (e.clientX / window.innerWidth) * 2 - 1
-    target.y = (e.clientY / window.innerHeight) * 2 - 1
+  // 鼠标视差：targetOffset 是目标值，currentOffset 每帧向 targetOffset 缓动
+  const targetOffset = { horizontal: 0, vertical: 0 }
+  const currentOffset = { horizontal: 0, vertical: 0 }
+
+  function handleMouseMove(event: MouseEvent) {
+    targetOffset.horizontal = (event.clientX / window.innerWidth) * 2 - 1
+    targetOffset.vertical = (event.clientY / window.innerHeight) * 2 - 1
   }
 
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2)
-    width = canvas.clientWidth
-    height = canvas.clientHeight
-    canvas.width = Math.round(width * dpr)
-    canvas.height = Math.round(height * dpr)
-    ctx!.setTransform(dpr, 0, 0, dpr, 0, 0)
+  function resizeCanvas() {
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
+    viewportWidth = canvas.clientWidth
+    viewportHeight = canvas.clientHeight
+    canvas.width = Math.round(viewportWidth * pixelRatio)
+    canvas.height = Math.round(viewportHeight * pixelRatio)
+    context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   }
 
-  function draw(t: number) {
-    ctx!.clearRect(0, 0, width, height)
-    for (const p of particles) {
-      if (!reduced) {
-        p.y -= p.vy
-        if (p.y < -12) {
-          Object.assign(p, spawn(false))
+  function drawParticles(timestamp: number) {
+    context.clearRect(0, 0, viewportWidth, viewportHeight)
+    for (const particle of particles) {
+      if (!prefersReducedMotion) {
+        particle.positionY -= particle.riseSpeed
+        if (particle.positionY < -12) {
+          Object.assign(particle, spawnParticle(false))
         }
-        p.x += Math.sin(t * 0.00035 + p.phase) * 0.06
+        particle.positionX += Math.sin(timestamp * 0.00035 + particle.phase) * 0.06
       }
-      const px = p.x + pos.x * p.z * PARALLAX
-      const py = p.y + pos.y * p.z * PARALLAX
-      const twinkle = 0.55 + 0.45 * Math.sin(t * 0.001 * p.tw + p.phase)
-      const alpha = (0.14 + 0.5 * p.z) * twinkle
-      ctx!.beginPath()
-      ctx!.fillStyle = withAlpha(p.color, alpha * 0.22)
-      ctx!.arc(px, py, p.r * 3, 0, Math.PI * 2)
-      ctx!.fill()
-      ctx!.beginPath()
-      ctx!.fillStyle = withAlpha(p.color, alpha)
-      ctx!.arc(px, py, p.r, 0, Math.PI * 2)
-      ctx!.fill()
+      const drawX = particle.positionX + currentOffset.horizontal * particle.depth * PARALLAX_DISTANCE
+      const drawY = particle.positionY + currentOffset.vertical * particle.depth * PARALLAX_DISTANCE
+      const twinkle =
+        0.55 + 0.45 * Math.sin(timestamp * 0.001 * particle.twinkleRate + particle.phase)
+      const alpha = (0.14 + 0.5 * particle.depth) * twinkle
+      context.beginPath()
+      context.fillStyle = withAlpha(particle.color, alpha * 0.22)
+      context.arc(drawX, drawY, particle.radius * 3, 0, Math.PI * 2)
+      context.fill()
+      context.beginPath()
+      context.fillStyle = withAlpha(particle.color, alpha)
+      context.arc(drawX, drawY, particle.radius, 0, Math.PI * 2)
+      context.fill()
     }
   }
 
-  function frame(t: number) {
+  function animationFrameStep(timestamp: number) {
     if (disposed) return
-    pos.x += (target.x - pos.x) * 0.05
-    pos.y += (target.y - pos.y) * 0.05
-    draw(t)
-    raf = requestAnimationFrame(frame)
+    currentOffset.horizontal += (targetOffset.horizontal - currentOffset.horizontal) * 0.05
+    currentOffset.vertical += (targetOffset.vertical - currentOffset.vertical) * 0.05
+    drawParticles(timestamp)
+    animationFrameId = requestAnimationFrame(animationFrameStep)
   }
 
-  function onVisibility() {
-    if (disposed || reduced) return
-    cancelAnimationFrame(raf)
-    if (!document.hidden) raf = requestAnimationFrame(frame)
-  }
-  function onResize() {
-    resize()
-    if (reduced) draw(0)
+  function handleVisibility() {
+    if (disposed || prefersReducedMotion) return
+    cancelAnimationFrame(animationFrameId)
+    if (!document.hidden) animationFrameId = requestAnimationFrame(animationFrameStep)
   }
 
-  resize()
-  const count = mobile ? 36 : 70
-  for (let i = 0; i < count; i++) particles.push(spawn(true))
+  function handleResize() {
+    resizeCanvas()
+    if (prefersReducedMotion) drawParticles(0)
+  }
 
-  window.addEventListener('resize', onResize)
-  if (!coarse) window.addEventListener('mousemove', onMouseMove, { passive: true })
-  if (reduced) {
-    draw(0) // 减动效：静态一帧
+  resizeCanvas()
+  const particleCount = smallViewport ? 36 : 70
+  for (let particleIndex = 0; particleIndex < particleCount; particleIndex++) {
+    particles.push(spawnParticle(true))
+  }
+
+  window.addEventListener('resize', handleResize)
+  if (!coarsePointer) window.addEventListener('mousemove', handleMouseMove, { passive: true })
+  if (prefersReducedMotion) {
+    drawParticles(0) // 减动效：静态一帧
   } else {
-    document.addEventListener('visibilitychange', onVisibility)
-    raf = requestAnimationFrame(frame)
+    document.addEventListener('visibilitychange', handleVisibility)
+    animationFrameId = requestAnimationFrame(animationFrameStep)
   }
 
   return function cleanup() {
     disposed = true
-    cancelAnimationFrame(raf)
-    window.removeEventListener('resize', onResize)
-    window.removeEventListener('mousemove', onMouseMove)
-    document.removeEventListener('visibilitychange', onVisibility)
+    cancelAnimationFrame(animationFrameId)
+    window.removeEventListener('resize', handleResize)
+    window.removeEventListener('mousemove', handleMouseMove)
+    document.removeEventListener('visibilitychange', handleVisibility)
   }
 }

@@ -23,12 +23,12 @@ export function AppDialog() {
 
   if (!state.visible) return null
 
-  function onKeydown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') {
-      e.preventDefault()
+  function onKeydown(event: React.KeyboardEvent) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
       dialogCancel()
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
+    } else if (event.key === 'Enter') {
+      event.preventDefault()
       dialogOk()
     }
   }

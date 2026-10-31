@@ -18,7 +18,7 @@ import type { ReactNode } from 'react'
 /**
  * docs 模块状态与业务编排（旧 store.js 的 React 移植）：
  * 文件树、当前文档、脏状态与自动保存、搜索、本地预览。
- * 状态收进单个 useState 对象 + ref 镜像：异步动作（保存/建文件链）要读最新值，
+ * 状态收进单个 useState 对象 + stateRef 镜像：异步动作（保存/建文件链）要读最新值，
  * 镜像让动作可以整体用 useCallback 包成稳定引用，组件树不必反复订阅。
  */
 
@@ -53,13 +53,13 @@ function saveExpanded(set: Set<string>): void {
 }
 
 function clockNow(): string {
-  const d = new Date()
-  return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+  const now = new Date()
+  return String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0')
 }
 
 /** 未认证跳转由 http.ts 统一处理（清 token 并跳接入页），此处不再 toast 刷屏 */
-function notifyError(e: unknown): void {
-  const message = e instanceof Error ? e.message : String(e)
+function notifyError(error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error)
   if (!message.startsWith('未认证')) toast(message, true)
 }
 
@@ -76,7 +76,7 @@ export interface DocsActions {
   renameNode: (node: DocNode) => Promise<void>
   deleteNode: (node: DocNode) => Promise<void>
   openToday: () => Promise<void>
-  doSearch: (q: string) => Promise<void>
+  doSearch: (searchText: string) => Promise<void>
   backToTree: () => void
   openSearchHit: (path: string) => Promise<void>
   openLocalFile: (file: File | null | undefined) => Promise<void>
@@ -109,40 +109,40 @@ function useDocsStoreValue(): DocsStore {
   })
 
   // 异步链路里的「最新状态」读取口
-  const ref = useRef(state)
-  ref.current = state
+  const stateRef = useRef(state)
+  stateRef.current = state
 
-  const patch = useCallback((p: Partial<DocsState>) => {
-    setState((s) => ({ ...s, ...p }))
+  const patch = useCallback((partialState: Partial<DocsState>) => {
+    setState((currentState) => ({ ...currentState, ...partialState }))
   }, [])
 
   const loadTree = useCallback(async () => {
     try {
       const tree = await docsApi.tree()
       patch({ tree })
-    } catch (e) {
-      notifyError(e)
+    } catch (error) {
+      notifyError(error)
     }
   }, [patch])
 
   const expand = useCallback(
     (path: string) => {
       if (!path) return
-      const next = new Set(ref.current.expanded)
-      next.add(path)
-      saveExpanded(next)
-      patch({ expanded: next })
+      const nextExpanded = new Set(stateRef.current.expanded)
+      nextExpanded.add(path)
+      saveExpanded(nextExpanded)
+      patch({ expanded: nextExpanded })
     },
     [patch],
   )
 
   const toggleDir = useCallback(
     (node: DocNode) => {
-      const next = new Set(ref.current.expanded)
-      if (next.has(node.path)) next.delete(node.path)
-      else next.add(node.path)
-      saveExpanded(next)
-      patch({ expanded: next })
+      const nextExpanded = new Set(stateRef.current.expanded)
+      if (nextExpanded.has(node.path)) nextExpanded.delete(node.path)
+      else nextExpanded.add(node.path)
+      saveExpanded(nextExpanded)
+      patch({ expanded: nextExpanded })
     },
     [patch],
   )
@@ -150,14 +150,14 @@ function useDocsStoreValue(): DocsStore {
   /** 展开路径的所有祖先目录（如新建日志后展开 日志/ 与 日志/2026-10/） */
   const expandAncestors = useCallback(
     (path: string) => {
-      const next = new Set(ref.current.expanded)
-      let dir = parentOf(path)
-      while (dir) {
-        next.add(dir)
-        dir = parentOf(dir)
+      const nextExpanded = new Set(stateRef.current.expanded)
+      let directory = parentOf(path)
+      while (directory) {
+        nextExpanded.add(directory)
+        directory = parentOf(directory)
       }
-      saveExpanded(next)
-      patch({ expanded: next })
+      saveExpanded(nextExpanded)
+      patch({ expanded: nextExpanded })
     },
     [patch],
   )
@@ -176,8 +176,8 @@ function useDocsStoreValue(): DocsStore {
           localFile: null,
         })
         setEditorValue(doc.content)
-      } catch (e) {
-        notifyError(e)
+      } catch (error) {
+        notifyError(error)
       }
     },
     [patch],
@@ -185,29 +185,29 @@ function useDocsStoreValue(): DocsStore {
 
   const refreshDirty = useCallback(() => {
     if (!hasEditor()) return
-    patch({ dirty: getEditorValue() !== ref.current.savedContent })
+    patch({ dirty: getEditorValue() !== stateRef.current.savedContent })
   }, [patch])
 
   const suggestNewName = useCallback(() => {
-    const dir = ref.current.currentPath ? parentOf(ref.current.currentPath) : ''
-    return dir ? dir + '/未命名.md' : '未命名.md'
+    const parentDirectory = stateRef.current.currentPath ? parentOf(stateRef.current.currentPath) : ''
+    return parentDirectory ? parentDirectory + '/未命名.md' : '未命名.md'
   }, [])
 
   const saveDoc = useCallback(async () => {
     if (!isEditorReady()) return
     try {
       const content = getEditorValue()
-      let target = ref.current.currentPath
+      let target = stateRef.current.currentPath
       if (!target) {
-        const name = await showDialog({
+        const documentName = await showDialog({
           title: '保存文档',
           input: true,
           value: suggestNewName(),
-          placeholder: '可含子目录，如：笔记/idea.md',
+          placeholder: '填写文档名，可用子目录，如 笔记/idea.md',
           confirmText: '保存',
         })
-        if (!name || typeof name !== 'string') return
-        target = extAllowed(name) ? name : name + '.md'
+        if (!documentName || typeof documentName !== 'string') return
+        target = extAllowed(documentName) ? documentName : documentName + '.md'
         await docsApi.createFile(target, content)
       } else {
         await docsApi.saveFile(target, content)
@@ -215,8 +215,8 @@ function useDocsStoreValue(): DocsStore {
       patch({ currentPath: target, savedContent: content, dirty: false, saveStatus: 'ok', savedAt: clockNow() })
       await loadTree()
       toast('已保存')
-    } catch (e) {
-      notifyError(e)
+    } catch (error) {
+      notifyError(error)
     }
   }, [loadTree, patch, suggestNewName])
 
@@ -227,12 +227,12 @@ function useDocsStoreValue(): DocsStore {
    */
   const autosaveRef = useRef<(() => Promise<void>) | undefined>(undefined)
   const autosave = useCallback(async () => {
-    const s = ref.current
-    if (!isEditorReady() || s.saving || !s.currentPath || !s.dirty) return
+    const currentState = stateRef.current
+    if (!isEditorReady() || currentState.saving || !currentState.currentPath || !currentState.dirty) return
     patch({ saving: true, saveStatus: 'saving' })
     try {
       const content = getEditorValue()
-      await docsApi.saveFile(s.currentPath, content)
+      await docsApi.saveFile(currentState.currentPath, content)
       patch({ savedContent: content, saving: false })
       // 保存期间有输入则保持脏标记，供补存判断
       patch({ dirty: getEditorValue() !== content, saveStatus: 'ok', savedAt: clockNow() })
@@ -247,23 +247,23 @@ function useDocsStoreValue(): DocsStore {
 
   const newFile = useCallback(
     async (dirPath: string) => {
-      const base = await showDialog({
+      const enteredFileName = await showDialog({
         title: dirPath ? '在「' + dirPath + '」中新建文档' : '新建文档',
         input: true,
         value: '未命名.md',
-        placeholder: '文档名，可含子目录',
+        placeholder: '填写文档名，可用子目录',
         confirmText: '创建',
       })
-      if (!base || typeof base !== 'string') return
-      const fixed = extAllowed(base) ? base : base + '.md'
-      const path = dirPath ? dirPath.replace(/\/$/, '') + '/' + fixed : fixed
+      if (!enteredFileName || typeof enteredFileName !== 'string') return
+      const fileName = extAllowed(enteredFileName) ? enteredFileName : enteredFileName + '.md'
+      const documentPath = dirPath ? dirPath.replace(/\/$/, '') + '/' + fileName : fileName
       try {
-        await docsApi.createFile(path, '# ' + baseName(fixed).replace(/\.(md|markdown|txt)$/i, '') + '\n\n')
+        await docsApi.createFile(documentPath, '# ' + baseName(fileName).replace(/\.(md|markdown|txt)$/i, '') + '\n\n')
         if (dirPath) expand(dirPath)
         await loadTree()
-        await openDoc(path)
-      } catch (e) {
-        notifyError(e)
+        await openDoc(documentPath)
+      } catch (error) {
+        notifyError(error)
       }
     },
     [expand, loadTree, openDoc],
@@ -271,23 +271,25 @@ function useDocsStoreValue(): DocsStore {
 
   const newDir = useCallback(
     async (dirPath: string) => {
-      const base = await showDialog({
+      const enteredFolderName = await showDialog({
         title: dirPath ? '在「' + dirPath + '」中新建文件夹' : '新建文件夹',
         input: true,
         value: '新建文件夹',
         placeholder: '文件夹名称',
         confirmText: '创建',
       })
-      if (!base || typeof base !== 'string') return
-      const path = dirPath ? dirPath.replace(/\/$/, '') + '/' + base : base
+      if (!enteredFolderName || typeof enteredFolderName !== 'string') return
+      const folderPath = dirPath
+        ? dirPath.replace(/\/$/, '') + '/' + enteredFolderName
+        : enteredFolderName
       try {
-        await docsApi.createDir(path)
+        await docsApi.createDir(folderPath)
         if (dirPath) expand(dirPath)
-        expand(path)
+        expand(folderPath)
         await loadTree()
         toast('文件夹已创建')
-      } catch (e) {
-        notifyError(e)
+      } catch (error) {
+        notifyError(error)
       }
     },
     [expand, loadTree],
@@ -303,14 +305,14 @@ function useDocsStoreValue(): DocsStore {
         confirmText: '重命名',
       })
       if (!newName || typeof newName !== 'string' || newName === node.name) return
-      const to = parentOf(node.path) ? parentOf(node.path) + '/' + newName : newName
+      const targetPath = parentOf(node.path) ? parentOf(node.path) + '/' + newName : newName
       try {
-        await docsApi.rename(node.path, to)
-        if (ref.current.currentPath === node.path) patch({ currentPath: to })
+        await docsApi.rename(node.path, targetPath)
+        if (stateRef.current.currentPath === node.path) patch({ currentPath: targetPath })
         await loadTree()
         toast('已重命名')
-      } catch (e) {
-        notifyError(e)
+      } catch (error) {
+        notifyError(error)
       }
     },
     [loadTree, patch],
@@ -318,20 +320,22 @@ function useDocsStoreValue(): DocsStore {
 
   const deleteNode = useCallback(
     async (node: DocNode) => {
-      const isDir = node.type === 'dir'
-      const msg = isDir ? '确定删除文件夹「' + node.path + '」及其全部内容？' : '确定删除「' + node.path + '」？'
-      if (!(await showConfirm({ title: '删除确认', message: msg, confirmText: '删除', danger: true }))) return
+      const isDirectory = node.type === 'dir'
+      const message = isDirectory
+        ? '文件夹「' + node.path + '」及其中内容将一并删除，确定继续？'
+        : '删除「' + node.path + '」？此操作不可恢复。'
+      if (!(await showConfirm({ title: '确认删除？', message, confirmText: '删除', danger: true }))) return
       try {
         await docsApi.remove(node.path)
-        const cur = ref.current.currentPath
-        if (cur === node.path || (isDir && cur && cur.startsWith(node.path + '/'))) {
+        const currentPath = stateRef.current.currentPath
+        if (currentPath === node.path || (isDirectory && currentPath && currentPath.startsWith(node.path + '/'))) {
           setEditorValue('')
           patch({ currentPath: '', savedContent: '', dirty: false })
         }
         await loadTree()
         toast('已删除')
-      } catch (e) {
-        notifyError(e)
+      } catch (error) {
+        notifyError(error)
       }
     },
     [loadTree, patch],
@@ -342,28 +346,28 @@ function useDocsStoreValue(): DocsStore {
     try {
       await docsApi.getFile(path)
       await openDoc(path)
-    } catch (e) {
-      if (e instanceof Error && e.message.startsWith('未认证')) return
+    } catch (error) {
+      if (error instanceof Error && error.message.startsWith('未认证')) return
       try {
         await docsApi.createFile(path, todayLogTemplate())
         expandAncestors(path)
         await loadTree()
         await openDoc(path)
-      } catch (err) {
-        notifyError(err)
+      } catch (error) {
+        notifyError(error)
       }
     }
   }, [expandAncestors, loadTree, openDoc])
 
   const doSearch = useCallback(
-    async (q: string) => {
-      const query = (q || '').trim()
+    async (searchText: string) => {
+      const query = (searchText || '').trim()
       if (!query) return
       try {
-        const hits = await docsApi.search(query)
-        patch({ searching: true, searchResults: hits, searchSummary: '找到 ' + hits.length + ' 条结果' })
-      } catch (e) {
-        notifyError(e)
+        const searchHits = await docsApi.search(query)
+        patch({ searching: true, searchResults: searchHits, searchSummary: '找到 ' + searchHits.length + ' 条结果' })
+      } catch (error) {
+        notifyError(error)
       }
     },
     [patch],
@@ -390,8 +394,8 @@ function useDocsStoreValue(): DocsStore {
       }
       try {
         patch({ localFile: { name: file.name, content: await readLocalFile(file) } })
-      } catch (e) {
-        toast(e instanceof Error ? e.message : String(e), true)
+      } catch (error) {
+        toast(error instanceof Error ? error.message : String(error), true)
       }
     },
     [patch],
@@ -402,26 +406,26 @@ function useDocsStoreValue(): DocsStore {
   }, [patch])
 
   const importLocalFile = useCallback(async () => {
-    const file = ref.current.localFile
-    if (!file) return
-    const target = await showDialog({
+    const localFile = stateRef.current.localFile
+    if (!localFile) return
+    const importPath = await showDialog({
       title: '导入到文档库',
-      message: '将「' + file.name + '」保存到：',
+      message: '将「' + localFile.name + '」保存到：',
       input: true,
-      value: '导入/' + file.name,
+      value: '导入/' + localFile.name,
       placeholder: '保存路径',
       confirmText: '导入',
     })
-    if (!target || typeof target !== 'string') return
+    if (!importPath || typeof importPath !== 'string') return
     try {
-      await docsApi.createFile(target, file.content)
-      expand(parentOf(target))
+      await docsApi.createFile(importPath, localFile.content)
+      expand(parentOf(importPath))
       await loadTree()
-      toast('已导入：' + target)
+      toast('已导入：' + importPath)
       hideLocalPreview()
-      await openDoc(target)
-    } catch (e) {
-      notifyError(e)
+      await openDoc(importPath)
+    } catch (error) {
+      notifyError(error)
     }
   }, [expand, hideLocalPreview, loadTree, openDoc])
 
