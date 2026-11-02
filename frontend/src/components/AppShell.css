@@ -16,6 +16,7 @@
 
 .sidebar {
     grid-area: side;
+    position: relative;
     background: var(--s0);
     border-right: 1px solid var(--line);
     display: flex;
@@ -23,7 +24,7 @@
     padding: var(--space-3);
     gap: var(--space-1);
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .side-brand {
@@ -73,7 +74,25 @@
     letter-spacing: var(--tracking-brand);
 }
 
-.side-collapse { margin-left: auto; }
+/* 收起钮贴在侧栏右缘：半悬在边界上，展开/收起都停在同一视觉锚点，
+   不再跟着品牌文字或折叠态上下漂移 */
+.side-collapse {
+    position: absolute;
+    top: 16px;
+    right: -12px;
+    width: 24px;
+    height: 24px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--s0);
+    box-shadow: var(--shadow-soft);
+    z-index: 5;
+}
+
+.side-collapse:hover {
+    border-color: var(--line-strong);
+    background: var(--s1);
+}
 
 .side-nav {
     display: flex;
@@ -150,7 +169,6 @@
 
 .collapsed .sidebar { padding: var(--space-3) var(--space-2); }
 .collapsed .side-brand { flex-direction: column; gap: var(--space-2); padding: 0 0 var(--space-4); }
-.collapsed .side-collapse { margin-left: 0; }
 .collapsed .side-item { justify-content: center; padding: 0; }
 .collapsed .side-item.active::before { left: 0; }
 .collapsed .side-group { margin-top: var(--space-3); padding-top: var(--space-3); }
@@ -222,7 +240,6 @@
     .strip-mid { display: none; }
     .sidebar { padding: var(--space-3) var(--space-2); }
     .side-brand { flex-direction: column; gap: var(--space-2); padding: 0 0 var(--space-4); }
-    .side-collapse { margin-left: 0; }
     .side-item { justify-content: center; padding: 0; }
     .side-item.active::before { left: 0; }
     .side-group { margin-top: var(--space-3); padding-top: var(--space-3); }
