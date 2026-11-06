@@ -1,6 +1,6 @@
 # 工作台 · Workbench
 
-个人后台管理系统（学习项目）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含：**流量监测域**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）与第一个工具**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索），后续工具以业务模块渐进扩展。
+个人后台管理系统（学习项目）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含三大能力：**流量监测**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）、**我的项目**（GitHub 仓库的 Pages 流量与 Release 下载量统计，配置与数据查看合一）与**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索），后续工具以业务模块渐进扩展。
 
 > 开发规范见 [AGENTS.md](./AGENTS.md)，当前计划与验收见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
@@ -10,7 +10,7 @@
 - **框架**：Spring Boot 4.1.1（`spring-boot-starter-webmvc` + `starter-validation`）· SpringDoc OpenAPI 3.1.1（Swagger UI）
 - **存储**：纯文件系统（文档即文件；监测时序数据为零依赖 JSONL 聚合存储），**无数据库、无缓存、无对象存储**
 - **构建**：Maven 多模块（common / framework / infrastructure / module-docs / module-monitor / server 六模块）
-- **认证**：轻量 Token（`X-API-Token` 请求头，配置式，空 = 关闭）
+- **认证**：密码 + 会话（服务端只存密码哈希 `AUTH_PASSWORD_SHA256`，登录签发 7 天会话令牌、5 次失败锁 60 秒；可选机器令牌 `API_TOKEN` 供外部上报；两者皆空 = 关闭）
 - **前端**：React 19 + TypeScript + Vite 6（`frontend/`，分域主题设计系统：明暗双主题可切换，分析域石墨+青 / 文档域暖纸感，语义令牌唯一事实源 + 共享 UI 原语（PageHeader / Button / IconButton / Tag / Spinner / Combobox / Icon）；字体三角色（IBM Plex Sans 正文 / Chakra Petch 展示 / IBM Plex Mono 数据）+ 字号/行高/字重/字距令牌统一管理；工作台首页 + 分组可折叠侧栏；明暗切换圆形揭示；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
 
 ## 仓库结构
