@@ -100,10 +100,12 @@ GitHub 采集：token 可直接在「我的项目」页动态保存（持久化�
 
 发布流：打 `v*` 标签（或手动触发）→ Actions 构建镜像推送 GHCR（`build-backend.yml`）；前端推 main 自动部署 GitHub Pages（`deploy-frontend.yml`）。
 
+**前后端对接（M13 双模式）**：前端构建时读取仓库 Actions Variable `VITE_API_BASE`（当前 = `https://api.imhgl.com`）注入后端地址；Pages 前端探测该地址的 `/api/monitor/status`，可达即进入服务端模式（真实数据 + 登录），不可达自动回落本地演示。后端 CORS 已默认放行 `workbench.imhgl.com` 与 `guol9180.github.io`（`.env` 的 `CORS_ALLOWED_ORIGINS` 可覆盖）。改后端地址：`gh variable set VITE_API_BASE --body <url>` 后重跑前端部署工作流。
+
 服务器（2c2G 参考配置）：
 
-1. 克隆本仓库（用到 `docker-compose.yml` 与 `Caddyfile`），同目录建 `.env`（参考 `.env.example`，必填 `API_TOKEN`；`openssl rand -base64 24` 生成）
+1. 克隆本仓库（用到 `docker-compose.yml` 与 `Caddyfile`），同目录建 `.env`（参考 `.env.example`，必填 `AUTH_PASSWORD_SHA256` 登录密码哈希）
 2. `docker compose pull && docker compose up -d`——Caddy 自动为 api.imhgl.com 申请证书并反代到 workbench:8080
-3. 首次访问 workbench.imhgl.com 会被 401 拦到登录页，输入登录密码——服务端校验后签发 7 天会话令牌，仅存本机浏览器
+3. 访问前端（workbench.imhgl.com 或 Pages 地址）→ 锁屏输入登录密码 → 服务端校验后签发 7 天会话令牌，仅存本机浏览器内存（刷新重登）
 
-持久化：`workbench-docs` 卷存文档库；`workbench-runtime` 卷存监测时序与源配置（含 GitHub token，任何接口不回显）。认证开关 = `API_TOKEN` 是否为空；令牌遗失 → 置空重启回到关闭态，重新生成后再开。
+持久化：`workbench-docs` 卷存文档库；`workbench-runtime` 卷存监测时序与源配置（含 GitHub token，任何接口不回显）。认证开关 = `AUTH_PASSWORD_SHA256` / `API_TOKEN` 任一非空；密码遗失 → 置空重启回到关闭态，重新生成后再开。

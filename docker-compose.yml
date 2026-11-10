@@ -13,9 +13,8 @@ services:
       - AUTH_PASSWORD_SHA256=${AUTH_PASSWORD_SHA256:?请在同目录 .env 中设置（生成方式见 .env.example）}
       # 可选机器凭据（ingest 外部上报静态携带）；不用可留空或删除
       - API_TOKEN=${API_TOKEN:-}
-      - API_TOKEN=${API_TOKEN:?请在同目录 .env 中设置 API_TOKEN}
-      # 跨域放行的前端来源
-      - CORS_ALLOWED_ORIGINS=https://workbench.imhgl.com
+      # 跨域放行的前端来源（默认同时放行自定义域与 GitHub Pages 域，按需在 .env 收紧）
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://workbench.imhgl.com,https://guol9180.github.io}
       - DOCS_ROOT=/data/docs
       # 监测时序与源配置同样持久化——不挂卷则容器重建即丢（M9.2 排查确认的现状）
       - METRICS_DATA=/data/runtime/metrics

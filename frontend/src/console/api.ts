@@ -5,6 +5,13 @@
  * 页面与组件不感知 fetch 细节。演示模式（后端不可达）完全不经过本文件。
  */
 
+/**
+ * 后端基地址：开发态留空 = 同源相对路径，走 Vite 代理到本地 8080；
+ * 生产由 CI 注入 VITE_API_BASE（如 https://api.imhgl.com）——GitHub Pages 是纯静态托管，
+ * 不配基地址时前端只能探测自身域名的 /api（必然 404）并回落演示模式。
+ */
+const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
+
 /** 后端统一响应包装（AGENTS §8）：code=0 成功 */
 interface ApiEnvelope<T> {
   message: string
@@ -159,13 +166,13 @@ function queryString(params: Record<string, string | number | undefined>): strin
 // ---------------- 认证 ----------------
 
 export async function login(password: string): Promise<{ token: string; expiresAt: number }> {
-  return request('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) })
+  return request(`${API_BASE}/api/auth/login`, { method: 'POST', body: JSON.stringify({ password }) })
 }
 
 export async function logout(): Promise<void> {
   if (!sessionToken) return
   try {
-    await request('/api/auth/logout', { method: 'POST' })
+    await request(`${API_BASE}/api/auth/logout`, { method: 'POST' })
   } catch {
     // 注销失败不阻断锁屏（会话本来就会过期）
   }
@@ -175,51 +182,51 @@ export async function logout(): Promise<void> {
 // ---------------- 监测 ----------------
 
 export function fetchMonitorStatus(): Promise<MonitorStatus> {
-  return request('/api/monitor/status')
+  return request(`${API_BASE}/api/monitor/status`)
 }
 
 export function fetchSources(): Promise<SourceStat[]> {
-  return request('/api/monitor/sources')
+  return request(`${API_BASE}/api/monitor/sources`)
 }
 
 export function fetchOverview(source: string, range: string): Promise<Overview> {
-  return request(`/api/monitor/overview${queryString({ source, range })}`)
+  return request(`${API_BASE}/api/monitor/overview${queryString({ source, range })}`)
 }
 
 export function fetchSeries(source: string, metric: 'count' | 'avgMs' | 'errCount', range: string, step: 'm' | 'h' = 'h'): Promise<SeriesPoint[]> {
-  return request(`/api/monitor/series${queryString({ source, metric, range, step })}`)
+  return request(`${API_BASE}/api/monitor/series${queryString({ source, metric, range, step })}`)
 }
 
 export function fetchRecent(source?: string, limit = 100): Promise<RecentRecord[]> {
-  return request(`/api/monitor/recent${queryString({ source, limit })}`)
+  return request(`${API_BASE}/api/monitor/recent${queryString({ source, limit })}`)
 }
 
 // ---------------- 文档 ----------------
 
 export function fetchDocTree(): Promise<DocNode> {
-  return request('/api/docs/tree')
+  return request(`${API_BASE}/api/docs/tree`)
 }
 
 export function fetchDocFile(path: string): Promise<DocContent> {
-  return request(`/api/docs/file${queryString({ path })}`)
+  return request(`${API_BASE}/api/docs/file${queryString({ path })}`)
 }
 
 export function createDocFile(path: string, content: string): Promise<void> {
-  return request('/api/docs/file', { method: 'POST', body: JSON.stringify({ path, content }) })
+  return request(`${API_BASE}/api/docs/file`, { method: 'POST', body: JSON.stringify({ path, content }) })
 }
 
 export function saveDocFile(path: string, content: string): Promise<void> {
-  return request('/api/docs/file', { method: 'PUT', body: JSON.stringify({ path, content }) })
+  return request(`${API_BASE}/api/docs/file`, { method: 'PUT', body: JSON.stringify({ path, content }) })
 }
 
 export function renameDocFile(from: string, to: string): Promise<void> {
-  return request('/api/docs/rename', { method: 'POST', body: JSON.stringify({ from, to }) })
+  return request(`${API_BASE}/api/docs/rename`, { method: 'POST', body: JSON.stringify({ from, to }) })
 }
 
 export function deleteDocFile(path: string): Promise<void> {
-  return request(`/api/docs/resource${queryString({ path })}`, { method: 'DELETE' })
+  return request(`${API_BASE}/api/docs/resource${queryString({ path })}`, { method: 'DELETE' })
 }
 
 export function searchDocs(queryText: string): Promise<SearchHit[]> {
-  return request(`/api/docs/search${queryString({ q: queryText })}`)
+  return request(`${API_BASE}/api/docs/search${queryString({ q: queryText })}`)
 }
