@@ -12,13 +12,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class TimeRangeTest {
 
     @Test
-    @DisplayName("合法标签：五种预设区间与秒数一一对应")
+    @DisplayName("合法标签：七种预设区间与秒数一一对应")
     void parsesAllowedLabels() {
         assertEquals(300L, TimeRange.of("5m").seconds());
         assertEquals(3_600L, TimeRange.of("1h").seconds());
         assertEquals(21_600L, TimeRange.of("6h").seconds());
         assertEquals(86_400L, TimeRange.of("24h").seconds());
         assertEquals(604_800L, TimeRange.of("7d").seconds());
+        assertEquals(1_209_600L, TimeRange.of("14d").seconds());
+        assertEquals(2_592_000L, TimeRange.of("30d").seconds());
         assertEquals("24h", TimeRange.of("24h").label());
     }
 

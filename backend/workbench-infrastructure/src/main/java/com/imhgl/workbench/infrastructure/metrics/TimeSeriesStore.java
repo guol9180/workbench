@@ -38,6 +38,12 @@ public interface TimeSeriesStore extends AutoCloseable {
      */
     List<EndpointRank> topEndpoints(String source, long fromMinute, long toMinute, int limit, String by);
 
+    /**
+     * 最近活动记录：按分钟倒序取前 limit 条（source 为 null/空白 = 全部来源）。
+     * 供管理台「运行日志」视图——只看最新发生了什么，不做区间统计。
+     */
+    List<RecentRecord> recent(String source, int limit);
+
     /** 把脏桶快照落盘（定时任务也会调用；测试与停机前显式调用） */
     void flush();
 

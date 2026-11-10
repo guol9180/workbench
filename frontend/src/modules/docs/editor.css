@@ -66,17 +66,18 @@
 /* 全屏是编辑器的独占态：把 AppShell 侧栏/状态条和文档自己的顶部条、文件树、
    空态卡都藏起来，只留全屏编辑器；文档画的底色也统一到纸面，避免两侧露边 */
 body:has(.vditor--fullscreen) .sidebar,
-body:has(.vditor--fullscreen) .strip,
-.docp:has(.vditor--fullscreen) .docp-bar,
-.docp:has(.vditor--fullscreen) .docp-sidebar,
-.docp:has(.vditor--fullscreen) .docp-welcome {
+body:has(.vditor--fullscreen) .topbar,
+body:has(.vditor--fullscreen) .docs-list-panel,
+body:has(.vditor--fullscreen) .docs-editor-head,
+body:has(.vditor--fullscreen) .docs-page > .page-head {
     visibility: hidden;
 }
 
-body:has(.vditor--fullscreen) .shell-main,
+body:has(.vditor--fullscreen) .shell-body,
 .docp:has(.vditor--fullscreen),
-.docp:has(.vditor--fullscreen) .docp-layout,
-.docp:has(.vditor--fullscreen) .docp-main {
+.docp:has(.vditor--fullscreen) .docs-layout,
+.docp:has(.vditor--fullscreen) .docs-editor-panel,
+.docp:has(.vditor--fullscreen) .docs-editor-canvas {
     background: var(--s0);
 }
 

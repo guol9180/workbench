@@ -22,6 +22,43 @@ import type { ReactNode } from 'react'
  * 镜像让动作可以整体用 useCallback 包成稳定引用，组件树不必反复订阅。
  */
 
+export interface LocalFileHandle {
+  name?: string
+  createWritable: () => Promise<{
+    write: (data: string) => Promise<void>
+    close: () => Promise<void>
+  }>
+}
+
+interface PickerFileHandle extends LocalFileHandle {
+  getFile: () => Promise<File>
+}
+
+interface FilePickerWindow extends Window {
+  showOpenFilePicker?: (options?: {
+    multiple?: boolean
+    types?: Array<{ description: string; accept: Record<string, string[]> }>
+  }) => Promise<PickerFileHandle[]>
+  showSaveFilePicker?: (options?: {
+    suggestedName?: string
+    types?: Array<{ description: string; accept: Record<string, string[]> }>
+  }) => Promise<LocalFileHandle>
+}
+
+const LOCAL_PICKER_TYPES = [
+  {
+    description: 'Markdown / 文本',
+    accept: { 'text/markdown': ['.md', '.markdown'], 'text/plain': ['.txt'] },
+  },
+]
+
+export interface LocalFileState {
+  name: string
+  content: string
+  handle: LocalFileHandle | null
+  dirty: boolean
+}
+
 export interface DocsState {
   tree: DocNode | null
   currentPath: string
@@ -34,7 +71,7 @@ export interface DocsState {
   searching: boolean
   searchResults: SearchHit[]
   searchSummary: string
-  localFile: { name: string; content: string } | null
+  localFile: LocalFileState | null
   sidebarOpen: boolean
 }
 
@@ -79,9 +116,12 @@ export interface DocsActions {
   doSearch: (searchText: string) => Promise<void>
   backToTree: () => void
   openSearchHit: (path: string) => Promise<void>
-  openLocalFile: (file: File | null | undefined) => Promise<void>
-  hideLocalPreview: () => void
+  openLocalFile: (file: File | null | undefined, handle?: LocalFileHandle | null) => Promise<void>
+  chooseLocalFile: () => Promise<boolean>
+  hideLocalPreview: () => Promise<void>
   importLocalFile: () => Promise<void>
+  updateLocalContent: (content: string) => void
+  saveLocalFile: () => Promise<void>
   setSidebarOpen: (open: boolean) => void
 }
 
@@ -164,6 +204,16 @@ function useDocsStoreValue(): DocsStore {
 
   const openDoc = useCallback(
     async (path: string) => {
+      const local = stateRef.current.localFile
+      if (local?.dirty) {
+        const leave = await showConfirm({
+          title: '本地文件有未保存改动',
+          message: '「' + local.name + '」的修改还没有写回，确定离开？',
+          confirmText: '离开',
+          danger: true,
+        })
+        if (!leave) return
+      }
       try {
         const doc = await docsApi.getFile(path)
         pushRecent(doc.path)
@@ -386,14 +436,24 @@ function useDocsStoreValue(): DocsStore {
   )
 
   const openLocalFile = useCallback(
-    async (file: File | null | undefined) => {
+    async (file: File | null | undefined, handle: LocalFileHandle | null = null) => {
       if (!file) return
       if (!extAllowed(file.name)) {
         toast('仅支持 .md / .markdown / .txt 文件', true)
         return
       }
+      const previous = stateRef.current.localFile
+      if (previous?.dirty) {
+        const replace = await showConfirm({
+          title: '替换本地文件？',
+          message: '「' + previous.name + '」还有未保存改动，继续打开会丢失。',
+          confirmText: '继续打开',
+          danger: true,
+        })
+        if (!replace) return
+      }
       try {
-        patch({ localFile: { name: file.name, content: await readLocalFile(file) } })
+        patch({ localFile: { name: file.name, content: await readLocalFile(file), handle, dirty: false } })
       } catch (error) {
         toast(error instanceof Error ? error.message : String(error), true)
       }
@@ -401,8 +461,91 @@ function useDocsStoreValue(): DocsStore {
     [patch],
   )
 
-  const hideLocalPreview = useCallback(() => {
+  /** 有 File System Access API 时走系统选择器并保留句柄，保存可写回原文件 */
+  const chooseLocalFile = useCallback(async () => {
+    const pickerWindow = window as FilePickerWindow
+    if (typeof pickerWindow.showOpenFilePicker !== 'function') return false
+    try {
+      const [handle] = await pickerWindow.showOpenFilePicker({
+        multiple: false,
+        types: LOCAL_PICKER_TYPES,
+      })
+      if (!handle) return true
+      await openLocalFile(await handle.getFile(), handle)
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        toast(error instanceof Error ? error.message : String(error), true)
+      }
+    }
+    return true
+  }, [openLocalFile])
+
+  const hideLocalPreview = useCallback(async () => {
+    const localFile = stateRef.current.localFile
+    if (!localFile) return
+    if (localFile.dirty) {
+      const close = await showConfirm({
+        title: '关闭本地文件？',
+        message: '「' + localFile.name + '」的修改还没有保存，关闭会丢失。',
+        confirmText: '关闭',
+        danger: true,
+      })
+      if (!close) return
+    }
     patch({ localFile: null })
+  }, [patch])
+
+  const updateLocalContent = useCallback((content: string) => {
+    const localFile = stateRef.current.localFile
+    if (!localFile) return
+    patch({ localFile: { ...localFile, content, dirty: true } })
+  }, [patch])
+
+  const saveLocalFile = useCallback(async () => {
+    const localFile = stateRef.current.localFile
+    if (!localFile) return
+    try {
+      if (localFile.handle) {
+        const writable = await localFile.handle.createWritable()
+        await writable.write(localFile.content)
+        await writable.close()
+        patch({ localFile: { ...localFile, dirty: false } })
+        toast('已写回本地文件')
+        return
+      }
+      const pickerWindow = window as FilePickerWindow
+      if (typeof pickerWindow.showSaveFilePicker === 'function') {
+        const handle = await pickerWindow.showSaveFilePicker({
+          suggestedName: localFile.name,
+          types: LOCAL_PICKER_TYPES,
+        })
+        const writable = await handle.createWritable()
+        await writable.write(localFile.content)
+        await writable.close()
+        patch({
+          localFile: {
+            ...localFile,
+            name: handle.name || localFile.name,
+            handle,
+            dirty: false,
+          },
+        })
+        toast('已保存到本地文件')
+        return
+      }
+      const blob = new Blob([localFile.content], { type: 'text/markdown;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = localFile.name
+      link.click()
+      URL.revokeObjectURL(url)
+      patch({ localFile: { ...localFile, dirty: false } })
+      toast('当前浏览器不支持写回，已下载修改后的文件')
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return
+      toast('写入本地文件失败：' + (error instanceof Error ? error.message : String(error)), true)
+    }
   }, [patch])
 
   const importLocalFile = useCallback(async () => {
@@ -421,13 +564,15 @@ function useDocsStoreValue(): DocsStore {
       await docsApi.createFile(importPath, localFile.content)
       expand(parentOf(importPath))
       await loadTree()
+      const clearedState = { ...stateRef.current, localFile: null }
+      stateRef.current = clearedState
+      patch({ localFile: null })
       toast('已导入：' + importPath)
-      hideLocalPreview()
       await openDoc(importPath)
     } catch (error) {
       notifyError(error)
     }
-  }, [expand, hideLocalPreview, loadTree, openDoc])
+  }, [expand, loadTree, openDoc, patch])
 
   const setSidebarOpen = useCallback(
     (open: boolean) => {
@@ -454,14 +599,18 @@ function useDocsStoreValue(): DocsStore {
       backToTree,
       openSearchHit,
       openLocalFile,
+      chooseLocalFile,
       hideLocalPreview,
       importLocalFile,
+      updateLocalContent,
+      saveLocalFile,
       setSidebarOpen,
     }),
     [
       loadTree, toggleDir, expand, openDoc, refreshDirty, saveDoc, autosave, newFile, newDir,
       renameNode, deleteNode, openToday, doSearch, backToTree, openSearchHit, openLocalFile,
-      hideLocalPreview, importLocalFile, setSidebarOpen,
+      chooseLocalFile, hideLocalPreview, importLocalFile, updateLocalContent, saveLocalFile,
+      setSidebarOpen,
     ],
   )
 

@@ -137,6 +137,34 @@ class JsonlTimeSeriesStoreTest {
     }
 
     @Test
+    @DisplayName("recent：分钟倒序、来源过滤、limit 截断、avg 由 totalMs/count 派生")
+    void recentOrdersFiltersAndLimits(@TempDir Path dir) {
+        try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {
+            store.append(rec(M0, "workbench", "/api/a", "GET", 200, 3, 90, 60, null));
+            store.append(rec(M0 + 2, "workbench", "/api/b", "GET", 500, 1, 20, 20, null));
+            store.append(rec(M0 + 1, "nginx", "/up", "POST", 200, 4, 40, 10, null));
+
+            // 全部来源：分钟倒序（M0+2 → M0+1 → M0）
+            List<RecentRecord> all = store.recent(null, 10);
+            assertEquals(3, all.size());
+            assertEquals(M0 + 2, all.get(0).minute());
+            assertEquals("workbench", all.get(0).source());
+            assertEquals(M0, all.get(2).minute());
+
+            // 来源过滤 + limit 截断：workbench 只有 2 条，limit=1 取最新
+            List<RecentRecord> wb = store.recent("workbench", 1);
+            assertEquals(1, wb.size());
+            assertEquals("/api/b", wb.get(0).endpoint());
+
+            // avg = 90/3 = 30；errCount 透传
+            List<RecentRecord> first = store.recent("workbench", 10).stream()
+                    .filter(r -> r.endpoint().equals("/api/a")).toList();
+            assertEquals(30, first.get(0).avgMs());
+            assertEquals(3, first.get(0).count());
+        }
+    }
+
+    @Test
     @DisplayName("sources：来源列表含 lastSeen（取最大分钟）")
     void sourcesWithLastSeen(@TempDir Path dir) {
         try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {

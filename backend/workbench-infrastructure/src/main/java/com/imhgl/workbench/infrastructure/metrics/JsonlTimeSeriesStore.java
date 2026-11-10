@@ -235,6 +235,28 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
     }
 
     @Override
+    public List<RecentRecord> recent(String source, int limit) {
+        // 运行日志视图：整表按（分钟倒序, 来源, 端点）取前 N——个人流量级别桶数有限，
+        // 全量流式排序的代价可忽略，不值得再维护一个按时间的索引结构
+        return buckets.entrySet().stream()
+                .filter(e -> source == null || source.isBlank() || e.getKey().source().equals(source))
+                .sorted(Comparator
+                        .comparing((Map.Entry<BucketKey, MinuteBucket> entry) -> -entry.getKey().minute())
+                        .thenComparing(entry -> entry.getKey().source())
+                        .thenComparing(entry -> entry.getKey().endpoint()))
+                .limit(Math.max(0, limit))
+                .map(e -> {
+                    MinuteBucket b = e.getValue();
+                    synchronized (b) {
+                        return new RecentRecord(e.getKey().minute(), e.getKey().source(), e.getKey().endpoint(),
+                                e.getKey().method(), b.count, b.errCount,
+                                b.count == 0 ? 0 : b.totalMs / b.count, b.maxMs);
+                    }
+                })
+                .toList();
+    }
+
+    @Override
     public void flush() {
         if (dirty.isEmpty()) {
             return;

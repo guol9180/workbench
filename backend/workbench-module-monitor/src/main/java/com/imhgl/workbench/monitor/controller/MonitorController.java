@@ -3,6 +3,7 @@ package com.imhgl.workbench.monitor.controller;
 import com.imhgl.workbench.common.result.ApiResult;
 import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
+import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
@@ -79,6 +80,13 @@ public class MonitorController {
                                                       @RequestParam(value = "limit", defaultValue = "10") int limit,
                                                       @RequestParam(value = "by", defaultValue = "count") String by) {
         return ApiResult.ok(monitorApi.topEndpoints(source, range, limit, by));
+    }
+
+    /** 最近活动记录（运行日志视图）：分钟桶粒度，按分钟倒序；limit 默认 100、上限 500 */
+    @GetMapping("/recent")
+    public ApiResult<List<RecentRecord>> recent(@RequestParam(value = "source", required = false) String source,
+                                                @RequestParam(value = "limit", defaultValue = "100") int limit) {
+        return ApiResult.ok(monitorApi.recent(source, limit));
     }
 
     /** 监测域自检（桶数/文件数/认证开关/丢弃计数，不回显 token） */

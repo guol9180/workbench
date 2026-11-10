@@ -130,21 +130,52 @@ export default function SourcesView() {
     }, '令牌已清除，会回落到环境变量 GITHUB_TOKEN（如果已设置）。')
   }
 
+  function exportProjects() {
+    const configs = configsQuery.data ?? []
+    if (configs.length === 0) return
+    const header = ['仓库', '启用', '指标', '最近成功', '最近数据日', '最近错误']
+    const rows = configs.map((config) => [
+      config.repo,
+      config.enabled ? '是' : '否',
+      config.metrics.join(' / '),
+      config.lastOkAt ? fmtClock(config.lastOkAt) : '—',
+      config.lastDay ?? '—',
+      config.lastError ?? '—',
+    ])
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => '"' + String(cell).replace(/"/g, '""') + '"').join(','))
+      .join('\r\n')
+    const url = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'workbench-projects.csv'
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="src">
       <PageHeader
-        eyebrow="项目 / GitHub"
-        title="我的项目"
+        title="项目监控"
         desc="接入 GitHub 仓库，Pages 流量与 Release 下载量集中在这里。"
       >
         <span className={'src-token-status' + (tokenReady ? ' ok' : '')}>
           <StatusDot state={tokenReady ? 'ok' : 'warn'} />
           {tokenReady ? '令牌已就绪' : '未配置令牌'}
         </span>
+        <Button variant="ghost" disabled={(configsQuery.data ?? []).length === 0} onClick={exportProjects}>
+          <Icon name="download" size={16} />导出数据
+        </Button>
+        <Button
+          variant="primary"
+          onClick={() => document.getElementById(tokenReady ? 'src-connect' : 'src-token')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        >
+          <Icon name="plus" size={16} />接入项目
+        </Button>
       </PageHeader>
 
       {!tokenReady && (
-        <Panel className="src-guide">
+        <Panel className="src-guide" id="src-token">
           <span className="src-panel-eyebrow">Setup / Token</span>
           <h2 className="src-guide-title">先配置 GitHub 令牌</h2>
           <p className="src-guide-text">
@@ -173,7 +204,7 @@ export default function SourcesView() {
       )}
 
       {tokenReady && (
-        <Panel className="src-form">
+        <Panel className="src-form" id="src-connect">
           <div className="src-panel-head">
             <span className="src-panel-eyebrow">Connect / Repository</span>
             <span className="src-panel-hint">从下拉选择，或直接输入 owner/name</span>
@@ -292,6 +323,47 @@ export default function SourcesView() {
           </EmptyState>
         )}
       </section>
+
+      <Panel className="src-status-panel">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">采集状态</h2>
+            <p className="panel-sub">最近一次 GitHub 采集结果；失败原因会原样保留</p>
+          </div>
+        </div>
+        {(configsQuery.data ?? []).length === 0 ? (
+          <EmptyState>接入项目后，这里会列出每次采集的成功时间与错误。</EmptyState>
+        ) : (
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>项目</th>
+                  <th>状态</th>
+                  <th>最近成功</th>
+                  <th>数据日</th>
+                  <th>最近错误</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(configsQuery.data ?? []).map((config) => (
+                  <tr key={config.id}>
+                    <td className="src-status-repo">{config.repo}</td>
+                    <td>
+                      <span className={'status-tag ' + (config.lastError ? 'status-danger' : config.lastOkAt ? 'status-success' : 'status-muted')}>
+                        {config.lastError ? '失败' : config.lastOkAt ? '正常' : '待采集'}
+                      </span>
+                    </td>
+                    <td className="src-status-mono">{config.lastOkAt ? fmtClock(config.lastOkAt) : '—'}</td>
+                    <td className="src-status-mono">{config.lastDay ?? '—'}</td>
+                    <td className="src-status-err">{config.lastError ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Panel>
     </div>
   )
 }

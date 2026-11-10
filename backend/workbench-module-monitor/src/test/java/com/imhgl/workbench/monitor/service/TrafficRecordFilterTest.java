@@ -4,6 +4,7 @@ import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.MetricsProperties;
 import com.imhgl.workbench.infrastructure.metrics.JsonlTimeSeriesStore;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
+import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.infrastructure.metrics.StoreStatus;
@@ -135,6 +136,11 @@ class TrafficRecordFilterTest {
         @Override
         public List<EndpointRank> topEndpoints(String source, long fromMinute, long toMinute, int limit, String by) {
             return delegate.topEndpoints(source, fromMinute, toMinute, limit, by);
+        }
+
+        @Override
+        public List<RecentRecord> recent(String source, int limit) {
+            return delegate.recent(source, limit);
         }
 
         @Override

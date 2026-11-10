@@ -6,22 +6,29 @@ import type { CSSProperties, ReactNode } from 'react'
 
 export type IconName =
   | 'home'
+  | 'dashboard'
   | 'pulse'
+  | 'monitor'
   | 'projects'
   | 'docs'
+  | 'tools'
+  | 'terminal'
   | 'arrow-right'
   | 'chevron-left'
   | 'chevron-right'
   | 'chevron-down'
+  | 'chevron-up'
   | 'menu'
   | 'close'
   | 'search'
   | 'plus'
   | 'refresh'
   | 'save'
+  | 'download'
   | 'sun'
   | 'moon'
   | 'logout'
+  | 'lock'
   | 'file'
   | 'folder'
   | 'file-plus'
@@ -36,6 +43,27 @@ export type IconName =
 
 const ICON_CONTENT: Record<IconName, ReactNode> = {
   home: <path d="M4 11 12 4l8 7M6.5 9.5V20h11V9.5" />,
+  dashboard: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 12l4.2-4.2M7.5 15.5h.01M16.5 15.5h.01" />
+    </>
+  ),
+  monitor: (
+    <>
+      <rect x="3" y="4" width="18" height="13" rx="2" />
+      <path d="M8 21h8M12 17v4" />
+    </>
+  ),
+  tools: <path d="M4 7h7M15 7h5M4 17h5M13 17h7M11 4v6M13 14v6" />,
+  terminal: <path d="M4 5h16v14H4zM7 9l3 3-3 3M12 15h5" />,
+  download: <path d="M12 3v12M7 10l5 5 5-5M4 19h16" />,
+  lock: (
+    <>
+      <rect x="5" y="10" width="14" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </>
+  ),
   pulse: <polyline points="2,12 7,12 9.5,6 14.5,18 17,12 22,12" />,
   projects: (
     <path d="M12 3c4.4 0 8 1.25 8 2.8v12.4c0 1.55-3.6 2.8-8 2.8s-8-1.25-8-2.8V5.8C4 4.25 7.6 3 12 3Zm-8 2.8c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8M4 12c0 1.55 3.6 2.8 8 2.8s8-1.25 8-2.8" />
@@ -45,6 +73,7 @@ const ICON_CONTENT: Record<IconName, ReactNode> = {
   'chevron-left': <path d="M14.5 6 9 12l5.5 6" />,
   'chevron-right': <path d="M9.5 6 15 12l-5.5 6" />,
   'chevron-down': <path d="M6 9.5 12 15.5 18 9.5" />,
+  'chevron-up': <path d="M6 14.5 12 8.5l6 6" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   close: <path d="M6 6l12 12M18 6 6 18" />,
   search: (

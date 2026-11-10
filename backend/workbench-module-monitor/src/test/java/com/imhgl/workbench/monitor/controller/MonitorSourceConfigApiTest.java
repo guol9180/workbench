@@ -119,6 +119,11 @@ class MonitorSourceConfigApiTest {
         }
 
         @Override
+        public List<com.imhgl.workbench.infrastructure.metrics.RecentRecord> recent(String source, int limit) {
+            return List.of();
+        }
+
+        @Override
         public MonitorStatus status() {
             return new MonitorStatus(0, 0, false, 0, true, "page");
         }

@@ -2,6 +2,7 @@ package com.imhgl.workbench.monitor.api;
 
 import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
+import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
@@ -35,6 +36,9 @@ public interface MonitorApi {
 
     /** 端点排行；by = count|err|avgMs */
     List<EndpointRank> topEndpoints(String source, String range, int limit, String by);
+
+    /** 最近活动记录（运行日志视图）；source 为 null/空白 = 全部来源，limit 1..500 */
+    List<RecentRecord> recent(String source, int limit);
 
     /** 监测域自检 */
     MonitorStatus status();

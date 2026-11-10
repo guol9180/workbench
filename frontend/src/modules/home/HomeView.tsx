@@ -1,313 +1,317 @@
 /**
- * 工作台首页：统一门面，消解"多个小应用硬粘在一起"的割裂感。
- * - 工具卡片区：每个业务模块一张卡（图标 + 一句话 + 域标签），后续新工具 = 加一张卡
- * - 全局健康：所有监测源的状态一张表看完，异常源排前；点击去对应页面深潜
- * - 最近文档：最近打开 3 篇直达（经 location.state 交给文档页打开）
+ * 数据看板：控制台门面。指标、走势、源状态与健康明细都来自真实监测接口，
+ * 不再使用旧稿里的项目/日志示例数据。
  */
-import { useEffect, useRef, useState } from 'react'
-import type { ReactElement } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { minutesToMs, monitorApi, RANGE_LABEL } from '../monitor/api'
-import type { MonitorStatusData, OverviewData, RangeKey } from '../monitor/api'
+import PulseChart from '../../components/PulseChart'
+import type { ChartPoint } from '../../components/PulseChart'
+import { Button, EmptyState, Icon, PageHeader, Panel, Segmented } from '../../components/ui/ui'
+import { fmtClock, fmtHM, fmtInt, fmtMs, fmtRate } from '../../utils/format'
+import { fillSeries, minutesToMs, monitorApi, RANGE_LABEL } from '../monitor/api'
+import type { OverviewData, RangeKey, SourceStat } from '../monitor/api'
 import { usePolling } from '../monitor/useMonitor'
-import { fmtClock, fmtHM, fmtInt, fmtRate } from '../../utils/format'
-import { getRecent } from '../docs/recent'
-import { baseName } from '../docs/util'
-import { Button, EmptyState, Icon, PageHeader, Panel, StatusDot, Tag } from '../../components/ui/ui'
 import './home.css'
 
 interface HealthRow {
   name: string
-  win: RangeKey
   lastSeenMinute: number
+  win: RangeKey
   overview: OverviewData
 }
 
-/** 健康摘要：sources → 逐源 overview（GitHub 源取 7d，其余 1h），异常排前，15s 静默刷新 */
-function useHealth(): HealthRow[] {
+const RANGES: RangeKey[] = ['1h', '6h', '24h', '7d']
+
+function isGithub(source: string): boolean {
+  return source.startsWith('github/')
+}
+
+function shortSource(source: string): string {
+  return source.startsWith('github/') ? source.split('/').slice(-1)[0] : source
+}
+
+function exportCsv(rows: HealthRow[]): void {
+  const header = ['源', '窗口', '请求', '错误数', '错误率', '平均延迟(ms)', 'P95(ms)', '最近活跃']
+  const lines = [
+    header,
+    ...rows.map((row) => [
+      row.name,
+      RANGE_LABEL[row.win],
+      row.overview.count,
+      row.overview.errCount,
+      (row.overview.errRate * 100).toFixed(2) + '%',
+      row.overview.avgMs,
+      row.overview.p95Ms,
+      fmtHM(minutesToMs(row.lastSeenMinute)),
+    ]),
+  ]
+  const csv = lines.map((line) => line.map((cell) => '"' + String(cell).replace(/"/g, '""') + '"').join(',')).join('\r\n')
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'workbench-dashboard.csv'
+  link.click()
+  URL.revokeObjectURL(url)
+}
+
+export default function HomeView() {
+  const navigate = useNavigate()
+  const sourcesQuery = usePolling(monitorApi.sources, 'home-sources', { intervalMs: 15_000 })
+  const sources: SourceStat[] = sourcesQuery.data ?? []
+  const sourceKey = sources.map((source) => source.name + ':' + source.lastSeenMinute).join('|')
   const [rows, setRows] = useState<HealthRow[]>([])
-  const [namesKey, setNamesKey] = useState('')
-  const namesRef = useRef<string[]>([])
+  const [rowsLoading, setRowsLoading] = useState(true)
+  const [query, setQuery] = useState('')
+  const [range, setRange] = useState<RangeKey>('24h')
 
   useEffect(() => {
     let alive = true
-    const load = async () => {
-      try {
-        const sources = await monitorApi.sources()
-        const names = sources.map((source) => source.name)
-        namesRef.current = names
-        if (alive) setNamesKey(names.join('|'))
-        if (names.length === 0) {
-          if (alive) setRows([])
-          return
+    async function loadRows() {
+      if (sources.length === 0) {
+        if (alive) {
+          setRows([])
+          setRowsLoading(false)
         }
-        const list = await Promise.all(
-          sources.map(async (source) => {
-            const name = source.name
-            const win: RangeKey = name.startsWith('github/') ? '7d' : '1h'
-            return {
-              name,
-              win,
-              lastSeenMinute: source.lastSeenMinute,
-              overview: await monitorApi.overview(name, win),
-            }
-          }),
-        )
-        if (alive) setRows(list)
-      } catch {
-        // 摘要是辅助层：失败保留旧值，不打断首页
+        return
       }
+      const nextRows = await Promise.all(
+        sources.map(async (source): Promise<HealthRow | null> => {
+          const win: RangeKey = isGithub(source.name) ? '7d' : '24h'
+          try {
+            return {
+              name: source.name,
+              lastSeenMinute: source.lastSeenMinute,
+              win,
+              overview: await monitorApi.overview(source.name, win),
+            }
+          } catch {
+            return null
+          }
+        }),
+      )
+      if (!alive) return
+      setRows(nextRows.filter((row): row is HealthRow => row !== null))
+      setRowsLoading(false)
     }
-    void load()
+    void loadRows()
     const timer = window.setInterval(() => {
-      if (!document.hidden) void load()
+      if (!document.hidden) void loadRows()
     }, 15_000)
     return () => {
       alive = false
       window.clearInterval(timer)
     }
-  }, [])
+    // sourceKey 把源集合与最近活跃变化作为刷新信号
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceKey])
 
-  useEffect(() => {
-    // namesKey 变化即重排：异常源（错误率 >1%）排最前，其余按名称稳定排序
-    setRows((previousRows) =>
-      [...previousRows].sort((leftRow, rightRow) => {
-        const isBadRow = (row: HealthRow) => row.overview.errRate > 0.01
-        if (isBadRow(rightRow) !== isBadRow(leftRow)) return isBadRow(rightRow) ? -1 : 1
-        return leftRow.name.localeCompare(rightRow.name)
-      }),
-    )
-  }, [namesKey])
-
-  return rows
-}
-
-interface PulseSnapshot {
-  status: MonitorStatusData | null
-  overview: OverviewData | null
-}
-
-/** 系统脉搏：存储规模 + workbench 近 5m 速率；失败时保留旧值，页面不闪 */
-function usePulse(): PulseSnapshot {
-  const statusQuery = usePolling(monitorApi.status, 'home-status', { intervalMs: 20_000 })
-  const overviewQuery = usePolling(() => monitorApi.overview('workbench', '5m'), 'home-pulse', {
-    intervalMs: 15_000,
+  const workbench = rows.find((row) => row.name === 'workbench') ?? null
+  const countQuery = usePolling(() => monitorApi.series('workbench', 'count', range), 'home-count|' + range, {
+    intervalMs: 20_000,
   })
-  return { status: statusQuery.data, overview: overviewQuery.data }
-}
+  const errQuery = usePolling(() => monitorApi.series('workbench', 'errCount', range), 'home-err|' + range, {
+    intervalMs: 20_000,
+  })
 
-function greeting(hour: number): string {
-  if (hour < 5) return '夜深了'
-  if (hour < 11) return '早上好'
-  if (hour < 14) return '中午好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
-}
-
-/** 窄屏简称：github/owner/name 只留仓库名（owner 相同，前缀没有信息量） */
-function shortSourceName(sourceName: string): string {
-  if (!sourceName.startsWith('github/')) return sourceName
-  return sourceName.split('/').slice(-1)[0]
-}
-
-
-
-const TOOLS: Array<{
-  to: string
-  name: string
-  tag: string
-  domain: 'analysis' | 'docs'
-  desc: string
-  icon: ReactElement
-}> = [
-  {
-    to: '/monitor',
-    name: '概览',
-    tag: '监测',
-    domain: 'analysis',
-    desc: '流量、延迟、端点，一屏看完。',
-    icon: <Icon name="pulse" />,
-  },
-  {
-    to: '/docs',
-    name: '文档',
-    tag: '写作',
-    domain: 'docs',
-    desc: 'Markdown 写作、自动保存、全文搜索。',
-    icon: <Icon name="docs" />,
-  },
-  {
-    to: '/sources',
-    name: '我的项目',
-    tag: '统计',
-    domain: 'analysis',
-    desc: 'GitHub 项目的 Pages 流量与 Release 下载量。',
-    icon: <Icon name="projects" />,
-  },
-]
-
-export default function HomeView() {
-  const navigate = useNavigate()
-  const health = useHealth()
-  const pulse = usePulse()
-  const [now, setNow] = useState(() => new Date())
-  const recent = getRecent().slice(0, 3)
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000)
-    return () => window.clearInterval(timer)
-  }, [])
-
-  const dateText = now.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric' })
-  const weekdayText = now.toLocaleDateString('zh-CN', { weekday: 'long' })
+  const countPoints: ChartPoint[] = useMemo(
+    () =>
+      fillSeries(countQuery.data ?? [], range).map((point) => ({
+        timestamp: minutesToMs(point.bucketEpoch),
+        value: point.value,
+      })),
+    [countQuery.data, range],
+  )
+  const errPoints: ChartPoint[] = useMemo(
+    () =>
+      fillSeries(errQuery.data ?? [], range).map((point) => ({
+        timestamp: minutesToMs(point.bucketEpoch),
+        value: point.value,
+      })),
+    [errQuery.data, range],
+  )
+  const totalCount = countPoints.reduce((sum, point) => sum + point.value, 0)
+  const githubCount = sources.filter((source) => isGithub(source.name)).length
+  const badRows = rows.filter((row) => row.overview.errRate > 0.01)
+  const healthyRows = rows.filter((row) => row.overview.errRate <= 0.01)
+  const filteredRows = rows.filter((row) => !query.trim() || row.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const distribution = [
+    { label: '健康', count: healthyRows.length, color: 'var(--ok)' },
+    { label: '错误率偏高', count: badRows.length, color: 'var(--danger)' },
+    { label: 'GitHub 项目', count: githubCount, color: 'var(--accent)' },
+  ]
+  const totalSources = Math.max(rows.length, 1)
+  const firstError = sourcesQuery.error ?? countQuery.error ?? errQuery.error
 
   return (
-    <div className="home">
+    <div className="home dash">
       <PageHeader
-        eyebrow="工作台 / Workbench"
-        title={greeting(now.getHours())}
-        desc={
-          <>
-            {dateText} · {weekdayText} · <kbd>Ctrl K</kbd> 跳转或搜索
-          </>
-        }
+        title="数据看板"
+        desc="流量、错误与项目状态的总览；数据来自 workbench 监测接口，每 15 秒刷新。"
       >
-        <span className="home-clock">
-          <i className="dot ok" aria-hidden="true" />
-          {fmtClock(now.getTime())}
-        </span>
+        <Button variant="ghost" onClick={() => exportCsv(rows)} disabled={rows.length === 0}>
+          <Icon name="download" size={16} />
+          导出看板数据
+        </Button>
       </PageHeader>
 
-      <section className="home-tools" aria-label="工具">
-        {TOOLS.map((tool) => (
-          <button key={tool.to} className="home-tool panel" onClick={() => navigate(tool.to)}>
-            <span className={'home-tool-mark d-' + tool.domain}>{tool.icon}</span>
-            <span className="home-tool-body">
-              <span className="home-tool-top">
-                <span className="home-tool-name">{tool.name}</span>
-                <Tag>{tool.tag}</Tag>
-              </span>
-              <span className="home-tool-desc">{tool.desc}</span>
-            </span>
-            <Icon name="arrow-right" size={16} className="home-tool-arrow" />
-          </button>
-        ))}
+      {firstError && (
+        <div className="dash-inline-error" role="alert">
+          监控接口暂不可达：{firstError}
+          <Button size="sm" onClick={() => { sourcesQuery.reload(); countQuery.reload(); errQuery.reload() }}>重试</Button>
+        </div>
+      )}
+
+      <section className="metric-grid" aria-label="关键指标">
+        <article className="metric-card">
+          <p className="metric-label">监测源</p>
+          <strong className="metric-value">{sources.length}</strong>
+          <p className="metric-foot">
+            <span>{githubCount} 个 GitHub 项目</span>
+            <span>{sources.length - githubCount} 个接口源</span>
+          </p>
+        </article>
+        <article className="metric-card">
+          <p className="metric-label">近 {RANGE_LABEL[range]}请求</p>
+          <strong className="metric-value">{countPoints.length > 0 ? fmtInt(totalCount) : '—'}</strong>
+          <p className="metric-foot"><span>workbench 自监测</span></p>
+        </article>
+        <article className="metric-card">
+          <p className="metric-label">错误率</p>
+          <strong className="metric-value" style={workbench && workbench.overview.errRate > 0.01 ? { color: 'var(--danger)' } : undefined}>
+            {workbench ? fmtRate(workbench.overview.errRate) : '—'}
+          </strong>
+          <p className="metric-foot"><span>{workbench ? fmtInt(workbench.overview.errCount) + ' 次错误' : '等待数据'}</span></p>
+        </article>
+        <article className="metric-card">
+          <p className="metric-label">平均响应</p>
+          <strong className="metric-value">{workbench ? fmtMs(workbench.overview.avgMs) : '—'}</strong>
+          <p className="metric-foot"><span>{workbench ? 'P95 ' + fmtMs(workbench.overview.p95Ms) : '等待数据'}</span></p>
+        </article>
       </section>
 
-      <div className="home-lower">
-        <Panel className="home-health">
-          <header className="home-panel-head">
-            <span className="home-panel-title">全局健康</span>
-            <Tag>{health.length} 个源</Tag>
-            <Button variant="ghost" size="sm" className="home-panel-more" onClick={() => navigate('/monitor')}>
-              看细节 <Icon name="arrow-right" size={14} />
-            </Button>
-          </header>
-
-          {health.length === 0 ? (
-            <EmptyState>还没有监测源。打开一篇文档或调用任意接口，之后会在这里开始记录。</EmptyState>
-          ) : (
-            <div className="home-rows">
-              <div className="home-row home-row-head" aria-hidden="true">
-                <span />
-                <span>源</span>
-                <span className="num">范围</span>
-                <span className="num">请求</span>
-                <span className="num">错误率</span>
-                <span className="num">最近活跃</span>
-              </div>
-              {health.map((row) => {
-                const isBad = row.overview.errRate > 0.01
-                const isRepo = row.name.startsWith('github/')
-                return (
-                  <button
-                    key={row.name}
-                    className="home-row"
-                    title={'近 ' + RANGE_LABEL[row.win] + ' · ' + row.name}
-                    onClick={() => navigate(isRepo ? '/sources' : '/monitor')}
-                  >
-                    <StatusDot state={isBad ? 'err' : 'ok'} />
-                    <span className="home-row-name">
-                      <span className="home-row-name-full">{row.name}</span>
-                      <span className="home-row-name-short">{shortSourceName(row.name)}</span>
-                    </span>
-                    <span className="home-row-win">{RANGE_LABEL[row.win]}</span>
-                    <span className="home-row-num">{fmtInt(row.overview.count)}</span>
-                    <span className={'home-row-num' + (isBad ? ' bad' : '')}>{fmtRate(row.overview.errRate)}</span>
-                    <span className="home-row-seen">{fmtHM(minutesToMs(row.lastSeenMinute))}</span>
-                  </button>
-                )
-              })}
+      <div className="dashboard-grid">
+        <Panel className="dash-chart-panel">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title">请求与错误走势</h2>
+              <p className="panel-sub">近 {RANGE_LABEL[range]} · 合计 {countPoints.length > 0 ? fmtInt(totalCount) : '—'} 次请求</p>
             </div>
-          )}
+            <Segmented
+              options={RANGES.map((rangeKey) => ({ value: rangeKey, label: rangeKey }))}
+              value={range}
+              onChange={setRange}
+              ariaLabel="走势时间范围"
+            />
+          </div>
+          <PulseChart
+            points={countPoints}
+            overlayPoints={errPoints}
+            height={280}
+            formatValue={fmtInt}
+            formatTime={fmtHM}
+            emptyText="还没有流量。调用任意 /api 接口后，这里会开始记录。"
+          />
+          <div className="chart-legend">
+            <span><i className="legend-dot" style={{ background: 'var(--accent)' }} />请求数</span>
+            <span><i className="legend-dot" style={{ background: 'var(--danger)' }} />错误数</span>
+          </div>
         </Panel>
 
-        <Panel className="home-recent">
-          <header className="home-panel-head">
-            <span className="home-panel-title">最近文档</span>
-            <Button variant="ghost" size="sm" className="home-panel-more" onClick={() => navigate('/docs')}>
-              去写文档 <Icon name="arrow-right" size={14} />
-            </Button>
-          </header>
-
-          {recent.length === 0 ? (
-            <EmptyState>最近没有打开过的文档。去写一篇。</EmptyState>
-          ) : (
-            <div className="home-docs">
-              {recent.map((docPath) => (
-                <button
-                  key={docPath}
-                  className="home-doc-row"
-                  title={docPath}
-                  onClick={() => navigate('/docs', { state: { openDoc: docPath } })}
-                >
-                  <span className="home-doc-icon"><Icon name="file" size={16} /></span>
-                  <span className="home-doc-name">{baseName(docPath)}</span>
-                  <span className="home-doc-path">{docPath}</span>
-                </button>
-              ))}
+        <Panel className="dash-status-panel">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title">源状态分布</h2>
+              <p className="panel-sub">按最近 24 小时的错误率统计</p>
             </div>
-          )}
+          </div>
+          <div className="status-list">
+            {distribution.map((item) => (
+              <div className="status-row" key={item.label}>
+                <span className="status-label">{item.label}</span>
+                <span className="status-track">
+                  <i className="status-fill" style={{ width: (item.count / totalSources) * 100 + '%', background: item.color }} />
+                </span>
+                <span className="status-count">{item.count}</span>
+              </div>
+            ))}
+          </div>
+          <div className="dash-status-foot">
+            <span>最近刷新</span>
+            <span>{sourcesQuery.updatedAt ? fmtClock(sourcesQuery.updatedAt) : '—'}</span>
+          </div>
         </Panel>
       </div>
 
-      <Panel className="home-pulse">
-        <header className="home-panel-head">
-          <span className="home-panel-title">系统脉搏</span>
-          <Tag>workbench · 近 5 分钟</Tag>
-        </header>
-        <div className="home-pulse-grid">
-          <div className="home-pulse-cell">
-            <span className="home-pulse-num">{pulse.overview ? pulse.overview.rps.toFixed(1) : '—'}</span>
-            <span className="home-pulse-label">每秒请求</span>
+      <Panel className="dash-health-panel">
+        <div className="panel-head">
+          <div>
+            <h2 className="panel-title">源健康明细</h2>
+            <p className="panel-sub">共 {rows.length} 个源{rowsLoading ? ' · 正在刷新' : ''}</p>
           </div>
-          <div className="home-pulse-cell">
-            <span className="home-pulse-num">{pulse.overview ? fmtRate(pulse.overview.errRate) : '—'}</span>
-            <span className="home-pulse-label">错误率</span>
-          </div>
-          <div className="home-pulse-cell">
-            <span className="home-pulse-num">{pulse.status ? fmtInt(pulse.status.memoryBuckets) : '—'}</span>
-            <span className="home-pulse-label">内存桶</span>
-          </div>
-          <div className="home-pulse-cell">
-            <span className="home-pulse-num">{pulse.status ? fmtInt(pulse.status.dataFiles) : '—'}</span>
-            <span className="home-pulse-label">数据文件</span>
-          </div>
+          <label className="search-field dash-search">
+            <span className="search-glyph-static" aria-hidden="true"><Icon name="search" size={16} /></span>
+            <input
+              className="input"
+              type="search"
+              value={query}
+              placeholder="搜索源名称"
+              aria-label="搜索源名称"
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
         </div>
-        <div className="home-pulse-foot">
-          {pulse.status ? (
-            <>
-              <span>认证{pulse.status.authEnabled ? '已开' : '已关'}</span>
-              <span className={pulse.status.droppedEvents > 0 ? 'warn' : undefined}>
-                {pulse.status.droppedEvents > 0
-                  ? '有 ' + fmtInt(pulse.status.droppedEvents) + ' 条数据被丢弃'
-                  : '没有丢弃数据'}
-              </span>
-            </>
-          ) : (
-            <span>后端离线，数据暂停更新</span>
-          )}
-        </div>
+
+        {rows.length === 0 ? (
+          <EmptyState>还没有监测到源。启动后端或调用任意接口后，这里会出现健康明细。</EmptyState>
+        ) : filteredRows.length === 0 ? (
+          <EmptyState>没有匹配的源，换个关键词再试。</EmptyState>
+        ) : (
+          <div className="table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>源</th>
+                  <th>状态</th>
+                  <th>窗口</th>
+                  <th className="num">请求</th>
+                  <th className="num">错误率</th>
+                  <th className="num">平均延迟</th>
+                  <th>最近活跃</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRows.map((row) => {
+                  const isBad = row.overview.errRate > 0.01
+                  return (
+                    <tr key={row.name}>
+                      <td>
+                        <span className="dash-source-name">{row.name}</span>
+                        <span className="dash-source-short">{shortSource(row.name)}</span>
+                      </td>
+                      <td><span className={'status-tag ' + (isBad ? 'status-danger' : 'status-success')}>{isBad ? '需关注' : '正常'}</span></td>
+                      <td className="dash-mono">{RANGE_LABEL[row.win]}</td>
+                      <td className="num dash-mono">{fmtInt(row.overview.count)}</td>
+                      <td className={'num dash-mono' + (isBad ? ' is-bad' : '')}>{fmtRate(row.overview.errRate)}</td>
+                      <td className="num dash-mono">{fmtMs(row.overview.avgMs)}</td>
+                      <td className="dash-mono">{fmtHM(minutesToMs(row.lastSeenMinute))}</td>
+                      <td>
+                        <button
+                          className="btn-text"
+                          type="button"
+                          onClick={() => navigate(isGithub(row.name) ? '/sources' : '/monitor')}
+                        >
+                          查看
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Panel>
     </div>
   )

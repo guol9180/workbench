@@ -1,12 +1,14 @@
 /* 概览页：观测站主盘的版式 */
 
 .mon {
-    max-width: 1180px;
+    width: 100%;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: var(--space-6) var(--space-6) var(--space-5);
+    padding: 24px 24px 48px;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 20px;
+    animation: page-rise 220ms var(--ease) both;
 }
 
 /* ---------- 源：单源信息行 / 多源卡片（见 .mon-cards） ---------- */

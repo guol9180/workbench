@@ -108,7 +108,7 @@ workbench-backend
 职责：流量监测域——本系统 API 自监测（Filter 采集）、外部系统通用上报（ingest 枢纽）、**外部数据源拉取采集（collector，M6 起）**、面向管理台的查询（sources / overview / series / top-endpoints / status）与**数据源配置管理（source-configs，M6 起）**。
 
 - 内部结构：`api/`（`MonitorApi` 对外唯一契约 + `impl/` 适配 infrastructure 中性查询模型）、`controller/`（监测与源配置端点，只注入 `MonitorApi`）、`dto/`（`IngestRequest`/`Point` 与 `SourceConfigRequest`，record + jakarta validation）、`model/`（`TimeRange` 值对象与业务查询模型）、`service/`（`MonitorService` 查询编排与采集入口、`TrafficRecordFilter` 自监测过滤器）、`collector/`（源配置文件存储、GitHub 采集客户端与调度，M6 起）。无 entity / mapper。
-- **`TimeRange` 值对象约定**：查询区间 `5m|1h|6h|24h|7d` 的解析与校验收拢在 model，非法值抛 `IllegalArgumentException` → 400。
+- **`TimeRange` 值对象约定**：查询区间 `5m|1h|6h|24h|7d|14d|30d` 的解析与校验收拢在 model，非法值抛 `IllegalArgumentException` → 400。14d/30d 为 M13 前端联调新增档位（走势图近 14/30 天视图）；数据可见性仍受 retention-days 约束。
 - **自监测约定**：`TrafficRecordFilter` 拦 `/api/**`（order 先于 Token 过滤器，未认证请求也计入流量），`source="workbench"`；路径归一化（纯数字段→`{n}`、UUID 段→`{u}`）；异步投递有界队列，队列满丢弃并计数、绝不阻塞业务请求。
 - **上报枢纽**：外部系统按 `IngestRequest` 结构 POST 到 `/api/monitor/ingest`，`source` 自带标识（如 `nginx`、`server-a`），数据进同一时序存储。
 - **源配置约定（M6）**：配置持久化为 JSON 文件（`workbench.sources.file`，默认 `data/sources.json`），由 `SourceConfigStore` 独占读写；仓库范围由用户在配置页管理，**运行期配置而非 yml**。同 repo 重复接入 → `CONFLICT(40900)`；删除源只停采集，历史数据按保留策略自然过期。
@@ -186,9 +186,7 @@ com.imhgl.workbench.<x>/
 | 通用工具 | Hutool（`hutool-all`） | 父 POM dependencyManagement | 父 POM dependencyManagement，按需在模块声明 |
 | 前端框架 | React + TypeScript（严格模式） | 19 / 5.8 | frontend |
 | 前端构建 | Vite + `@vitejs/plugin-react` | 6 | frontend devDependencies |
-| 前端路由 | `react-router-dom`（hash 路由，保 GitHub Pages 深链） | 7 | frontend |
-| 编辑器 | Vditor（本地 vendored UMD 副本，`public/vendor/vditor`） | 4.0.0 | frontend（无 npm 包） |
-| 前端字体 | `@fontsource/chakra-petch` / `@fontsource/ibm-plex-sans` / `@fontsource/ibm-plex-mono`（latin 子集自托管） | 5 | frontend |
+| 前端字体 | `@fontsource/ibm-plex-sans` / `@fontsource/ibm-plex-mono`（latin 子集自托管） | 5 | frontend |
 
 规则：
 
@@ -220,15 +218,16 @@ com.imhgl.workbench.<x>/
 | DELETE | `/api/docs/resource?path=` | query | - |
 | GET | `/api/docs/search?q=` | query | `List<SearchHit{path, name, fileNameMatch, line, snippet}>` |
 
-**monitor 域（监测六端点 + 源配置五端点）**：
+**monitor 域（监测七端点 + 源配置五端点）**：
 
 | 方法 | 路径 | 入参 | 出参 data |
 |---|---|---|---|
 | POST | `/api/monitor/ingest` | `{source, points:[{endpoint, method, status, count, totalMs, maxMs, ts}]}` | - |
 | GET | `/api/monitor/sources` | - | `List<SourceStat{name, lastSeenMinute}>`（含自身 `workbench`） |
-| GET | `/api/monitor/overview?source=&range=5m\|1h\|6h\|24h\|7d` | query | `Overview{count, errCount, errRate, avgMs, p95Ms, rps}` |
+| GET | `/api/monitor/overview?source=&range=5m\|1h\|6h\|24h\|7d\|14d\|30d` | query | `Overview{count, errCount, errRate, avgMs, p95Ms, rps}` |
 | GET | `/api/monitor/series?source=&metric=count\|avgMs\|errCount&range=&step=m\|h&endpoint=` | query | `List<SeriesPoint{bucketEpoch, value}>`（endpoint 可选：视图按端点过滤，如 GitHub 源的 views/downloads 单独出曲线；缺省=不过滤） |
 | GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=count\|err\|avgMs` | query | `List<EndpointRank{endpoint, count, errCount, avgMs, p95Ms}>` |
+| GET | `/api/monitor/recent?source=&limit=` | query | `List<RecentRecord{minute, source, endpoint, method, count, errCount, avgMs, maxMs}>`（M13：最近分钟桶记录，按分钟倒序，limit 默认 100 上限 500；前端「运行日志」用，level 由前端派生） |
 | GET | `/api/monitor/status` | - | 监测域自检（内存桶数 / 数据文件数 / 认证开关 / GitHub token 配置状态与来源；不回显任何 token 值） |
 | PUT | `/api/monitor/settings/github-token` | `{token}`（trim 后非空） | -（保存页面级 token，立即生效，优先于环境变量） |
 | DELETE | `/api/monitor/settings/github-token` | - | -（清除页面级 token，回落环境变量） |
@@ -251,29 +250,18 @@ com.imhgl.workbench.<x>/
 
 ---
 
-## 9. 前端约定（frontend/）
+## 9. 前端约定（M13：参考稿 UI + 后端联调双模式）
 
-React 19 + TypeScript（严格模式）+ Vite，替代已删除的 Vue 3 前端（历史见 git 主干）。与后端同守「架构清晰、代码质量优先」，本节是前端的对应规范。
+React 19 + TypeScript + Vite。**旧版前端页面（backend API 看板 / Vditor 文档工作区 / 登录页）已不再挂载**；当前入口是 `src/console/ConsoleApp.tsx`。M13 起前端按「双模式」运行：启动时探测 `GET /api/monitor/status`——可达即 **服务端模式**（真实数据），不可达即 **演示模式**（M12 的本地示例行为原样保留，前端单独部署到 GitHub Pages 仍是完整可演示产品）。两种模式共用同一套参考稿 UI，不引入第二套页面。
 
-1. **目录结构（按域分模块）**：`src/modules/<域>/`（home / monitor / docs / sources / access）内聚各自的 `api.ts`（唯一出域请求封装）、视图组件与样式；跨域公共件放 `src/components/`（AppShell / PulseChart / 浮层 / `ui/` 原语层），全局样式只有 `src/styles/tokens.css`（设计令牌唯一来源）与 `base.css`。
-2. **设计系统「分域主题」（M9 起）**：
-   - **令牌三层**：全局中性层（`data-theme='light'|'dark'`：背景/表面 4 档/文字 3 级/线条/ok/danger）→ 域强调层（`data-domain`：analysis 石墨+青 / docs 暖纸感，双主题各自成套）→ 组件只引用语义变量；禁止散落硬编码色值与 rgba 变体（发光/遮罩走 `--ok-glow`/`--overlay` 等专用令牌）。
-   - **明暗双主题**：默认跟随 `prefers-color-scheme`（无系统偏好取暗色），侧栏手动切换并记忆（`src/theme.ts` 唯一读写口）；`prefers-reduced-motion` 全局熄灭动效。
-   - **域只换主区气质**：AppShell 按路由把 `data-domain` 挂在主区，侧栏与底部状态条保持中性骨架；未来新工具可在 analysis/docs 之外定义自己的域主题块。
-   - **警示色独立**：`--warn`（琥珀黄）专职警示，与品牌强调色色相分离，禁止用强调色表达警告。
-   - **字体三角色**：`--font-body` 中文 UI 与正文（IBM Plex Sans 接管拉丁，PingFang / 微软雅黑 UI 接管中文）；`--font-display` 标题 / 品牌 / 大数字（Chakra Petch，中文回落黑体）；`--font-mono` 数据 / 路径 / 时间 / 元信息（IBM Plex Mono，中文回落雅黑 UI，禁止落到 NSimSun 宋体）。
-   - **字号与排版**：字号 7 档 `--fs-xs 11 / --fs-sm 12 / --fs-md 13 / --fs-base 14 / --fs-lg 16 / --fs-xl 20 / --fs-2xl 26`，文档阅读面 `--fs-read 15`；行高 `--lh-none / display / tight / heading / body / copy / read`；字重只用 400 / 500 / 600；字距走 `--tracking-*`。页面禁止写裸 `font-size` / `line-height` / `font-weight`。
-   - **间距**：布局走 4 / 8 / 12 / 16 / 24 / 32（`--space-1..6`）；控件内边距 6 / 10 / 12 / 24；图标-文字 6（小控件）/ 8（导航与按钮）；卡片与面板 16 / 24；text-3 两主题对表面 ≥4.5:1（WCAG AA）。
-3. **组件原语**：Panel / PageHeader / Button / IconButton / Tag / Spinner / Segmented / Chip / StatusDot / Banner / Field / EmptyState（`components/ui/`）是共享视觉件的唯一来源；图标统一取 `components/ui/Icon.tsx`；模块 CSS 只写布局与域特有样式，禁止复制原语观感（通用规范第 7 条）。
-4. **骨架与信息架构**：`/home` 工作台首页是默认路由（工具卡片 + 全局健康摘要 + 最近文档）；侧栏分组「分析/工具」（概览=API 自监测态势，我的项目=GitHub 项目流量与下载量），折叠钮固定在侧栏右上缘（半悬边界，展开/收起同一锚点）并记忆折叠态，底部为 暖色/暗色切换 与 退出登录（清除本机密码并回登录页，带 loggedOut 状态防认证关闭时自动回跳）；登录页无侧栏入口——401 自动拦截与退出落地已覆盖全部到达路径，手动入口冗余；导航条目不加装饰性标记（M9.7 裁定：域色点因易被误读为状态提示而删除），未来新增工具 = 首页加一卡 + 侧栏加一条。
-5. **数据层**：全部请求经 `src/api/http.ts`（X-API-Token 头、`ApiResult` 解包、401 清令牌跳接入页、非 JSON 响应统一翻译为离线提示）；展示型数字一律走 `src/utils/format.ts`，口径全站一致；monitor 查询用 `usePolling`（15s、页面隐藏暂停、失败保留旧数据）。
-6. **契约对齐**：后端查询模型字段与前端 TS 接口一一对应；`bucketEpoch` / `lastSeenMinute` 口径为 **epoch 分钟**（展示前 ×60000）；range→step 固定映射（24h/7d → 小时桶）。
-7. **认证流（M9.5 会话模型）**：登录页以「密码」呈现——密码经 `POST /api/auth/login` 换取会话令牌（SecureRandom 32B、内存态、默认 7 天过期），浏览器以 `X-API-Token: <会话令牌>` 携带；探测 `/api/monitor/status`——open 直进首页 / locked 出密码表单 / offline 重试；「退出登录」先调 `/api/auth/logout` 失效服务端会话再清本地；密码只在登录瞬间出现，浏览器存的是可过期会话令牌。界面不出现「令牌」字样（sources 页的 GitHub PAT 除外）。
-8. **依赖纪律**：React Bits 不作为依赖引入（其效果按需手写，如 PulseChart）；新增 npm 依赖先登记第 7 节表格；禁早熟抽象——第二个副本出现才抽公共组件。
-9. **编辑器**：Vditor 走 `public/vendor` 本地副本（无 CDN）；经 `modules/docs/editor.ts` 适配层隔离实例；主题切换走实例 `setTheme` 热切换（重建实例会丢编辑器缓冲内容，禁止用 remount 换肤）；**不使用 React StrictMode**（vendored Vditor 不兼容开发期双挂载）；Vditor 挂载点必须是 `.docp-editor` 内的独立 mount，不能把带 padding 的外层直接当 mount（否则纸面边框/全屏都失效）。**大纲固定右侧**（`outline: { position: 'right' }`），避免和左侧文档树叠成双左栏；**树收起时正文列 860→1040 且居中**，仍保持约 70 字阅读行长。全屏必须覆盖视口并隐藏 AppShell 侧栏/状态条/文档条，Vditor 自算宽高在滚动条存在时会偏小（实测 1418×802），CSS 强制 `100vw/100vh` 并不透明纸色。Lute（3.7MB）与 hljs 由 `modules/docs/prefetch.ts` 应用空闲时预执行（index.html 另有 preload 提前并行下载）——Pages 对大文件免 gzip 且跨境链路慢（实测 3.7MB 下载 215s），预载按 id 握手（onload 后补 id，镜像 Vditor 加载器去重行为）；**仅当「已打开文档且引擎未就绪」**才显示 `docp-boot` 纯文本预览层（数据 = openDoc 已有的 savedContent），未打开文档时必须让 Vditor 骨架（工具栏+placeholder，无需 Lute 即渲染）直接可见——覆盖无内容的场景曾被实测为「整页发白」回归。
-10. **概览页版式（M9.10）**：自上而下 = 页头（标题/副题 + 区间）→ 源上下文 → 流量描迹 + 四读数 → 端点台账通栏。源上下文是**唯一**源选择入口：单源收敛为信息行（不给点了没反应的卡片），多源才是可选卡片；卡片/选择状态与概览的源集合必须同源（`github/*` 在概览过滤，属「我的项目」）。图表数据由 `monitor/api.ts` 的 `fillSeries` 按 range 补齐整窗（缺桶 = 0），禁止把稀疏桶拉成全窗斜线——图形不得撒谎。台账通栏保证五列（端点/请求/错误/延迟/P95）无需横向滚动；窄屏按 768/480 两级收起 P95、延迟。
-11. **页面细节与文案（M10）**：页面只组合 `components/ui` 原语，图标统一取 `Icon.tsx`；常规交互动效统一 120–240ms 的 `--dur-fast/--dur/--ease`（主题圆形揭示与加载旋转另行固定时长），页面进入只做一次轻微上浮，加载态用 `Spinner`，不用零散 CSS 动画。明暗切换用圆形揭示（`theme.ts` 以点击坐标为圆心，View Transitions，回退颜色过渡），避免交叉淡化造成的中灰闪屏；主题初始化在 `main.tsx`（登录页在 AppShell 之外，直达 `/login` 也必须有令牌）。文案直给、具体、可行动，**有活人感但不过度口语化**：空态说清「这里能干什么」，错误给下一步，避免「吧/了/呢」堆叠、网络俚语、反问句与营销腔。
-
+1. **目录与入口**：活动代码全部在 `src/console/`（`ConsoleApp` / `DashboardPage` / `ProjectsPage` / `DocsPage` / `Dialogs` / `LockScreen` / `TrendChart` / `Icon` / `data.ts` / `api.ts` / `console.css`）；`App.tsx` 只渲染 `ConsoleApp`，`main.tsx` 只加载字体、`console.css` 与主题初始化。
+2. **视觉唯一事实源**：`src/console/console.css` 从参考稿抽取，页面只使用参考稿类名与原语观感；旧 `styles/tokens.css`、`components/ui` 不再参与渲染。明暗主题由 `src/theme.ts` 同时写 `html[data-theme]` 与 `body[data-theme]`；保留旧版圆形揭示动画（View Transitions + 点击坐标）。
+3. **信息架构**：内部路由只有 `dashboard` / `projects` / `docs`；侧栏固定深色 268px（折叠 76px），分组「总览 / 监控 / 工具」。项目监控含项目卡与运行日志；在线文档为列表 + 编辑器/预览；「集成工具」是导航按钮 + 原生 dialog，不单独建页面。锁屏是本地密码遮罩，默认演示密码 `commandcode`。
+4. **数据边界（按模式）**：演示模式 = 项目与日志是会话内示例数据，文档与自定义工具保存在浏览器 localStorage（`devconsole.docs.v1` / `devconsole.tools.v1`），不写后端、不伪造服务端记录；服务端模式 = 看板与项目监控读 `/api/monitor/**` 真实数据，在线文档读写 `/api/docs/**` 服务端文件库（只作用于后端 DOCS_ROOT）。自定义工具两种模式下均存 `devconsole.tools.v1`（个人快捷入口，无服务端概念）；主题 / 侧栏 / 锁屏键分别为 `devconsole.theme.v1` / `devconsole.sidebar.v1` / `devconsole.locked.v1`，会话令牌只存内存不落盘。
+5. **本地 Markdown**：文档页支持打开/拖入本地文件，预览与「继续编辑」；有 File System Access 句柄时写回原文件，否则另存/下载；`Ctrl/Cmd+S` 保存本地文件，未保存关闭/刷新有提示。此能力与模式无关，服务端模式下与服务端文档并存。
+6. **交互与文案**：页面进入只做一次轻微上浮；主题揭示、侧栏 260ms、面板 hover 走统一缓动；`prefers-reduced-motion` 熄灭动效。文案沿用参考稿：直给、具体、有活人感但不过度口语化。
+7. **服务端模式契约（api.ts 统一封装）**：请求带 `X-API-Token`（会话令牌，登录后存内存）；`ApiResult` 统一解包，`code != 0` 抛业务错误；401 → 回锁屏重登；网络错误 → 回落演示模式并提示；路由或 range 变化即重拉监测数据（切页取最新数，查询本身也计入自监测闭环）。数据看板：指标卡 = `overview(workbench, 24h)` + 活跃源数；走势 = `series(workbench, count|errCount, 7d|14d|30d, step=h)` 按日聚合（requests 换算万次、errors 换算百次）；状态分布与健康明细 = `sources()` + 每源 `overview(source, 24h)`（状态派生：错误率 ≥1% 且有流量 → 异常；24h 无流量 → 已停止；其余 → 运行中；stack 派生：github/ 前缀 → GitHub，否则本机服务）。项目监控：源卡同上，**「新增项目」按钮在服务端模式隐藏**（数据源由流量自动发现，无手动登记语义）；运行日志 = `GET /api/monitor/recent`，级别派生 errCount>0 → ERROR、maxMs>800 → WARN、否则 INFO，消息文案 `METHOD endpoint · N 次 · 平均 Xms`；「刷新日志」= 重新拉取。在线文档：tree / file / save / rename / delete / search 直连 `/api/docs/**`，标题与路径一一对应（`标题.md`，Windows 保留字符过滤，内容懒加载，编辑防抖 900ms 落盘，标题变更同时 rename，新建同名冲突自动加 -2 后缀）。锁屏：后端认证开启时解锁即 `POST /api/auth/login` 换会话令牌、锁屏即 `POST /api/auth/logout` 注销；认证关闭时沿用本地演示密码。
+8. **验收**：桌面 1440 / 移动 390 逐页与参考稿比对；`pnpm build` 零错；演示模式必测项同 M12（项目新增、日志筛选/刷新、工具新增/删除/激活、文档新建/删除/搜索、本地文件写回、搜索、锁屏、侧栏折叠）；服务端模式必测 = 登录 → 看板真实指标（自监测闭环：页面查询本身计入 workbench 流量）→ 文档服务端 CRUD（新建/编辑/重命名/删除/搜索）→ 项目页源卡与 recent 日志 → 停后端自动回落演示模式。
 ---
 
 > 项目背景、技术栈与启动方式见 [README.md](./README.md)，当前计划与验收清单见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。三文档职责互斥：同一信息只写在归属文件，其余位置引用而不复制；修订时只改归属文件，引用处自动生效。

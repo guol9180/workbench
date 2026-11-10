@@ -3,6 +3,7 @@ package com.imhgl.workbench.monitor.controller;
 import com.imhgl.workbench.framework.handler.GlobalExceptionHandler;
 import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
+import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
@@ -121,6 +122,24 @@ class MonitorControllerTest {
                 .andExpect(jsonPath("$.data.droppedEvents").value(0));
     }
 
+    @Test
+    @DisplayName("recent：limit 默认 100，出参为分钟桶记录形状")
+    void recentDefaultsAndShape() throws Exception {
+        mvc.perform(get("/api/monitor/recent").param("source", "workbench"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].minute").value(12345))
+                .andExpect(jsonPath("$.data[0].endpoint").value("/api/docs/tree"))
+                .andExpect(jsonPath("$.data[0].count").value(6))
+                .andExpect(jsonPath("$.data[0].errCount").value(1));
+        assertEquals(100, api.lastRecentLimit);
+        assertEquals("workbench", api.lastRecentSource);
+
+        api.throwOnRecentLimit = true;
+        mvc.perform(get("/api/monitor/recent").param("source", "workbench").param("limit", "501"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(40000));
+    }
+
     /** 记录调用参数的桩 api：不引 Mockito，行为直观可读 */
     static class StubApi implements MonitorApi {
         final AtomicInteger ingestCalls = new AtomicInteger();
@@ -130,7 +149,10 @@ class MonitorControllerTest {
         String lastEndpoint;
         int lastLimit = -1;
         String lastBy;
+        String lastRecentSource;
+        int lastRecentLimit = -1;
         boolean throwOnRange;
+        boolean throwOnRecentLimit;
 
         @Override
         public void ingest(IngestRequest request) {
@@ -171,6 +193,16 @@ class MonitorControllerTest {
         @Override
         public MonitorStatus status() {
             return new MonitorStatus(3, 1, false, 0, false, null);
+        }
+
+        @Override
+        public List<RecentRecord> recent(String source, int limit) {
+            lastRecentSource = source;
+            lastRecentLimit = limit;
+            if (throwOnRecentLimit) {
+                throw new IllegalArgumentException("非法条数上限：501（可选 1..500）");
+            }
+            return List.of(new RecentRecord(12345L, "workbench", "/api/docs/tree", "GET", 6, 1, 48, 70));
         }
 
         @Override

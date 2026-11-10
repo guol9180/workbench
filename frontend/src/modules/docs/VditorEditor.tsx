@@ -1,5 +1,7 @@
 /**
- * Vditor 编辑器封装（IR 模式）。
+ * Vditor 编辑器封装（WYSIWYG 模式）。
+ * 选 WYSIWYG 而不是 IR：表格的行/列/删除操作条只在 WYSIWYG 层提供，
+ * 同时更接近语雀那种"所见即所得"的文档编辑体验。
  * Vditor 由 index.html 的本地 vendored 脚本提供（window.Vditor）；
  * 就绪协议见 editor.ts——句柄先建、异步就绪后补挂，双向不阻塞。
  * 卸载时先解绑适配层再销毁实例：迟到的 after 回调会因句柄不符被忽略。
@@ -36,7 +38,7 @@ export default function VditorEditor({ onInput }: { onInput: () => void }) {
     const vditor = new window.Vditor(mountElement, {
       cdn: import.meta.env.BASE_URL + 'vendor/vditor',
       lang: 'zh_CN',
-      mode: 'ir',
+      mode: 'wysiwyg',
       theme,
       height: '100%',
       cache: { enable: false },

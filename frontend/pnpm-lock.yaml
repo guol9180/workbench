@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@fontsource/chakra-petch':
-        specifier: ^5.2.5
-        version: 5.3.0
       '@fontsource/ibm-plex-mono':
         specifier: ^5.3.0
         version: 5.3.0
@@ -283,9 +280,6 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
-
-  '@fontsource/chakra-petch@5.3.0':
-    resolution: {integrity: sha512-QZvbM/q2R6n1pg2x+TJPftZmBNS+ADU37L4Z4L/6UJIz+JZ/SRaEf8usPFRiP7Ht28sIideMu/Bm1SnGlSrwNw==}
 
   '@fontsource/ibm-plex-mono@5.3.0':
     resolution: {integrity: sha512-eTgnZjZEGk1QtD3ZstF+Vclo2HLAni8YMy34/DxllwZvyz1lR/1RF/xTiAquOBO7MvqBx8D2Ig2WCPMVfdZu7Q==}
@@ -885,8 +879,6 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.12':
     optional: true
-
-  '@fontsource/chakra-petch@5.3.0': {}
 
   '@fontsource/ibm-plex-mono@5.3.0': {}
 

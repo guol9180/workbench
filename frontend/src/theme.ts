@@ -4,7 +4,7 @@
  */
 export type Theme = 'light' | 'dark'
 
-const THEME_KEY = 'wb-theme'
+const THEME_KEY = 'devconsole.theme.v1'
 const TRANSITION_CLASS = 'theme-switching'
 let transitionTimer = 0
 const listeners = new Set<(t: Theme) => void>()
@@ -12,13 +12,14 @@ const listeners = new Set<(t: Theme) => void>()
 export function currentTheme(): Theme {
   const saved = localStorage.getItem(THEME_KEY)
   if (saved === 'light' || saved === 'dark') return saved
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
 function apply(theme: Theme): void {
   document.documentElement.dataset.theme = theme
-  // 浏览器 UI（移动端地址栏 / 桌面端窗口边）跟随页面底色，避免明暗切换时边缘色不连贯
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a0e0f' : '#eef2f1')
+  // 新版控制台 CSS 的变量挂在 body 上；两处同步，旧主题揭示与参考稿共用一套令牌
+  document.body.dataset.theme = theme
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0e1a1c' : '#f3f7f7')
 }
 
 /** 应用启动时调用一次：把记忆/系统偏好落到 <html data-theme>（不做过渡，避免首屏闪一下） */

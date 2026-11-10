@@ -5,6 +5,7 @@ import com.imhgl.workbench.common.exception.ErrorCode;
 import com.imhgl.workbench.framework.config.AuthProperties;
 import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
+import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
@@ -84,6 +85,14 @@ public class MonitorApiImpl implements MonitorApi {
     @Override
     public List<EndpointRank> topEndpoints(String source, String range, int limit, String by) {
         return service.topEndpoints(source, TimeRange.of(range), limit, by);
+    }
+
+    @Override
+    public List<RecentRecord> recent(String source, int limit) {
+        if (limit < 1 || limit > 500) {
+            throw new IllegalArgumentException("非法条数上限：" + limit + "（可选 1..500）");
+        }
+        return service.recent(source, limit);
     }
 
     @Override

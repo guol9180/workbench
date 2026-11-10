@@ -1,17 +1,18 @@
 /**
- * 应用骨架：分组文字侧栏（可折叠记忆）+ 主区 + 底部遥测状态条。
- * - 主区按路由挂 data-domain：换域即换气质（analysis 石墨青 / docs 暖纸），骨架恒定
- * - 侧栏底部：主题切换（明暗记忆）+ 退出登录；登录页无侧栏入口（401 拦截与退出落地已覆盖全部到达路径）
- * - 骨架不掺任何业务语义；各模块自带头部条
+ * 应用骨架：参考控制台稿的深色纵轨、顶栏与主区。
+ * - 域只换强调色（docs 紫 / 监控 蓝 / 默认青），侧栏始终是同一块深色骨架
+ * - 顶栏承担页面标题、全局搜索、主题与当前 AI；锁屏走既有退出登录流程
+ * - 侧栏折叠只做宽度与标签淡出，不重排图标
  */
 import { useEffect, useState } from 'react'
 import type { MouseEvent, ReactElement } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { logoutRequest, setToken } from '../api/http'
-import StatusBar from './StatusBar'
+import { currentTheme, setTheme, type Theme } from '../theme'
+import { toast } from '../ui/toast'
 import { Icon } from './ui/Icon'
 import { IconButton } from './ui/ui'
-import { currentTheme, setTheme, type Theme } from '../theme'
+import TopSearch from './TopSearch'
 import './AppShell.css'
 
 const COLLAPSE_KEY = 'wb-rail-collapsed'
@@ -22,110 +23,102 @@ interface NavItem {
   icon: ReactElement
 }
 
-
-
-const HOME: NavItem = {
-  to: '/home',
-  label: '首页',
-  icon: <Icon name="home" />,
-}
 const GROUPS: Array<{ name: string; items: NavItem[] }> = [
   {
-    name: '分析',
+    name: '总览',
+    items: [{ to: '/home', label: '数据看板', icon: <Icon name="dashboard" /> }],
+  },
+  {
+    name: '监控',
     items: [
-      {
-        to: '/monitor',
-        label: '概览',
-        icon: <Icon name="pulse" />,
-      },
-      { to: '/sources', label: '我的项目', icon: <Icon name="projects" /> },
+      { to: '/sources', label: '项目监控', icon: <Icon name="monitor" /> },
+      { to: '/monitor', label: '流量监测', icon: <Icon name="pulse" /> },
     ],
   },
   {
     name: '工具',
     items: [
-      { to: '/docs', label: '文档', icon: <Icon name="docs" /> },
+      { to: '/docs', label: '在线文档', icon: <Icon name="docs" /> },
+      { to: '/tools', label: '集成工具', icon: <Icon name="tools" /> },
     ],
   },
 ]
 
-const LOGOUT_ICON = <Icon name="logout" />
+interface RouteMeta {
+  title: string
+  sub: string
+  domain: 'docs' | 'monitor' | ''
+}
+
+const ROUTES: Record<string, RouteMeta> = {
+  '/home': { title: '数据看板', sub: '流量与项目运行总览 · 自动刷新', domain: '' },
+  '/sources': { title: '项目监控', sub: 'GitHub 项目流量与下载量', domain: 'monitor' },
+  '/monitor': { title: '流量监测', sub: '接口流量与端点状态 · 每 15 秒刷新', domain: 'monitor' },
+  '/docs': { title: '在线文档', sub: '写作与笔记 · 支持本地 Markdown', domain: 'docs' },
+  '/tools': { title: '集成工具', sub: '常用入口与本地命令', domain: '' },
+}
 
 export default function AppShell() {
   const location = useLocation()
   const navigate = useNavigate()
-  // 域随路由：docs → 暖纸感；其余 → 分析域。挂在 main 上，侧栏/状态条保持中性骨架
-  const domain = location.pathname.startsWith('/docs') ? 'docs' : 'analysis'
+  const meta = ROUTES[location.pathname] ?? { title: '工作台', sub: '个人开发控制台', domain: '' }
 
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem(COLLAPSE_KEY) === '1')
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [theme, setThemeState] = useState<Theme>(() => currentTheme())
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_KEY, collapsed ? '1' : '0')
   }, [collapsed])
 
+  useEffect(() => {
+    setMobileOpen(false)
+    document.querySelector<HTMLElement>('#main-content')?.scrollTo(0, 0)
+  }, [location.pathname])
+
   function toggleTheme(event: MouseEvent<HTMLButtonElement>) {
     const next: Theme = theme === 'dark' ? 'light' : 'dark'
-    // 以点击位置为圆心做圆形揭示，明暗切换不经过中灰
     setTheme(next, { x: event.clientX, y: event.clientY })
     setThemeState(next)
   }
 
-  /** 退出登录：先尽力失效服务端会话，再清本机密码并回登录页。
-   *  带 loggedOut 状态让登录页跳过 open 自动回跳（认证关闭时否则会原地弹回首页）。 */
-  async function logout() {
+  async function lock() {
     await logoutRequest()
     setToken(null)
     navigate('/login', { state: { loggedOut: true } })
   }
 
-  const itemCls = (active: boolean) => 'side-item' + (active ? ' active' : '')
-
   const renderItem = (navItem: NavItem) => (
-    <NavLink key={navItem.to} to={navItem.to} title={navItem.label} className={({ isActive }) => itemCls(isActive)}>
+    <NavLink
+      key={navItem.to}
+      to={navItem.to}
+      title={navItem.label}
+      className={({ isActive }) => 'side-item' + (isActive ? ' active' : '')}
+      onClick={() => setMobileOpen(false)}
+    >
       {navItem.icon}
       <span className="side-item-label">{navItem.label}</span>
     </NavLink>
   )
 
   return (
-    <div className={'shell' + (collapsed ? ' collapsed' : '')}>
-      <aside className="sidebar">
+    <div
+      className={'shell' + (collapsed ? ' is-collapsed' : '') + (mobileOpen ? ' is-mobile-open' : '')}
+      data-domain={meta.domain || undefined}
+    >
+      <aside className="sidebar" aria-label="控制台导航">
         <div className="side-brand">
-          <span className="side-mark">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" role="img" aria-label="工作台">
-              <polyline
-                points="3,7 7.5,17 12,9.5 16.5,17 21,7"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </span>
+          <span className="side-mark" aria-hidden="true">DC</span>
           <span className="side-brand-text">
-            <span className="side-wordmark">工作台</span>
-            <span className="side-caption">Personal Console</span>
+            <strong className="side-wordmark">个人开发控制台</strong>
+            <span className="side-caption">数据监控 · 开发工具</span>
           </span>
-          <IconButton
-            className="side-collapse"
-            size="sm"
-            label={collapsed ? '展开侧栏' : '收起侧栏'}
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            <Icon
-              name="chevron-left"
-              size={16}
-              style={{ transform: collapsed ? 'rotate(180deg)' : undefined, transition: 'transform 0.15s' }}
-            />
-          </IconButton>
         </div>
 
-        <nav className="side-nav">
-          {renderItem(HOME)}
+        <nav className="side-nav" aria-label="主导航">
           {GROUPS.map((group) => (
             <div key={group.name} className="side-group">
-              <div className="side-group-name">{group.name}</div>
+              <span className="side-group-name">{group.name}</span>
               {group.items.map(renderItem)}
             </div>
           ))}
@@ -133,25 +126,76 @@ export default function AppShell() {
 
         <div className="side-foot">
           <button
-            className="side-item"
-            title={theme === 'dark' ? '切到浅色' : '切到暗色'}
-            onClick={toggleTheme}
+            className="side-item side-collapse-btn"
+            type="button"
+            aria-expanded={!collapsed}
+            title={collapsed ? '展开侧栏' : '收起侧栏'}
+            onClick={() => setCollapsed(!collapsed)}
           >
-            <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
-            <span className="side-item-label">{theme === 'dark' ? '浅色模式' : '暗色模式'}</span>
+            <Icon
+              name={collapsed ? 'chevron-right' : 'chevron-left'}
+              size={16}
+              className="side-collapse-icon"
+            />
+            <span className="side-item-label">{collapsed ? '展开侧栏' : '收起侧栏'}</span>
           </button>
-          <button className="side-item side-logout" title="退出当前登录" onClick={() => void logout()}>
-            {LOGOUT_ICON}
-            <span className="side-item-label">退出登录</span>
+          <button className="side-item side-lock" type="button" title="锁屏" onClick={() => void lock()}>
+            <Icon name="lock" size={16} />
+            <span className="side-item-label">锁屏</span>
           </button>
         </div>
       </aside>
 
-      <main className="shell-main" data-domain={domain}>
-        <Outlet />
-      </main>
+      {mobileOpen && (
+        <button className="sidebar-scrim" type="button" aria-label="关闭导航" onClick={() => setMobileOpen(false)} />
+      )}
 
-      <StatusBar />
+      <div className="workspace">
+        <header className="topbar">
+          <IconButton
+            className="menu-btn"
+            label={mobileOpen ? '关闭导航' : '打开导航'}
+            onClick={() => setMobileOpen(!mobileOpen)}
+          >
+            <Icon name="menu" size={18} />
+          </IconButton>
+
+          <div className="top-heading">
+            <strong className="top-title">{meta.title}</strong>
+            <span className="top-sub">{meta.sub}</span>
+          </div>
+
+          <TopSearch />
+
+          <button
+            className="topbar-icon"
+            type="button"
+            aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
+            aria-pressed={theme === 'dark'}
+            title={theme === 'dark' ? '切换到浅色主题' : '切换到暗色主题'}
+            onClick={toggleTheme}
+          >
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} size={18} />
+          </button>
+
+          <button
+            className="account"
+            type="button"
+            title="当前 AI：Command Code · AI 配置页后续开放"
+            onClick={() => toast('AI 配置页后续开放，当前使用 Command Code。')}
+          >
+            <span className="avatar ai-avatar" aria-hidden="true">AI</span>
+            <span className="account-text">
+              <strong className="account-name">Command Code</strong>
+              <span className="account-role">当前 AI · 编码助手</span>
+            </span>
+          </button>
+        </header>
+
+        <main className="shell-body" id="main-content" tabIndex={-1}>
+          <Outlet />
+        </main>
+      </div>
     </div>
   )
 }

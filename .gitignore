@@ -61,3 +61,6 @@ yarn-error.log*
 
 # Agents config
 .commandcode/
+
+# IDE changelist 本地配置
+.openidea/

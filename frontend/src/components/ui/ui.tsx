@@ -11,8 +11,8 @@ export type { IconName } from './Icon'
 export { Combobox } from './Combobox'
 export type { ComboboxProps } from './Combobox'
 
-export function Panel({ className = '', children }: { className?: string; children: ReactNode }) {
-  return <section className={'panel ' + className}>{children}</section>
+export function Panel({ id, className = '', children }: { id?: string; className?: string; children: ReactNode }) {
+  return <section id={id} className={'panel ' + className}>{children}</section>
 }
 
 /** 页头：眉标（域/编号）+ 标题 + 一行说明 + 右侧操作。全站页面共用同一节奏 */

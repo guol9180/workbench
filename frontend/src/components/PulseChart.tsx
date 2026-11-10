@@ -29,6 +29,9 @@ interface Props {
   formatTime: (timestamp: number) => string
   /** 无数据时的空态文案（trace 与 bars 的语义不同，由调用方决定） */
   emptyText?: string
+  /** 第二条参考线（如错误数）：独立量纲，不画第二轴，只给形状对照 */
+  overlayPoints?: ChartPoint[]
+  overlayColor?: string
 }
 
 /** y 轴上界取 1/2/2.5/5×10^k 的「好看」值：避免 20→50 这类粗跳把描迹压进底部死角 */
@@ -49,6 +52,8 @@ export default function PulseChart({
   formatValue,
   formatTime,
   emptyText,
+  overlayPoints,
+  overlayColor = 'var(--danger)',
 }: Props) {
   const boxRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
@@ -88,6 +93,17 @@ export default function PulseChart({
     const baselineY = (CHART_PADDING.top + plotHeight).toFixed(1)
     const area = `${line} L${traceX(pointCount - 1).toFixed(1)},${baselineY} L${CHART_PADDING.left},${baselineY} Z`
 
+    const overlayMax = niceMax(Math.max(...(overlayPoints ?? []).map((point) => point.value), 0))
+    const overlayLine =
+      overlayPoints && overlayPoints.length > 0
+        ? overlayPoints
+            .map((point, pointIndex) => {
+              const overlayY = CHART_PADDING.top + plotHeight - (point.value / overlayMax) * plotHeight
+              return `${pointIndex === 0 ? 'M' : 'L'}${traceX(Math.min(pointIndex, pointCount - 1)).toFixed(1)},${overlayY.toFixed(1)}`
+            })
+            .join(' ')
+        : ''
+
     // 等分份数按上界整除性选（4 或 5），保证每条栅格的读数都是整洁整数
     const divisions = topValue % 4 === 0 ? 4 : 5
     const gridLines = Array.from({ length: divisions + 1 }, (_, divisionIndex) => {
@@ -120,10 +136,11 @@ export default function PulseChart({
       valueY,
       line,
       area,
+      overlayLine,
       gridLines,
       ticks,
     }
-  }, [width, height, points, variant])
+  }, [width, height, points, variant, overlayPoints])
 
   function handleMouseMove(event: MouseEvent<HTMLDivElement>) {
     if (!geometry) return
@@ -228,6 +245,19 @@ export default function PulseChart({
                 pathLength={1}
                 className="pulse-trace"
               />
+              {geometry.overlayLine && (
+                <path
+                  d={geometry.overlayLine}
+                  fill="none"
+                  stroke={overlayColor}
+                  strokeWidth="1.4"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  strokeDasharray="4 3"
+                  opacity="0.9"
+                  className="pulse-overlay"
+                />
+              )}
             </>
           )}
 

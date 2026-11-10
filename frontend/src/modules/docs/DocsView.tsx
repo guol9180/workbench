@@ -1,13 +1,13 @@
 /**
- * 文档工作区：目录 + 编辑器 + 本地预览。
+ * 文档工作区：参考稿的文档列表 + 编辑区布局，内部继续使用文件树与 Vditor。
  * 全局键盘（Ctrl+S 保存 / Esc 关预览）、拖拽打开本地文件、未保存离开拦截、
- * 250ms 脏刷新 + 2s 自动保存节流——交互骨架与旧 DocsView.vue 一致。
+ * 250ms 脏刷新 + 2s 自动保存节流。
  */
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { isEditorReady, onEditorReady } from './editor'
 import { DocsProvider, useDocs } from './useDocs'
-import { Button, Icon, IconButton } from '../../components/ui/ui'
+import { Button, Icon, PageHeader } from '../../components/ui/ui'
 import Sidebar from './Sidebar'
 import VditorEditor from './VditorEditor'
 import LocalPreview from './LocalPreview'
@@ -36,10 +36,8 @@ function DocsWorkspace() {
 
   useEffect(() => {
     void actions.loadTree()
-    // eslint 挂载一次语义：actions 为稳定引用
   }, [actions])
 
-  // 命令面板直达：/docs 带 {openDoc: path} 状态时打开该文档，然后清掉状态防重放
   useEffect(() => {
     const target = (location.state as { openDoc?: string } | null)?.openDoc
     if (!target) return
@@ -54,18 +52,24 @@ function DocsWorkspace() {
     autosaveTimer.current = window.setTimeout(() => void actions.autosave(), 2000)
   }
 
+  async function chooseLocalFile() {
+    const handled = await actions.chooseLocalFile()
+    if (!handled) fileInput.current?.click()
+  }
+
   useEffect(() => {
     function onKeydown(event: KeyboardEvent) {
       if ((event.ctrlKey || event.metaKey) && (event.key === 's' || event.key === 'S')) {
         event.preventDefault()
-        void actions.saveDoc()
+        if (state.localFile) void actions.saveLocalFile()
+        else void actions.saveDoc()
       }
       if (event.key === 'Escape' && state.localFile) {
-        actions.hideLocalPreview()
+        void actions.hideLocalPreview()
       }
     }
     function onBeforeUnload(event: BeforeUnloadEvent) {
-      if (state.dirty) {
+      if (state.dirty || state.localFile?.dirty) {
         event.preventDefault()
         event.returnValue = ''
       }
@@ -121,95 +125,103 @@ function DocsWorkspace() {
           : ''
 
   return (
-    <div className={'docp' + (state.sidebarOpen ? ' sidebar-open' : '')}>
-      <header className="docp-bar">
-        {/* 文件树收放全由用户手动控制（openDoc 不再自动收起）；收/放图标+提示语双态区分 */}
-        <IconButton
-          label={state.sidebarOpen ? '收起目录' : '展开目录'}
-          onClick={() => actions.setSidebarOpen(!state.sidebarOpen)}
-        >
-          <Icon name={state.sidebarOpen ? 'close' : 'menu'} size={16} />
-        </IconButton>
-        <div className="docp-crumb">
-          <span className="docp-brand">文档</span>
-          <span className="docp-sep" aria-hidden="true">/</span>
-          <span className="docp-doc" title={state.currentPath}>
-            {state.currentPath || '还没打开文档'}
-            {state.dirty && <i className="docp-dirty" title="还没保存" />}
-          </span>
-          {saveStatusText && (
-            <span className={'docp-save' + (state.saveStatus === 'error' ? ' err' : '')}>{saveStatusText}</span>
-          )}
-        </div>
-        <div className="docp-actions">
-          {state.currentPath && (
-            <Button variant="primary" size="sm" title="Ctrl+S" onClick={() => void actions.saveDoc()}>保存</Button>
-          )}
-          <Button variant="ghost" size="sm" title="打开或新建今天的日志" onClick={() => void actions.openToday()}>
-            <Icon name="clock" size={14} />今日日志
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            title="选择本地 Markdown 文件在浏览器中预览"
-            onClick={() => fileInput.current?.click()}
-          >
-            <Icon name="file" size={14} />打开本地文件
-          </Button>
-        </div>
-        <input
-          ref={fileInput}
-          type="file"
-          accept=".md,.markdown,.txt"
-          className="docp-file"
-          onChange={(event) => {
-            void actions.openLocalFile(event.target.files?.[0])
-            event.target.value = ''
-          }}
-        />
-      </header>
+    <div className={'docp docs-page' + (state.sidebarOpen ? ' sidebar-open' : '')}>
+      <PageHeader
+        title="在线文档"
+        desc="编辑在线文档，也可以打开或拖入本地 Markdown 文件预览、修改并写回。"
+      >
+        <Button variant="ghost" onClick={() => void chooseLocalFile()}>
+          <Icon name="file" size={16} />打开本地文件
+        </Button>
+        <Button variant="ghost" onClick={() => actions.setSidebarOpen(!state.sidebarOpen)}>
+          <Icon name={state.sidebarOpen ? 'chevron-up' : 'chevron-down'} size={16} />
+          {state.sidebarOpen ? '收起列表' : '展开列表'}
+        </Button>
+        <Button variant="primary" onClick={() => void actions.newFile('')}>
+          <Icon name="file-plus" size={16} />新建文档
+        </Button>
+      </PageHeader>
 
-      <div className="docp-layout">
-        <div className="docp-backdrop" onClick={() => actions.setSidebarOpen(false)} />
-        <Sidebar />
-        <main className="docp-main">
-          <VditorEditor onInput={onEditorInput} />
-          {/* 空态：没有打开文档时给一张真正的入口卡，而不是只留编辑器 placeholder */}
-          {!state.currentPath && !state.localFile && (
-            <div className="docp-welcome">
-              <div className="docp-welcome-inner">
-                <span className="docp-welcome-mark" aria-hidden="true"><Icon name="file" size={22} /></span>
-                <span className="docp-welcome-eyebrow">Docs / Workspace</span>
-                <h2 className="docp-welcome-title">从一页空白开始</h2>
-                <p className="docp-welcome-text">
-                  在左侧选择文档，或新建一篇；也可以拖入本地 Markdown 文件预览。
-                </p>
-                <div className="docp-welcome-actions">
-                  <Button variant="primary" onClick={() => void actions.newFile('')}>
-                    <Icon name="file-plus" size={14} />新建文档
-                  </Button>
-                  <Button onClick={() => void actions.openToday()}><Icon name="clock" size={14} />今日日志</Button>
-                  <Button variant="ghost" onClick={() => fileInput.current?.click()}>
-                    <Icon name="file" size={14} />打开本地文件
-                  </Button>
+      <div className={'docs-layout' + (state.sidebarOpen ? '' : ' is-list-collapsed')}>
+        <section className="panel docs-list-panel" aria-label="文档列表">
+          <div className="docs-list-head">
+            <div>
+              <h2 className="panel-title">文档列表</h2>
+              <p className="panel-sub">选择、搜索或新建文档</p>
+            </div>
+          </div>
+          <Sidebar />
+        </section>
+
+        <section className="panel docs-editor-panel" aria-label="文档编辑器">
+          <div className="docs-editor-head">
+            <div className="docs-editor-crumb">
+              <span className="docs-editor-path" title={state.localFile?.name || state.currentPath || '未打开文档'}>
+                {state.localFile?.name || state.currentPath || '未打开文档'}
+                {(state.dirty || state.localFile?.dirty) && <i className="docp-dirty" title="还没保存" />}
+              </span>
+              {state.localFile && <span className="doc-local-badge">{state.localFile.dirty ? '未保存' : '本地文件'}</span>}
+              {saveStatusText && (
+                <span className={'docp-save' + (state.saveStatus === 'error' ? ' err' : '')}>{saveStatusText}</span>
+              )}
+            </div>
+            <div className="docs-editor-actions">
+              {state.currentPath && (
+                <Button variant="primary" size="sm" title="Ctrl+S" onClick={() => void actions.saveDoc()}>保存</Button>
+              )}
+              <Button variant="ghost" size="sm" title="打开或新建今天的日志" onClick={() => void actions.openToday()}>
+                <Icon name="clock" size={14} />今日日志
+              </Button>
+            </div>
+          </div>
+
+          <div className="docs-editor-canvas">
+            <VditorEditor onInput={onEditorInput} />
+            {!state.currentPath && !state.localFile && (
+              <div className="docp-welcome">
+                <div className="docp-welcome-inner">
+                  <span className="docp-welcome-mark" aria-hidden="true"><Icon name="file" size={22} /></span>
+                  <span className="docp-welcome-eyebrow">Docs / Workspace</span>
+                  <h2 className="docp-welcome-title">从一页空白开始</h2>
+                  <p className="docp-welcome-text">
+                    在左侧选择文档，或新建一篇；也可以拖入本地 Markdown 文件预览。
+                  </p>
+                  <div className="docp-welcome-actions">
+                    <Button variant="primary" onClick={() => void actions.newFile('')}>
+                      <Icon name="file-plus" size={14} />新建文档
+                    </Button>
+                    <Button onClick={() => void actions.openToday()}><Icon name="clock" size={14} />今日日志</Button>
+                    <Button variant="ghost" onClick={() => void chooseLocalFile()}>
+                      <Icon name="file" size={14} />打开本地文件
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-          {/* 只在「已打开文档且引擎未就绪」时覆盖：未打开文档时让 Vditor 骨架
-              （工具栏+placeholder，无需 Lute 即渲染）直接可见，避免整片空白 */}
-          {!editorReady && state.currentPath && (
-            <div className="docp-boot" role="status">
-              <pre className="docp-boot-text">{state.savedContent}</pre>
-              <div className="docp-boot-hint">
-                <i className="docp-boot-dot" />
-                编辑器还在加载，先展示纯文本，就绪后自动切换。
+            )}
+            {!editorReady && state.currentPath && (
+              <div className="docp-boot" role="status">
+                <pre className="docp-boot-text">{state.savedContent}</pre>
+                <div className="docp-boot-hint">
+                  <i className="docp-boot-dot" />
+                  编辑器还在加载，先展示纯文本，就绪后自动切换。
+                </div>
               </div>
-            </div>
-          )}
-        </main>
-        <LocalPreview />
+            )}
+            <LocalPreview />
+          </div>
+        </section>
       </div>
+
+      <input
+        ref={fileInput}
+        type="file"
+        accept=".md,.markdown,.txt"
+        className="docp-file"
+        onChange={(event) => {
+          void actions.openLocalFile(event.target.files?.[0])
+          event.target.value = ''
+        }}
+      />
 
       {dropActive && (
         <div className="docp-drop">

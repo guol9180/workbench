@@ -1,6 +1,8 @@
 # 工作台 · Workbench
 
-个人后台管理系统（学习项目）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含三大能力：**流量监测**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）、**我的项目**（GitHub 仓库的 Pages 流量与 Release 下载量统计，配置与数据查看合一）与**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索），后续工具以业务模块渐进扩展。
+个人后台管理系统（学习项目）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含三大能力：**流量监测**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）、**我的项目**（GitHub 仓库的 Pages 流量与 Release 下载量统计，配置与数据查看合一）与**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索 / 本地文件预览与写回），以及浏览器本地的**集成工具**入口；后续工具以业务模块渐进扩展。
+
+> 前端已按参考稿重建为控制台单页（数据看板 / 项目监控 / 在线文档 / 集成工具 / 锁屏），并按**双模式**运行：探测到后端（`/api`）即接入真实数据（监测源看板、服务端文档、密码登录）；后端不可达时自动回落本地演示（示例数据 + localStorage 文档），可单独静态部署。详见 AGENTS 第 9 节。
 
 > 开发规范见 [AGENTS.md](./AGENTS.md)，当前计划与验收见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
@@ -11,7 +13,7 @@
 - **存储**：纯文件系统（文档即文件；监测时序数据为零依赖 JSONL 聚合存储），**无数据库、无缓存、无对象存储**
 - **构建**：Maven 多模块（common / framework / infrastructure / module-docs / module-monitor / server 六模块）
 - **认证**：密码 + 会话（服务端只存密码哈希 `AUTH_PASSWORD_SHA256`，登录签发 7 天会话令牌、5 次失败锁 60 秒；可选机器令牌 `API_TOKEN` 供外部上报；两者皆空 = 关闭）
-- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，分域主题设计系统：明暗双主题可切换，分析域石墨+青 / 文档域暖纸感，语义令牌唯一事实源 + 共享 UI 原语（PageHeader / Button / IconButton / Tag / Spinner / Combobox / Icon）；字体三角色（IBM Plex Sans 正文 / Chakra Petch 展示 / IBM Plex Mono 数据）+ 字号/行高/字重/字距令牌统一管理；工作台首页 + 分组可折叠侧栏；明暗切换圆形揭示；react-router 7 hash 路由；Vditor vendored 编辑器；字体自托管——React Bits 不引入，动效组件手写）
+- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，参考稿视觉的控制台单页：深色纵轨侧栏、数据看板、项目监控、在线文档、集成工具与锁屏；服务端模式走 `/api/monitor` `/api/docs` `/api/auth` 实时数据，演示模式为本地示例 + localStorage；明暗双主题保留圆形揭示；文档支持本地 Markdown 预览与写回；字体自托管 IBM Plex Sans / IBM Plex Mono）
 
 ## 仓库结构
 
@@ -24,7 +26,7 @@ workbench/
 │   ├── workbench-module-docs/    # 工具：在线文档（api 层 + DocPath 值对象 + 搜索服务）
 │   ├── workbench-module-monitor/ # 流量监测域：自监测 + 上报枢纽 + 查询（TimeRange 值对象）
 │   └── workbench-server/         # 聚合启动（main + application.yml，禁止业务）
-├── frontend/                     # React 19 + TS 前端：工作台首页 + 概览看板 + 我的项目（GitHub）+ 在线文档
+├── frontend/                     # React 19 + TS 控制台：数据看板 / 项目监控 / 在线文档 / 集成工具 / 锁屏
 ├── AGENTS.md / DEVELOP_PLAN.md / README.md
 └── docs/superpowers/plans/       # 重构实施计划（2026-10-15-backend-refactor-docs-only.md）
 ```

@@ -2,12 +2,14 @@
    视觉原语（panel/btn/tag/dot/input）来自 components/ui，这里只写布局与页特有件 */
 
 .src {
-    max-width: 1180px;
+    width: 100%;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: var(--space-6) var(--space-6) var(--space-5);
+    padding: 24px 24px 48px;
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 20px;
+    animation: page-rise 220ms var(--ease) both;
 }
 
 /* 页头右侧：令牌配置状态 */
@@ -389,6 +391,32 @@
 
 .src-detail-err {
     grid-column: 1 / -1;
+    color: var(--danger);
+    font-size: var(--fs-sm);
+}
+
+/* ---------- 采集状态（真实 lastOkAt / lastError，不伪造运行日志） ---------- */
+
+.src-status-panel { padding: 18px 20px; }
+
+.src-status-repo {
+    font-family: var(--font-mono);
+    color: var(--text);
+    white-space: nowrap;
+}
+
+.src-status-mono {
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+    white-space: nowrap;
+}
+
+.src-status-err {
+    max-width: 360px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     color: var(--danger);
     font-size: var(--fs-sm);
 }

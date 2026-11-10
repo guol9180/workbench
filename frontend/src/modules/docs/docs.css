@@ -464,17 +464,7 @@
     z-index: 15;
 }
 
-/* 宽屏：本地预览从覆盖层升级为右侧阅读栏，编辑与预览并排 */
-@media (min-width: 1024px) {
-    .docp-lp {
-        position: relative;
-        inset: auto;
-        z-index: auto;
-        flex: none;
-        width: clamp(320px, 38vw, 520px);
-        border-left: 1px solid var(--line);
-    }
-}
+/* 本地文件在主编辑区全宽阅读，不再变成右侧窄栏；文档树仍在左侧可导航 */
 
 .docp-lp-bar {
     flex: none;
@@ -487,6 +477,41 @@
     flex-wrap: wrap;
 }
 
+.doc-local-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: var(--r-xs);
+    background: var(--accent-dim);
+    color: var(--accent);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.doc-local-badge.is-dirty { color: var(--warn); background: var(--warn-dim); }
+
+.docp-lp-editor {
+    flex: 1;
+    min-height: 0;
+    width: calc(100% - 2 * var(--space-4));
+    max-width: 1040px;
+    margin: var(--space-4) auto;
+    padding: var(--space-5);
+    resize: none;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--s0);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: var(--fs-md);
+    line-height: var(--lh-copy);
+    outline: none;
+}
+
+.docp-lp-editor:focus { border-color: var(--accent); }
+
 .docp-lp-title { font-weight: var(--fw-semibold); font-size: var(--fs-base); word-break: break-all; }
 .docp-lp-tip { color: var(--text-3); font-size: var(--fs-sm); }
 .docp-lp-actions { margin-left: auto; display: flex; gap: var(--space-2); }
@@ -494,9 +519,11 @@
 .docp-lp-content {
     flex: 1;
     overflow-y: auto;
+    width: calc(100% - 2 * var(--space-4));
+    max-width: 1040px;
     padding: var(--space-6) clamp(var(--space-4), 5vw, 56px) 64px;
     background: var(--s0);
-    margin: var(--space-4);
+    margin: var(--space-4) auto;
     border-radius: var(--r-md);
     border: 1px solid var(--line);
     font-family: var(--font-body);
@@ -578,3 +605,136 @@
     .docp-lp-content { margin: var(--space-2); padding: var(--space-4) var(--space-4) 48px; }
     .docp-search input { font-size: var(--fs-lg); }
 }
+
+/* ---------- 控制台稿：页头 + 文档列表面板 + 编辑面板 ---------- */
+
+.docs-page {
+    height: 100%;
+    min-height: 0;
+    padding: 24px 24px 32px;
+    gap: 20px;
+    animation: page-rise 220ms var(--ease) both;
+}
+
+.docs-page > .page-head { flex: none; }
+
+.docs-layout {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+}
+
+.docs-layout.is-list-collapsed { grid-template-columns: minmax(0, 1fr); }
+.docs-layout.is-list-collapsed .docs-list-panel { display: none; }
+
+.docs-list-panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.docs-list-head {
+    flex: none;
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.docs-list-panel .docp-sidebar {
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+    border-right: 0;
+    background: transparent;
+}
+
+.docs-list-panel .docp-search { padding: 12px 14px; }
+
+.docs-editor-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.docs-editor-head {
+    flex: none;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    flex-wrap: wrap;
+}
+
+.docs-editor-crumb {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.docs-editor-path {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--fs-sm);
+    color: var(--text-2);
+}
+
+.docs-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+}
+
+.docs-editor-canvas {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+}
+
+.docs-editor-canvas .docp-editor { padding: 0; }
+
+.docs-editor-canvas .docp-editor .vditor {
+    border: 0;
+    border-radius: 0;
+}
+
+.docs-editor-canvas .docp-welcome {
+    inset: 0;
+    border: 0;
+    border-radius: 0;
+}
+.docs-editor-canvas .docp-boot { inset: var(--space-4); }
+.docs-editor-canvas .docp-lp { inset: 0; }
+
+@media (max-width: 1023px) {
+    .docs-page { padding: 18px 16px 28px; gap: 16px; }
+    .docs-layout { grid-template-columns: minmax(0, 1fr); }
+    .docs-list-panel { max-height: 360px; }
+    .docs-page:not(.sidebar-open) .docs-list-panel { display: none; }
+    .docs-page .docs-editor-panel { min-height: 560px; }
+}
+
+@media (max-width: 560px) {
+    .docs-page { padding: 14px 12px 24px; }
+    .docs-page .page-head-actions { width: 100%; }
+    .docs-page .page-head-actions .btn { flex: 1; }
+    .docs-editor-head { padding: 8px 10px; }
+    .docs-editor-actions { width: 100%; }
+}
+

@@ -2,6 +2,7 @@ package com.imhgl.workbench.monitor.service;
 
 import com.imhgl.workbench.infrastructure.metrics.EndpointRank;
 import com.imhgl.workbench.infrastructure.metrics.Overview;
+import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.infrastructure.metrics.StoreStatus;
@@ -74,6 +75,11 @@ public class MonitorService {
     public List<EndpointRank> topEndpoints(String source, TimeRange range, int limit, String by) {
         long now = currentMinute();
         return store.topEndpoints(source, range.fromMinute(now), now, limit, by);
+    }
+
+    /** 最近活动记录（运行日志视图）；source 为 null/空白 = 全部来源 */
+    public List<RecentRecord> recent(String source, int limit) {
+        return store.recent(source, limit);
     }
 
     public StoreStatus storeStatus() {

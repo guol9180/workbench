@@ -200,7 +200,7 @@ export default function MonitorView() {
 
   return (
     <div className="mon">
-      <PageHeader eyebrow="观测 / Monitor" title="概览" desc="接口流量和端点状态，每 15 秒自动刷新">
+      <PageHeader title="流量监测" desc="接口流量和端点状态，每 15 秒自动刷新">
         <Segmented
           options={RANGES.map((rangeOption) => ({ value: rangeOption, label: rangeOption }))}
           value={range}

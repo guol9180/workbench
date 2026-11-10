@@ -3,8 +3,8 @@
  * 模块内其余代码统一经此读写编辑器，不直接持有 Vditor 实例，也不把它混进 React 状态。
  * 两阶段就绪：attachEditor 挂载后立即生效，markEditorReady 在 Vditor 异步初始化完成后置位。
  * Vditor 的 Lute 引擎是懒加载的大脚本（约 3.7MB，见 vendor/vditor/dist/js/lute/lute.min.js），
- * 就绪前调用实例方法会抛 "Cannot read properties of undefined (reading 'Md2VditorIRDOM')"
- * （IR 模式下 setValue 内部读 vditor.lute）。所以就绪前的写入先挂起、就绪后补写，
+ * 就绪前调用实例方法会抛 "Cannot read properties of undefined (reading 'Md2VditorDOM')"
+ * （WYSIWYG 模式下 setValue 内部读 vditor.lute）。所以就绪前的写入先挂起、就绪后补写，
  * 就绪前的读取返回挂起值：让「打开文档」与「编辑器初始化」两条异步链路互不依赖先后。
  */
 export interface EditorHandle {
