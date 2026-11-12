@@ -14,11 +14,7 @@ Workbench 是一个**单用户、自托管**的后台系统，同时是一个以
 
 > 开发规范见 [AGENTS.md](./AGENTS.md)，当前计划与验收见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
-## 项目状态
-
-2026-11 完成重新定位：**M14 代码层已完成**——docs 域、演示模式、双站部署与死代码已移除，单域名部署配置已提交（运行时验证待服务器）。M15–M18 进行中：主动拨测、GitHub 每日快照、控制台四页重画；当前控制台保留看板与项目两页并接真实数据。实际进度以 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md) 为准；界面截图待 M17 完成后补充。
-
-## 功能（目标形态）
+## 功能（能力类别快照，不逐功能追加）
 
 - **总览**：所有观测对象的健康卡与异常汇总，一屏回答「现在有没有东西挂了」。
 - **服务与站点**：自部署服务的拨测状态、可用率与延迟历史；自有服务可经 ingest 上报结构化访问记录。
@@ -38,6 +34,8 @@ Workbench 是一个**单用户、自托管**的后台系统，同时是一个以
 | 前端字体 | IBM Plex Sans / Mono（fontsource 自托管，latin 子集） | 正文与数据分字体 |
 | 测试 | JUnit 5（各模块 test） | `mvn test` |
 
+模块划分、依赖规则与内部结构见 [AGENTS.md · 架构与目录约定](./AGENTS.md#4-架构与目录约定)。
+
 ## 快速开始
 
 要求：JDK 25、Maven 3.9+、Node 20+ 与 pnpm。纯文件存储，无需 Docker。
@@ -48,7 +46,7 @@ cd workbench
 
 # 后端
 export JAVA_HOME=/path/to/jdk-25
-cd backend && mvn package && mvn -pl workbench-server spring-boot:run
+cd backend && mvn package && java -jar workbench-server/target/workbench-server.jar
 
 # 前端（另开终端）
 cd frontend && pnpm install && pnpm dev
@@ -56,7 +54,7 @@ cd frontend && pnpm install && pnpm dev
 
 Windows 用户可直接双击根目录 `start.bat`（内置局部 `JAVA_HOME`）。后端默认 `http://localhost:8080`，接口文档 `/swagger-ui.html`，前端开发服务器 `http://localhost:5173`（`/api` 已代理到 8080）。
 
-## 部署（目标形态，M14 实施）
+## 部署
 
 单域名、单部署单元：Caddy 对外提供 HTTPS，托管前端静态产物并反代 `/api` 到后端容器；前后端同源，不存在 CORS 配置。参考 2C2G 服务器：workbench 容器上限 768m、Caddy 上限 128m。
 
@@ -69,23 +67,11 @@ docker compose pull && docker compose up -d
 - 持久化：`workbench-runtime` 卷存时序数据与 `sources.json`（含 GitHub token，任何接口不回显）
 - 密码遗失兜底：置空 `AUTH_PASSWORD_SHA256` 重启回到关闭态
 
-具体发布步骤、前端产物分发方式与迁移注意事项见 [DEVELOP_PLAN.md · T1](./DEVELOP_PLAN.md#t1-m14-减法与部署合并p0)。
-
 ## 数据与隐私
 
 - 数据只存在你自己的机器上：时序 JSONL + `sources.json`，无遥测、无外部上报。
 - GitHub token 只用于只读 API；任何接口不回显 token 值。
 - 数据目录内只有真实探测、采集与用户操作产生的数据；测试一律使用临时目录。
-
-## 路线图
-
-- M14：减法与部署合并（删 docs 域、演示模式、死代码；单域名部署）
-- M15：主动拨测（HTTP 探测 + 可用率 / 延迟历史）
-- M16：GitHub 每日快照与 releases 下载量
-- M17：控制台四页重画
-- M18：全量验收与文档收尾
-
-详细任务卡与验收标准见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
 ## 许可证
 
