@@ -17,11 +17,6 @@
     <dependencies>
         <dependency>
             <groupId>com.imhgl</groupId>
-            <artifactId>workbench-module-docs</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.imhgl</groupId>
             <artifactId>workbench-module-monitor</artifactId>
             <version>${project.version}</version>
         </dependency>

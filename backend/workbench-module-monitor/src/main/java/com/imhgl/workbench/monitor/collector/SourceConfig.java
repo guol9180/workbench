@@ -7,7 +7,7 @@ import java.util.List;
  * <p>id 由 repo 归一生成（gh-{owner}-{repo}，小写），保证同一仓库重复接入在 id 层面也可判定；
  * lastOkAt/lastError 是采集器的运行状态回写；lastDay 是 pages 指标的已采日期游标（ISO yyyy-MM-dd）——
  * GitHub 给的是每日绝对值，聚合桶的语义是叠加，靠游标只采严格更新的日期来保证幂等（重启不丢，随配置持久化）。
- * token 不落盘也不出现在本记录（只从环境变量读取）。
+ * token 不在本记录中（存于 sources.json 的 settings 区，任何接口不回显）。
  */
 public record SourceConfig(
         String id,

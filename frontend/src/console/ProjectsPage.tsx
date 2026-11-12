@@ -1,4 +1,4 @@
-/** 项目监控：项目卡片 + 运行日志。数据来自参考稿的本地示例状态。 */
+/** 项目监控：监测源卡片 + 运行日志，数据全部来自服务端。 */
 import { useEffect, useRef, useState } from 'react'
 import { errorRate, fmtClockSec, fmtDay, fmtStamp, fmtWan, LEVEL_META, STATUS_META } from './data'
 import type { LogEntry, Project } from './data'
@@ -9,7 +9,6 @@ export default function ProjectsPage({
   logs,
   focusProjectId,
   onFocusConsumed,
-  onAddProject,
   onProjectDetail,
   onProjectLogs,
   onExport,
@@ -19,8 +18,6 @@ export default function ProjectsPage({
   logs: LogEntry[]
   focusProjectId: string | null
   onFocusConsumed: () => void
-  /** 服务端模式下数据源由流量自动发现（AGENTS §9.7），不提供手动登记入口 */
-  onAddProject?: (trigger?: HTMLElement) => void
   onProjectDetail: (project: Project, trigger?: HTMLElement) => void
   onProjectLogs: (projectId: string) => void
   onExport: (trigger?: HTMLElement) => void
@@ -59,13 +56,10 @@ export default function ProjectsPage({
       <div className="page-head">
         <div>
           <h1 className="page-title" id="projects-title">项目监控</h1>
-          <p className="page-desc">集中查看自己开发的项目数据与运行日志 · 示例数据</p>
+          <p className="page-desc">集中查看监测源的数据与运行日志</p>
         </div>
-          <div className="page-actions">
+        <div className="page-actions">
           <button className="btn btn-ghost" type="button" onClick={() => onExport()}><Icon name="download" size={17} />导出数据</button>
-            {onAddProject && (
-              <button className="btn btn-primary" type="button" onClick={(event) => onAddProject(event.currentTarget)}><Icon name="plus" size={17} />新增项目</button>
-            )}
         </div>
       </div>
 
@@ -73,13 +67,13 @@ export default function ProjectsPage({
         <div className="panel-head">
           <div>
             <h2 className="panel-title" id="project-list-title">项目列表</h2>
-            <p className="panel-sub">共登记 {projects.length} 个项目</p>
+            <p className="panel-sub">共 {projects.length} 个监测源</p>
           </div>
         </div>
         {projects.length === 0 ? (
           <div className="empty-state">
-            <p className="empty-title">还没有登记项目</p>
-            <p className="empty-desc">点击右上角「新增项目」登记第一个项目。</p>
+            <p className="empty-title">还没有监测源</p>
+            <p className="empty-desc">数据源由流量自动发现：任意系统向 /api/monitor/ingest 上报后出现在这里。</p>
           </div>
         ) : (
           <div className="project-grid">
@@ -100,7 +94,7 @@ export default function ProjectsPage({
                     <span className="project-stat"><b>{project.todayRequests > 0 ? project.latency + 'ms' : '—'}</b><span>平均响应</span></span>
                   </div>
                   <div className="project-foot">
-                    <span>最近部署 {fmtDay(project.lastDeploy)}</span>
+                    <span>最近活跃 {fmtDay(project.lastLogAt)}</span>
                     <span className="project-actions">
                       <button className="btn-text" type="button" onClick={(event) => onProjectDetail(project, event.currentTarget)}>详情</button>
                       <button className="btn-text" type="button" onClick={() => { setLogProject(project.id); onProjectLogs(project.id) }}>日志</button>

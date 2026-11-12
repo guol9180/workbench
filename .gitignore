@@ -42,6 +42,7 @@ data/
 ### 前端 ###
 node_modules/
 frontend/dist/
+.pnpm-store/
 
 # 本地环境变量（.env.example 为模板，入库）
 .env

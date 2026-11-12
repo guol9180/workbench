@@ -34,10 +34,8 @@ class MonitorTokenIntegrationTest {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) throws IOException {
         Path metricsDir = Files.createTempDirectory("workbench-metrics-t");
-        Path docsDir = Files.createTempDirectory("workbench-docs-t");
         registry.add("workbench.auth.machine-token", () -> TOKEN);
         registry.add("workbench.metrics.data-dir", () -> metricsDir.toString());
-        registry.add("workbench.storage.root", () -> docsDir.toString());
     }
 
     @LocalServerPort
@@ -62,7 +60,7 @@ class MonitorTokenIntegrationTest {
     @Test
     @DisplayName("无头 → 401 + 40100")
     void missingTokenRejected() throws Exception {
-        HttpResponse<String> r = get("/api/docs/tree", null);
+        HttpResponse<String> r = get("/api/monitor/status", null);
         assertEquals(401, r.statusCode());
         assertTrue(r.body().contains("\"code\":40100"), r.body());
     }
@@ -70,14 +68,7 @@ class MonitorTokenIntegrationTest {
     @Test
     @DisplayName("错值 → 401；正确值 → 放行")
     void wrongAndCorrectToken() throws Exception {
-        assertEquals(401, get("/api/docs/tree", "wrong").statusCode());
-        assertEquals(200, get("/api/docs/tree", TOKEN).statusCode());
-    }
-
-    @Test
-    @DisplayName("monitor 域同样受保护：status 带正确 token 可访问")
-    void monitorDomainProtected() throws Exception {
-        assertEquals(401, get("/api/monitor/status", null).statusCode());
+        assertEquals(401, get("/api/monitor/status", "wrong").statusCode());
         assertEquals(200, get("/api/monitor/status", TOKEN).statusCode());
     }
 
@@ -91,7 +82,7 @@ class MonitorTokenIntegrationTest {
     @Test
     @DisplayName("被 401 拒绝的请求也计入自监测（采集先于认证）")
     void rejectedRequestsAreStillMonitored() throws Exception {
-        get("/api/docs/tree", null); // 401
+        get("/api/monitor/status", null); // 401
         Thread.sleep(300); // 异步投递窗口
 
         String body = get("/api/monitor/overview?source=workbench&range=5m", TOKEN).body();

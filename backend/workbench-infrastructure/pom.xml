@@ -12,7 +12,7 @@
 
     <artifactId>workbench-infrastructure</artifactId>
     <name>workbench-infrastructure</name>
-    <description>技术设施：中性文件树存储（防穿越 + 白名单），不依赖任何业务模块</description>
+    <description>技术设施：中性 JSONL 时序存储，不依赖任何业务模块</description>
 
     <dependencies>
         <dependency>

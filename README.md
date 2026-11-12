@@ -1,111 +1,92 @@
-# 工作台 · Workbench
+# Workbench
 
-个人后台管理系统（学习项目）：以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体，定位是**流量监测 + 工具集**。当前包含三大能力：**流量监测**（本系统 API 自监测 + 其他系统通用上报枢纽 + 管理查询）、**我的项目**（GitHub 仓库的 Pages 流量与 Release 下载量统计，配置与数据查看合一）与**在线 Markdown 文档**（文件树 / 在线编辑保存 / 全文搜索 / 本地文件预览与写回），以及浏览器本地的**集成工具**入口；后续工具以业务模块渐进扩展。
+> 个人观测台：一眼看清我的服务、站点与开源项目的健康与互动。
 
-> 前端已按参考稿重建为控制台单页（数据看板 / 项目监控 / 在线文档 / 集成工具 / 锁屏），并按**双模式**运行：探测到后端（`/api`）即接入真实数据（监测源看板、服务端文档、密码登录）；后端不可达时自动回落本地演示（示例数据 + localStorage 文档），可单独静态部署。详见 AGENTS 第 9 节。
+![Java](https://img.shields.io/badge/Java-25-blue) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1.1-6DB33F) ![React](https://img.shields.io/badge/React-19-61DAFB) ![License](https://img.shields.io/badge/License-MIT-yellow)
+
+Workbench 是一个**单用户、自托管**的后台系统，同时是一个以「架构清晰、代码质量优先」为标准的 Spring Boot 模块化单体学习项目。它把我自己的三类东西收进一个控制台：
+
+- 自有服务器上部署的服务——活着吗、谁在用、哪里报错、多慢；
+- 开源项目的静态页面——能不能打开；
+- GitHub 仓库——有没有人看、增长如何。
+
+它解决的是一个很具体的问题：每天打开一次，比 SSH 上去翻日志更快地知道「我的东西都活着吗、有人在看吗」。后端纯文件存储，无数据库、无缓存、无对象存储；一条 `docker compose up -d` 即可在 2C2G 的小机器上跑起来。
 
 > 开发规范见 [AGENTS.md](./AGENTS.md)，当前计划与验收见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
+## 项目状态
+
+2026-11 完成重新定位：**M14 代码层已完成**——docs 域、演示模式、双站部署与死代码已移除，单域名部署配置已提交（运行时验证待服务器）。M15–M18 进行中：主动拨测、GitHub 每日快照、控制台四页重画；当前控制台保留看板与项目两页并接真实数据。实际进度以 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md) 为准；界面截图待 M17 完成后补充。
+
+## 功能（目标形态）
+
+- **总览**：所有观测对象的健康卡与异常汇总，一屏回答「现在有没有东西挂了」。
+- **服务与站点**：自部署服务的拨测状态、可用率与延迟历史；自有服务可经 ingest 上报结构化访问记录。
+- **开源项目**：GitHub 仓库接入与 token 管理；views/clones 流量曲线、每日快照（stars / forks / watchers / open issues）与 releases 下载量。
+- **设置**：数据源管理、GitHub token、主题与锁屏。
+- **认证**：密码登录换取会话令牌（服务端只存哈希，会话存内存）；外部上报可用机器令牌。两者皆空即关闭认证，适合本机开发。
+
 ## 技术栈
 
-- **语言 / 运行时**：Java 25 LTS（Temurin 25.0.4.1+1，位于 `D:\dev\environment\jdk-25.0.4.1+1`，仅以局部 `JAVA_HOME` 引用，不改系统环境变量）
-- **框架**：Spring Boot 4.1.1（`spring-boot-starter-webmvc` + `starter-validation`）· SpringDoc OpenAPI 3.1.1（Swagger UI）
-- **存储**：纯文件系统（文档即文件；监测时序数据为零依赖 JSONL 聚合存储），**无数据库、无缓存、无对象存储**
-- **构建**：Maven 多模块（common / framework / infrastructure / module-docs / module-monitor / server 六模块）
-- **认证**：密码 + 会话（服务端只存密码哈希 `AUTH_PASSWORD_SHA256`，登录签发 7 天会话令牌、5 次失败锁 60 秒；可选机器令牌 `API_TOKEN` 供外部上报；两者皆空 = 关闭）
-- **前端**：React 19 + TypeScript + Vite 6（`frontend/`，参考稿视觉的控制台单页：深色纵轨侧栏、数据看板、项目监控、在线文档、集成工具与锁屏；服务端模式走 `/api/monitor` `/api/docs` `/api/auth` 实时数据，演示模式为本地示例 + localStorage；明暗双主题保留圆形揭示；文档支持本地 Markdown 预览与写回；字体自托管 IBM Plex Sans / IBM Plex Mono）
+| 组件 | 选型 | 说明 |
+|---|---|---|
+| 语言 / 运行时 | Java 25 LTS（Temurin 25.0.4.1+1） | 仅以局部 `JAVA_HOME` 引用，不写系统环境变量 |
+| 应用框架 | Spring Boot 4.1.1（`spring-boot-starter-webmvc` + `starter-validation`） | 模块化单体 |
+| 接口文档 | SpringDoc OpenAPI 3.1.1 | Swagger UI |
+| 存储 | 纯文件系统：JSONL 时序数据 + JSON 配置 | 无数据库 / 缓存 / 对象存储 |
+| 前端 | React 19 + TypeScript 5.8 + Vite 6 | 单页控制台，`console.css` 自绘，无 UI 框架 |
+| 前端字体 | IBM Plex Sans / Mono（fontsource 自托管，latin 子集） | 正文与数据分字体 |
+| 测试 | JUnit 5（各模块 test） | `mvn test` |
 
-## 仓库结构
+## 快速开始
 
-```text
-workbench/
-├── backend/                      # Maven 模块化单体
-│   ├── workbench-common/         # 响应与异常契约（record ApiResult / ErrorCode / BusinessException）
-│   ├── workbench-framework/      # Web 框架能力：全局异常 / 参数校验 / CORS / OpenAPI / Token 认证（零端点）
-│   ├── workbench-infrastructure/ # 技术设施：中性文件树存储 + 中性 JSONL 时序存储
-│   ├── workbench-module-docs/    # 工具：在线文档（api 层 + DocPath 值对象 + 搜索服务）
-│   ├── workbench-module-monitor/ # 流量监测域：自监测 + 上报枢纽 + 查询（TimeRange 值对象）
-│   └── workbench-server/         # 聚合启动（main + application.yml，禁止业务）
-├── frontend/                     # React 19 + TS 控制台：数据看板 / 项目监控 / 在线文档 / 集成工具 / 锁屏
-├── AGENTS.md / DEVELOP_PLAN.md / README.md
-└── docs/superpowers/plans/       # 重构实施计划（2026-10-15-backend-refactor-docs-only.md）
+要求：JDK 25、Maven 3.9+、Node 20+ 与 pnpm。纯文件存储，无需 Docker。
+
+```bash
+git clone https://github.com/guol9180/workbench.git
+cd workbench
+
+# 后端
+export JAVA_HOME=/path/to/jdk-25
+cd backend && mvn package && mvn -pl workbench-server spring-boot:run
+
+# 前端（另开终端）
+cd frontend && pnpm install && pnpm dev
 ```
 
-## 本地开发
+Windows 用户可直接双击根目录 `start.bat`（内置局部 `JAVA_HOME`）。后端默认 `http://localhost:8080`，接口文档 `/swagger-ui.html`，前端开发服务器 `http://localhost:5173`（`/api` 已代理到 8080）。
 
-要求：JDK 25（本机 `D:\dev\environment\jdk-25.0.4.1+1`）、Maven 3.9+。纯文件存储，**无需 Docker / MySQL / Redis**，开箱即跑。
+## 部署（目标形态，M14 实施）
 
-在任意终端（PowerShell / CMD 均可）中局部设置 `JAVA_HOME`（不影响其他项目）：
+单域名、单部署单元：Caddy 对外提供 HTTPS，托管前端静态产物并反代 `/api` 到后端容器；前后端同源，不存在 CORS 配置。参考 2C2G 服务器：workbench 容器上限 768m、Caddy 上限 128m。
 
-```powershell
-$env:JAVA_HOME = 'D:\dev\environment\jdk-25.0.4.1+1'
-cd backend
-mvn package                     # 全量构建 + 测试（94 个用例）
-mvn -pl workbench-server spring-boot:run
+```bash
+cp .env.example .env        # 填写 AUTH_PASSWORD_SHA256
+docker compose pull && docker compose up -d
 ```
 
-启动后：<http://localhost:8080/swagger-ui.html>（接口文档），文档库默认在 `backend/data/docs`（`DOCS_ROOT` 可改），监测数据默认在 `backend/data/metrics`（`METRICS_DATA` 可改）。本地默认不配 Token（`API_TOKEN` 可开启认证）。Windows 也可双击根目录 `start.bat`（已内置局部 `JAVA_HOME`）。
+- 镜像：打 `v*` 标签触发 Actions 构建两个镜像——后端 `:latest`、前端静态产物 `:frontend`（Caddy 运行时）
+- 持久化：`workbench-runtime` 卷存时序数据与 `sources.json`（含 GitHub token，任何接口不回显）
+- 密码遗失兜底：置空 `AUTH_PASSWORD_SHA256` 重启回到关闭态
 
-前端（另开一个终端）：
+具体发布步骤、前端产物分发方式与迁移注意事项见 [DEVELOP_PLAN.md · T1](./DEVELOP_PLAN.md#t1-m14-减法与部署合并p0)。
 
-```powershell
-cd frontend
-npm install        # 或 pnpm install
-npm run dev        # http://localhost:5173 （/api 已代理到本地 8080）
-```
+## 数据与隐私
 
-## API 一览（统一包装 `{message, code, data}`，code=0 成功）
+- 数据只存在你自己的机器上：时序 JSONL + `sources.json`，无遥测、无外部上报。
+- GitHub token 只用于只读 API；任何接口不回显 token 值。
+- 数据目录内只有真实探测、采集与用户操作产生的数据；测试一律使用临时目录。
 
-**工具 · docs 域**：
+## 路线图
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/docs/tree` | 文件树（目录优先、不分大小写排序） |
-| GET | `/api/docs/file?path=` | 读取文档 |
-| POST / PUT | `/api/docs/file` | 新建 / 保存（body：`{path, content}`） |
-| POST | `/api/docs/dir` | 新建文件夹（body：`{path}`） |
-| POST | `/api/docs/rename` | 重命名/移动（body：`{from, to}`） |
-| DELETE | `/api/docs/resource?path=` | 删除（递归） |
-| GET | `/api/docs/search?q=` | 全文搜索（双匹配、上限 100、懒遍历短路） |
+- M14：减法与部署合并（删 docs 域、演示模式、死代码；单域名部署）
+- M15：主动拨测（HTTP 探测 + 可用率 / 延迟历史）
+- M16：GitHub 每日快照与 releases 下载量
+- M17：控制台四页重画
+- M18：全量验收与文档收尾
 
-**监测 · monitor 域**：
+详细任务卡与验收标准见 [DEVELOP_PLAN.md](./DEVELOP_PLAN.md)。
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/monitor/ingest` | 外部系统流量上报（body：`{source, points:[...]}`） |
-| GET | `/api/monitor/sources` | 已知来源列表 + lastSeen（含自身 `workbench`） |
-| GET | `/api/monitor/overview?source=&range=` | 总量 / 错误率 / avg / p95 / rps（range：5m~7d） |
-| GET | `/api/monitor/series?source=&metric=&range=&step=` | 时间序列（metric：count/avgMs/errCount） |
-| GET | `/api/monitor/top-endpoints?source=&range=&limit=&by=` | 端点排行（by：count/err/avgMs） |
-| GET | `/api/monitor/status` | 监测域自检（桶数 / 文件数 / 认证开关 / GitHub token 配置状态） |
+## 许可证
 
-**源配置 · monitor 域（M6，配置页驱动）**：
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/monitor/source-configs` | 已接入数据源（含采集状态；token 永不回显） |
-| POST | `/api/monitor/source-configs` | 接入（body：`{type:"github", repo:"owner/name", enabled, metrics:["pages"\|"downloads"]}`） |
-| PUT | `/api/monitor/source-configs/{id}` | 修改（启停 / 指标 / repo） |
-| DELETE | `/api/monitor/source-configs/{id}` | 删除（停采集；历史数据按保留策略自然过期） |
-| POST | `/api/monitor/source-configs/{id}/collect` | 手动立即采集（ok=false 时 error 给可行动原因） |
-| GET | `/api/monitor/github/repos` | 当前 token 可见的仓库列表（「我的项目」页勾选式接入用） |
-
-GitHub 采集：token 可直接在「我的项目」页动态保存（持久化于 `data/sources.json`，**优先于环境变量** `GITHUB_TOKEN`，清除后回落 env）；Pages 流量为日粒度、最多回看 14 天（GitHub 侧限制）；下载量按采集增量入库。
-
-**认证**（M9.5 双凭据）：`AUTH_PASSWORD_SHA256` = 登录密码的 SHA-256（服务端只存哈希），登录页输密码经 `/api/auth/login` 换取 7 天会话令牌；`API_TOKEN` = 机器凭据（外部系统 ingest 上报静态携带，可选）。任一非空 = 认证开启；全部 `/api/**` 须带 `X-API-Token`（浏览器带会话令牌、外部系统带机器令牌），失败 401 + `40100`；两者皆空 = 关闭。
-
-错误映射：文件/目录不存在 → 400 + `40400`；已存在/冲突 → 400 + `40900`；非法输入（穿越、非法名、扩展名白名单外）→ 400 + `40000`；未知路径 → 404 + `40400`；方法不支持 → 405 + `40500`；未认证 → 401 + `40100`；未知异常 → 500 + `50000`「服务器内部错误」。完整行为约定见 [AGENTS.md · API 设计约定](./AGENTS.md#8-api-设计约定apidocs-与-apimonitor)。
-
-## 部署
-
-发布流：打 `v*` 标签（或手动触发）→ Actions 构建镜像推送 GHCR（`build-backend.yml`）；前端推 main 自动部署 GitHub Pages（`deploy-frontend.yml`）。
-
-**前后端对接（M13 双模式）**：前端构建时读取仓库 Actions Variable `VITE_API_BASE`（当前 = `https://api.imhgl.com`）注入后端地址；Pages 前端探测该地址的 `/api/monitor/status`，可达即进入服务端模式（真实数据 + 登录），不可达自动回落本地演示。后端 CORS 已默认放行 `workbench.imhgl.com` 与 `guol9180.github.io`（`.env` 的 `CORS_ALLOWED_ORIGINS` 可覆盖）。改后端地址：`gh variable set VITE_API_BASE --body <url>` 后重跑前端部署工作流。
-
-服务器（2c2G 参考配置）：
-
-1. 克隆本仓库（用到 `docker-compose.yml` 与 `Caddyfile`），同目录建 `.env`（参考 `.env.example`，必填 `AUTH_PASSWORD_SHA256` 登录密码哈希）
-2. `docker compose pull && docker compose up -d`——Caddy 自动为 api.imhgl.com 申请证书并反代到 workbench:8080
-3. 访问前端（workbench.imhgl.com 或 Pages 地址）→ 锁屏输入登录密码 → 服务端校验后签发 7 天会话令牌，仅存本机浏览器内存（刷新重登）
-
-持久化：`workbench-docs` 卷存文档库；`workbench-runtime` 卷存监测时序与源配置（含 GitHub token，任何接口不回显）。认证开关 = `AUTH_PASSWORD_SHA256` / `API_TOKEN` 任一非空；密码遗失 → 置空重启回到关闭态，重新生成后再开。
+本项目采用 [MIT 许可证](./LICENSE)。

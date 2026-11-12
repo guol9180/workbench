@@ -1,18 +1,13 @@
 /**
- * 服务端模式 API 层（M13）：双模式控制台的唯一后端入口。
+ * 服务端 API 层：控制台唯一后端入口。
  *
  * 职责：统一携带会话令牌、解包 ApiResult、把 401 / 网络错误归一为可判别的异常——
- * 页面与组件不感知 fetch 细节。演示模式（后端不可达）完全不经过本文件。
+ * 页面与组件不感知 fetch 细节。
  */
 
-/**
- * 后端基地址：开发态留空 = 同源相对路径，走 Vite 代理到本地 8080；
- * 生产由 CI 注入 VITE_API_BASE（如 https://api.imhgl.com）——GitHub Pages 是纯静态托管，
- * 不配基地址时前端只能探测自身域名的 /api（必然 404）并回落演示模式。
- */
-const API_BASE = (import.meta.env.VITE_API_BASE ?? '').replace(/\/+$/, '')
+/** 前端与后端同源部署，请求一律使用相对路径；开发态由 Vite 代理到 8080。 */
 
-/** 后端统一响应包装（AGENTS §8）：code=0 成功 */
+/** 后端统一响应包装（AGENTS §7）：code=0 成功 */
 interface ApiEnvelope<T> {
   message: string
   code: number
@@ -37,13 +32,13 @@ export class ApiError extends Error {
     return this.httpStatus === 401
   }
 
-  /** 后端不可达 / 代理失败——调用方应整体回落演示模式 */
+  /** 后端不可达 / 代理失败 */
   get offline(): boolean {
     return this.httpStatus === 0
   }
 }
 
-// ---------------- 后端契约模型（与 §8 表格一一对应） ----------------
+// ---------------- 后端契约模型（与 AGENTS §7.2 表格一一对应） ----------------
 
 export interface SourceStat {
   name: string
@@ -80,32 +75,11 @@ export interface MonitorStatus {
   dataFiles: number
   authEnabled: boolean
   droppedEvents: number
-  githubTokenReady: boolean
+  githubTokenConfigured: boolean
   githubTokenSource: string | null
 }
 
-export interface DocNode {
-  name: string
-  path: string
-  type: 'dir' | 'file'
-  children: DocNode[]
-}
-
-export interface DocContent {
-  path: string
-  name: string
-  content: string
-}
-
-export interface SearchHit {
-  path: string
-  name: string
-  fileNameMatch: boolean
-  line: number
-  snippet: string
-}
-
-// ---------------- 会话令牌：只存内存，刷新即重登（AGENTS §9.4） ----------------
+// ---------------- 会话令牌：只存内存，刷新即重登（AGENTS §8.6） ----------------
 
 let sessionToken = ''
 
@@ -143,7 +117,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     envelope = await response.json() as ApiEnvelope<T>
   } catch {
-    // 非 JSON 响应（如代理 502 页面）：按离线处理，双模式回落演示
+    // 非 JSON 响应（如代理 502 页面）：按离线处理
     throw new ApiError('后端响应异常', 0, response.status)
   }
   if (!response.ok || envelope.code !== 0) {
@@ -166,67 +140,39 @@ function queryString(params: Record<string, string | number | undefined>): strin
 // ---------------- 认证 ----------------
 
 export async function login(password: string): Promise<{ token: string; expiresAt: number }> {
-  return request(`${API_BASE}/api/auth/login`, { method: 'POST', body: JSON.stringify({ password }) })
+  return request('/api/auth/login', { method: 'POST', body: JSON.stringify({ password }) })
 }
 
 export async function logout(): Promise<void> {
-  if (!sessionToken) return
+  const tokenAtStart = sessionToken
+  if (!tokenAtStart) return
   try {
-    await request(`${API_BASE}/api/auth/logout`, { method: 'POST' })
+    await request('/api/auth/logout', { method: 'POST' })
   } catch {
     // 注销失败不阻断锁屏（会话本来就会过期）
   }
-  sessionToken = ''
+  // 锁屏后可能已重新登录：只清理发起注销时的旧令牌
+  if (sessionToken === tokenAtStart) sessionToken = ''
 }
 
 // ---------------- 监测 ----------------
 
 export function fetchMonitorStatus(): Promise<MonitorStatus> {
-  return request(`${API_BASE}/api/monitor/status`)
+  return request('/api/monitor/status')
 }
 
 export function fetchSources(): Promise<SourceStat[]> {
-  return request(`${API_BASE}/api/monitor/sources`)
+  return request('/api/monitor/sources')
 }
 
 export function fetchOverview(source: string, range: string): Promise<Overview> {
-  return request(`${API_BASE}/api/monitor/overview${queryString({ source, range })}`)
+  return request(`/api/monitor/overview${queryString({ source, range })}`)
 }
 
 export function fetchSeries(source: string, metric: 'count' | 'avgMs' | 'errCount', range: string, step: 'm' | 'h' = 'h'): Promise<SeriesPoint[]> {
-  return request(`${API_BASE}/api/monitor/series${queryString({ source, metric, range, step })}`)
+  return request(`/api/monitor/series${queryString({ source, metric, range, step })}`)
 }
 
 export function fetchRecent(source?: string, limit = 100): Promise<RecentRecord[]> {
-  return request(`${API_BASE}/api/monitor/recent${queryString({ source, limit })}`)
-}
-
-// ---------------- 文档 ----------------
-
-export function fetchDocTree(): Promise<DocNode> {
-  return request(`${API_BASE}/api/docs/tree`)
-}
-
-export function fetchDocFile(path: string): Promise<DocContent> {
-  return request(`${API_BASE}/api/docs/file${queryString({ path })}`)
-}
-
-export function createDocFile(path: string, content: string): Promise<void> {
-  return request(`${API_BASE}/api/docs/file`, { method: 'POST', body: JSON.stringify({ path, content }) })
-}
-
-export function saveDocFile(path: string, content: string): Promise<void> {
-  return request(`${API_BASE}/api/docs/file`, { method: 'PUT', body: JSON.stringify({ path, content }) })
-}
-
-export function renameDocFile(from: string, to: string): Promise<void> {
-  return request(`${API_BASE}/api/docs/rename`, { method: 'POST', body: JSON.stringify({ from, to }) })
-}
-
-export function deleteDocFile(path: string): Promise<void> {
-  return request(`${API_BASE}/api/docs/resource${queryString({ path })}`, { method: 'DELETE' })
-}
-
-export function searchDocs(queryText: string): Promise<SearchHit[]> {
-  return request(`${API_BASE}/api/docs/search${queryString({ q: queryText })}`)
+  return request(`/api/monitor/recent${queryString({ source, limit })}`)
 }

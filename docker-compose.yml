@@ -1,35 +1,28 @@
-# 生产部署参考：打 v* 标签 → Actions 构建镜像推送 GHCR（.github/workflows/build-backend.yml）→ 服务器 pull。
-# 当前架构纯文件存储：无 MySQL / Redis / OSS；持久化全部落在 named volumes。
-# 旧栈（MySQL/Redis/OSS/APP_PASSWORD）已随 M3 重构废弃——不要再按旧记忆补回这些服务。
+# 生产部署：打 v* 标签 → Actions 构建并推送两个镜像（后端 :latest、前端 :frontend）→ 服务器 pull。
+# 单域名同源：Caddy 托管前端静态产物，/api 反代到后端；无 CORS、无数据库。
 services:
   workbench:
     image: ghcr.io/guol9180/workbench:latest
     container_name: workbench
     ports:
-      # 仅绑定本机回环，外部流量统一走 Caddy HTTPS 反代
+      # 仅绑定本机回环，外部流量统一走 Caddy HTTPS
       - "127.0.0.1:8080:8080"
     environment:
       # 登录密码哈希：必填。先生成密码，再取其 SHA-256（echo -n '密码' | sha256sum）；置空/删除 = 关闭认证
       - AUTH_PASSWORD_SHA256=${AUTH_PASSWORD_SHA256:?请在同目录 .env 中设置（生成方式见 .env.example）}
       # 可选机器凭据（ingest 外部上报静态携带）；不用可留空或删除
       - API_TOKEN=${API_TOKEN:-}
-      # 跨域放行的前端来源（默认同时放行自定义域与 GitHub Pages 域，按需在 .env 收紧）
-      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-https://workbench.imhgl.com,https://guol9180.github.io}
-      - DOCS_ROOT=/data/docs
-      # 监测时序与源配置同样持久化——不挂卷则容器重建即丢（M9.2 排查确认的现状）
+      # 时序数据与源配置持久化——不挂卷则容器重建即丢
       - METRICS_DATA=/data/runtime/metrics
       - WORKBENCH_SOURCES_FILE=/data/runtime/sources.json
     volumes:
-      # 文档库沿用既有命名卷（服务器上已有数据，不换卷名以免数据失联）
-      - workbench-docs:/data/docs
-      # 运行期数据（监测时序 + 源配置，含 GitHub token——文件永不回显）：与文档分开便于各自备份
       - workbench-runtime:/data/runtime
     mem_limit: 768m
     restart: unless-stopped
 
-  # HTTPS 反向代理：api.imhgl.com → workbench:8080，证书自动申请续期（需放行 80/443）
+  # 前端静态产物 + HTTPS 反代：镜像由 frontend/Dockerfile 构建（dist 已打进 /srv/frontend）
   caddy:
-    image: caddy:2-alpine
+    image: ghcr.io/guol9180/workbench:frontend
     container_name: workbench-caddy
     ports:
       - "80:80"
@@ -42,7 +35,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  workbench-docs:
   workbench-runtime:
   caddy_data:
   caddy_config:

@@ -1,4 +1,4 @@
-/** 参考稿的请求/错误双线走势图（纯 SVG，无图表库）。M13 起接受外部数据点（服务端模式真实序列）。 */
+/** 请求/错误双线走势图（纯 SVG，无图表库），数据来自服务端真实序列。 */
 import { useMemo } from 'react'
 import { fmtDay } from './data'
 
@@ -7,27 +7,6 @@ export interface TrendPoint {
   date: Date
   requests: number
   errors: number
-}
-
-/** 演示模式的示例走势：与参考稿同一公式，保证曲线与汇总口径一致 */
-export function buildDemoPoints(days: number): TrendPoint[] {
-  const points: TrendPoint[] = []
-  for (let index = days - 1; index >= 0; index -= 1) {
-    let requests: number
-    if (index === 0) {
-      requests = 45.8
-    } else {
-      const wave = Math.sin(index * 1.7) * 3.2 + Math.cos(index * 0.9) * 2.1
-      requests = Math.max(24, 38 + wave + (days - index) * 0.12)
-    }
-    const errorRate = index === 0 ? 0.0048 : 0.0035 + Math.abs(Math.sin(index * 2.3)) * 0.0035
-    points.push({
-      date: new Date(Date.now() - index * 86_400_000),
-      requests,
-      errors: Math.round((requests * 10000 * errorRate) / 100),
-    })
-  }
-  return points
 }
 
 export default function TrendChart({ days, points }: { days: number; points: TrendPoint[] }) {
@@ -40,7 +19,7 @@ export default function TrendChart({ days, points }: { days: number; points: Tre
     const bottom = 40
     const plotWidth = width - left - right
     const plotHeight = height - top - bottom
-    // 真实流量可能远小于演示量级：yMax 保底 10，避免 0 流量时除零与空刻度
+    // 真实流量量级可能很小：yMax 保底 10，避免 0 流量时除零与空刻度
     const maxRequest = points.length ? Math.max(...points.map((point) => point.requests)) : 0
     const maxError = Math.max(...points.map((point) => point.errors), 1)
     const yMax = Math.max(10, Math.ceil(maxRequest / 10) * 10)

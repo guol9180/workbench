@@ -3,7 +3,7 @@ package com.imhgl.workbench.infrastructure.metrics;
 import java.util.List;
 
 /**
- * 中性时序存储契约：流量记录的追加与查询（规范见 AGENTS.md 3.3）。
+ * 中性时序存储契约：流量记录的追加与查询（规范见 AGENTS.md §6.3）。
  * <p>接口只收 epoch 分钟数（不携带任何业务侧的时间语义），保持技术设施中性；
  * 业务模块（monitor）负责把 TimeRange 这类值对象翻译成分钟区间传入。
  * 查询返回的是内存桶的近似视图（最终一致），对监测场景足够。

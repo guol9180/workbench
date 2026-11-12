@@ -15,28 +15,22 @@ springdoc:
     path: /swagger-ui.html
 
 workbench:
-  storage:
-    # 文档库存储目录（中性配置键，环境变量仍为 DOCS_ROOT），建议指向持久化路径
-    root: ${DOCS_ROOT:./data/docs}
-  cors:
-    # 允许的前端来源，逗号分隔
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
   auth:
-    # 密码登录（人类）：AUTH_PASSWORD_SHA256 = 登录密码的 SHA-256 hex（echo -n '密码' | sha256sum）；非空 = /api/auth/login 开启
+    # 密码登录（人类）：AUTH_PASSWORD_SHA256 = 登录密码的 SHA-256 hex（echo -n '密码' | sha256sum）；非空 = 开启认证
     password-sha256: ${AUTH_PASSWORD_SHA256:}
     # 机器凭据（ingest 外部上报）：API_TOKEN 非空时外部系统可带 X-API-Token 直连
     machine-token: ${API_TOKEN:}
     # 会话时长（小时）；会话存内存，容器重启即失效
     session-ttl-hours: 168
   metrics:
-    # 监测时序数据目录（按天 JSONL 滚动）
+    # 观测时序数据目录（按天 JSONL 滚动）
     data-dir: ${METRICS_DATA:./data/metrics}
     retention-days: 14
     flush-interval-seconds: 5
   sources:
-    # 数据源配置页（M6）：接入清单持久化文件 + GitHub token（只读 PAT，环境变量注入，不落盘）
+    # 数据源配置：接入清单 + GitHub token（页面设置优先于环境变量，持久化于该文件）
     # cron 默认每天 08:05/20:05 各拉一次（GitHub 流量本身是日粒度），配 "-" 可关闭定时只留手动采集
-    file: ${SOURCES_FILE:./data/sources.json}
+    file: ${WORKBENCH_SOURCES_FILE:./data/sources.json}
     github-token: ${GITHUB_TOKEN:}
     cron: ${SOURCES_CRON:0 5 8,20 * * *}
 

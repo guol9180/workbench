@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * 零依赖 JSONL 时序存储（技术设施，规范见 AGENTS.md 3.3）。整体是一个「内存聚合桶 + 按天快照日志」的结构：
+ * 零依赖 JSONL 时序存储（技术设施，规范见 AGENTS.md §6.3）。整体是一个「内存聚合桶 + 按天快照日志」的结构：
  *
  * <p>设计取舍（为什么这么做）：
  * <ul>

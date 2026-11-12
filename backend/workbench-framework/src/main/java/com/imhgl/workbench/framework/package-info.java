@@ -1,5 +1,5 @@
 /**
- * Web 框架能力（规范见 AGENTS.md 3.2）：全局异常映射、参数校验、CORS、SpringDoc/OpenAPI、请求上下文。
- * 禁止：HTTP 端点（一律放业务模块）、业务逻辑、业务 DTO。
+ * Web 框架能力（规范见 AGENTS.md §6.2）：全局异常映射、参数校验、认证、SpringDoc/OpenAPI、请求上下文。
+ * 禁止业务逻辑与业务 DTO；唯一允许的端点是 /api/auth/**（认证机制本身）。
  */
 package com.imhgl.workbench.framework;

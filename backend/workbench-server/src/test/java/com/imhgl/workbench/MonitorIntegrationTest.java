@@ -26,7 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 监测域集成（认证关闭态）：自监测链路、外部上报枢纽、非法区间 400、自检。
- * 与 DocsApiIntegrationTest 同法：JDK HttpClient + RANDOM_PORT + 临时存储目录。
+ * JDK HttpClient + RANDOM_PORT + 临时数据目录。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -34,14 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MonitorIntegrationTest {
 
     static Path metricsDir;
-    static Path docsDir;
 
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) throws IOException {
         metricsDir = Files.createTempDirectory("workbench-metrics-test");
-        docsDir = Files.createTempDirectory("workbench-docs-test");
         registry.add("workbench.metrics.data-dir", () -> metricsDir.toString());
-        registry.add("workbench.storage.root", () -> docsDir.toString());
     }
 
     @LocalServerPort
@@ -77,9 +74,9 @@ class MonitorIntegrationTest {
 
     @Test
     @Order(1)
-    @DisplayName("自监测链路：调 docs API 后 workbench 来源计数增长、端点为归一化路径")
-    void selfMonitoringRecordsDocsTraffic() throws Exception {
-        assertEquals(200, get("/api/docs/tree").statusCode());
+    @DisplayName("自监测链路：调监测 API 后 workbench 来源计数增长、端点为归一化路径")
+    void selfMonitoringRecordsMonitorTraffic() throws Exception {
+        assertEquals(200, get("/api/monitor/status").statusCode());
 
         // 异步投递：轮询提取 count（每轮 overview 请求自身也会累积流量，须用数值断言而非子串匹配）
         int count = -1;
@@ -91,10 +88,10 @@ class MonitorIntegrationTest {
             }
             Thread.sleep(100);
         }
-        assertTrue(count >= 1, "自监测应记录 /api/docs/tree 调用，count=" + count);
+        assertTrue(count >= 1, "自监测应记录 /api/monitor/status 调用，count=" + count);
         // 自身这条 overview 请求也会被记录——top 端点至少含归一化后的两个端点之一
         String top = get("/api/monitor/top-endpoints?source=workbench&range=5m&limit=5&by=count").body();
-        assertTrue(top.contains("/api/docs/tree") || top.contains("/api/monitor/overview"), top);
+        assertTrue(top.contains("/api/monitor/status") || top.contains("/api/monitor/overview"), top);
     }
 
     @Test

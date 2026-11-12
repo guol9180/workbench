@@ -12,7 +12,7 @@
 
     <artifactId>workbench-framework</artifactId>
     <name>workbench-framework</name>
-    <description>Web 框架能力：全局异常 / 参数校验 / CORS / OpenAPI（零业务、零端点）</description>
+    <description>Web 框架能力：全局异常 / 参数校验 / 认证 / OpenAPI（零业务；唯一端点 /api/auth/**）</description>
 
     <dependencies>
         <dependency>

@@ -1,6 +1,6 @@
-/** 数据看板：示例项目指标、请求/错误走势、状态分布与项目健康明细。 */
+/** 数据看板：监测源指标、请求/错误走势、状态分布与健康明细。 */
 import { useMemo, useState } from 'react'
-import TrendChart, { buildDemoPoints } from './TrendChart'
+import TrendChart from './TrendChart'
 import type { TrendPoint } from './TrendChart'
 import { errorRate, fmtClock, fmtNum, fmtStamp, fmtWan, STATUS_META } from './data'
 import type { Project, StatusKey } from './data'
@@ -25,8 +25,8 @@ export default function DashboardPage({
   setRange: (range: number) => void
   onExport: () => void
   onProjectDetail: (project: Project, trigger?: HTMLElement) => void
-  /** 服务端模式的真实走势；缺省 = 演示序列（参考稿公式） */
-  trendPoints?: TrendPoint[] | null
+  /** 服务端真实走势（按日聚合） */
+  trendPoints: TrendPoint[]
 }) {
   const [healthSearch, setHealthSearch] = useState('')
   const [healthStatus, setHealthStatus] = useState<'all' | StatusKey>('all')
@@ -42,7 +42,7 @@ export default function DashboardPage({
   }, [projects])
 
   const activeProjects = metrics.counts.running + metrics.counts.developing
-  const chartPoints = trendPoints ?? buildDemoPoints(range)
+  const chartPoints = trendPoints
   // 汇总文案直接来自走势序列本身（而非另算口径），与参考稿「合计/日均」一致
   const trendSummary = useMemo(() => {
     const totalRequests = chartPoints.reduce((sum, point) => sum + point.requests, 0)
@@ -50,7 +50,7 @@ export default function DashboardPage({
       sum: totalRequests.toFixed(1),
       dailyAverage: (totalRequests / range).toFixed(1),
     }
-  }, [range, trendPoints])
+  }, [chartPoints, range])
   const healthRows = projects.filter((project) => {
     const keyword = healthSearch.trim().toLowerCase()
     const matchesKeyword = !keyword || `${project.name} ${project.stack}`.toLowerCase().includes(keyword)
@@ -70,7 +70,7 @@ export default function DashboardPage({
       <div className="page-head">
         <div>
           <h1 className="page-title" id="dashboard-title">数据看板</h1>
-          <p className="page-desc">个人开发项目的运行总览 · 数据为本地示例</p>
+          <p className="page-desc">我的服务的实时观测总览</p>
         </div>
         <div className="page-actions">
           <button className="btn btn-ghost" type="button" onClick={() => onExport()}>
@@ -83,12 +83,12 @@ export default function DashboardPage({
         <div className="metric-card">
           <p className="metric-label">活跃项目</p>
           <strong className="metric-value">{activeProjects}</strong>
-          <p className="metric-foot"><span>共登记 {metrics.total} 个项目 · {metrics.counts.error} 个异常</span></p>
+          <p className="metric-foot"><span>共 {metrics.total} 个监测源 · {metrics.counts.error} 个异常</span></p>
         </div>
         <div className="metric-card">
           <p className="metric-label">今日请求</p>
           <strong className="metric-value">{fmtWan(metrics.requests)}</strong>
-          <p className="metric-foot"><span className="trend-tag up">+6.2%</span><span>对比昨日</span></p>
+          <p className="metric-foot"><span>近 {range} 日累计</span></p>
         </div>
         <div className="metric-card">
           <p className="metric-label">今日错误</p>
@@ -98,7 +98,7 @@ export default function DashboardPage({
         <div className="metric-card">
           <p className="metric-label">平均响应</p>
           <strong className="metric-value">{metrics.requests > 0 ? metrics.latency + 'ms' : '—'}</strong>
-          <p className="metric-foot"><span className="trend-tag flat">-8ms</span><span>对比昨日</span></p>
+          <p className="metric-foot"><span>24h 窗口平均</span></p>
         </div>
       </div>
 
@@ -132,7 +132,7 @@ export default function DashboardPage({
           <div className="panel-head">
             <div>
               <h2 className="panel-title" id="status-title">项目状态分布</h2>
-              <p className="panel-sub">按当前登记项目统计</p>
+              <p className="panel-sub">按监测源统计</p>
             </div>
           </div>
           <div className="status-list">
@@ -155,7 +155,7 @@ export default function DashboardPage({
         <div className="panel-head">
           <div>
             <h2 className="panel-title" id="health-title">项目健康明细</h2>
-            <p className="panel-sub">共 {projects.length} 个项目，当前显示 {healthRows.length} 个</p>
+            <p className="panel-sub">共 {projects.length} 个监测源，当前显示 {healthRows.length} 个</p>
           </div>
         </div>
         <div className="toolbar" style={{ marginTop: 14 }}>

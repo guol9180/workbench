@@ -4,7 +4,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * 源采集配置（workbench.sources.*）。
- * <p>token 只从环境变量 GITHUB_TOKEN 注入，不落盘、不回显；cron 默认每天 08:05/20:05 各拉一次
+ * <p>token 默认取环境变量 GITHUB_TOKEN；设置页可运行期覆盖（存于 sources.json 的 settings 区，
+ * 页面设置优先），任何接口不回显 token。cron 默认每天 08:05/20:05 各拉一次
  * （GitHub 流量数据本身是日粒度，更密无意义），配 "-" 可整体关闭定时、只保留配置页手动采集。
  */
 @ConfigurationProperties(prefix = "workbench.sources")

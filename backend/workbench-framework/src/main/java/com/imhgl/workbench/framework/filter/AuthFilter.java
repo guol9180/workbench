@@ -17,16 +17,16 @@ import java.security.MessageDigest;
 /**
  * 认证过滤器（M9.5 双凭据模型）：`X-API-Token` 为<b>会话令牌</b>（登录签发，内存校验）
  * 或<b>机器令牌</b>（ingest 外部上报静态凭据）任一匹配即放行；否则 401 + 40100。
- * 两凭据皆空 = 认证关闭——本地开发与既有测试零回归的兼容开关（AGENTS.md 1.6）。
+ * 两凭据皆空 = 认证关闭——本地开发与既有测试零回归的兼容开关（AGENTS.md §7.1）。
  *
  * <p>取舍：
  * <ul>
  *   <li><b>只拦 /api/**</b>：Swagger UI 等非 API 路径天然放行，无需维护放行清单。</li>
- *   <li><b>CORS 预检直通</b>：浏览器预检（OPTIONS）不携带自定义头，拦截会杀死全部跨域部署。</li>
+ *   <li><b>OPTIONS 直通</b>：同源部署下浏览器不会发预检；保留该分支以兼容反向代理与外部探测。</li>
  *   <li><b>机器令牌常量时间比较</b>：用 {@link MessageDigest#isEqual} 而非 equals，
  *       避免逐字节短路返回造成的时序侧信道；会话令牌走内存 Map（256 位随机数，探测时序无从利用）。</li>
  *   <li><b>响应体为静态字符串</b>：拒绝路径不经过消息转换器（过滤器先于 MVC），
- *       直接写定死的 ApiResult JSON 行；CORS 头由先行的 CorsFilter（-150）写入。</li>
+ *       直接写定死的 ApiResult JSON 行。</li>
  *   <li><b>@Order(-100)</b>：位于自监测过滤器（-200，未认证请求也要计入流量）之后、
  *       业务处理之前。</li>
  * </ul>
@@ -56,7 +56,7 @@ public class AuthFilter extends OncePerRequestFilter {
             chain.doFilter(request, response);
             return;
         }
-        // 非 API 路径与 CORS 预检直通
+        // 非 API 路径与 OPTIONS 探测直通
         if (!request.getRequestURI().startsWith("/api/")
                 || "OPTIONS".equalsIgnoreCase(request.getMethod())) {
             chain.doFilter(request, response);

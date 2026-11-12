@@ -1216,3 +1216,18 @@ html.theme-switching, html.theme-switching *, html.theme-switching *::before, ht
 .status-fill { display: block; }
 
 :root { --ease: cubic-bezier(.22,.61,.36,1); }
+
+/* 离线提示：后端不可达时展示，不渲染任何假数据 */
+.offline-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 13px;
+}

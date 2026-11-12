@@ -1,0 +1,61 @@
+name: Build images
+
+# 打 v* 标签（或手动触发）时构建两个镜像并推送 GHCR：
+# - ghcr.io/<repo>:latest   后端（Spring Boot）
+# - ghcr.io/<repo>:frontend 前端静态产物 + Caddy 运行时
+# 服务器只需 docker compose pull && docker compose up -d（2 核 2G 友好，无需本地编译）。
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.name }}:latest
+            ghcr.io/${{ steps.repo.outputs.name }}:${{ github.ref_name }}
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        id: repo
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ghcr.io/${{ steps.repo.outputs.name }}:frontend
