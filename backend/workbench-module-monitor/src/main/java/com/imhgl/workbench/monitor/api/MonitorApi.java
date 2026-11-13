@@ -6,8 +6,10 @@ import com.imhgl.workbench.infrastructure.metrics.RecentRecord;
 import com.imhgl.workbench.infrastructure.metrics.SeriesPoint;
 import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
+import com.imhgl.workbench.monitor.dto.ProbeTargetRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
+import com.imhgl.workbench.monitor.model.ProbeTargetView;
 import com.imhgl.workbench.monitor.model.SourceCollectResult;
 import com.imhgl.workbench.monitor.model.SourceConfigView;
 
@@ -68,4 +70,18 @@ public interface MonitorApi {
 
     /** 当前 token 可见的仓库列表（full_name，按最近推送排序、上限 100）；未配置 token 抛 PARAM_INVALID */
     List<String> githubRepos();
+
+    /* ---------------- 主动拨测目标（M15） ---------------- */
+
+    /** 拨测目标列表（按创建顺序；运行状态由 series / recent 派生，不在此回写） */
+    List<ProbeTargetView> probeTargets();
+
+    /** 新增拨测目标；重名 / 同 URL 抛 CONFLICT，非法输入抛 PARAM_INVALID */
+    String createProbeTarget(ProbeTargetRequest request);
+
+    /** 修改拨测目标；不存在抛 NOT_FOUND */
+    void updateProbeTarget(String id, ProbeTargetRequest request);
+
+    /** 删除拨测目标（停拨测，历史数据按保留策略自然过期）；不存在抛 NOT_FOUND */
+    void deleteProbeTarget(String id);
 }

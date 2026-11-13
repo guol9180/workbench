@@ -96,6 +96,9 @@ com.imhgl.workbench.<x>/
 | `workbench.sources.file` | `WORKBENCH_SOURCES_FILE` | `./data/sources.json` |
 | `workbench.sources.github-token` | `GITHUB_TOKEN` | 空 |
 | `workbench.sources.cron` | `SOURCES_CRON` | `0 5 8,20 * * *` |
+| `workbench.probe.enabled` | — | true |
+| `workbench.probe.interval-seconds` | — | 60 |
+| `workbench.probe.timeout-ms` | — | 5000 |
 | `springdoc.api-docs.enabled` | `SPRINGDOC_API_DOCS_ENABLED` | true |
 
 3. 同源单部署，不再提供 CORS 配置；禁止重新引入跨域部署形态。
@@ -149,6 +152,7 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 - **源配置**：`SourceConfigStore` 独占读写 JSON 配置（`workbench.sources.file`）；同 repo 重复接入 → `CONFLICT(40900)`；删除源只停采集，历史数据按保留策略自然过期。
 - **GitHub 采集**：cron 定时 + 手动触发，JDK `HttpClient` 只读调用，零新增依赖。映射：`source=github/{owner}/{repo}`、`endpoint=指标名`、`status=200`、`totalMs/maxMs=0`、`count=增量`（views/downloads 相对上次采集，重启重新起算）、`ts=数据所属日`（UTC 日零点对齐分钟）；快照类指标（M16）取日末值，不求和。
 - **token**：设置页可运行期设置（`PUT|DELETE /api/monitor/settings/github-token`），持久化于 sources.json，优先级页面 > `GITHUB_TOKEN`；任何接口不回显 token。
+- **主动拨测（M15）**：目标列表持久化于 sources.json 的 `probes` 区，目标名与 URL 均唯一；调度默认 60 秒、单目标超时 5 秒。结果以合成流量记录入库：`source = probe/{name}`、`endpoint = url`、`method = GET`、`status = HTTP 码（连接失败/超时记 0）`、`count = 1`、`totalMs/maxMs = 延迟`，延迟样本供 p95 使用。启用开关只影响调度，不删历史数据；改名等于换 source，历史留在旧 source、不迁移。
 
 ### 6.5 workbench-server
 
@@ -181,14 +185,19 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 | PUT / DELETE | `/api/monitor/source-configs/{id}` | 修改 / 停采集 |
 | POST | `/api/monitor/source-configs/{id}/collect` | 手动采集 |
 | GET | `/api/monitor/github/repos` | 当前 token 可见仓库（上限 100） |
+| GET | `/api/monitor/probe-targets` | 拨测目标列表 |
+| POST | `/api/monitor/probe-targets` | 新增拨测目标（name / url / enabled） |
+| PUT | `/api/monitor/probe-targets/{id}` | 修改拨测目标 |
+| DELETE | `/api/monitor/probe-targets/{id}` | 删除目标（停拨测，历史数据自然过期） |
 | POST | `/api/auth/login` | 密码换会话令牌 |
 | POST | `/api/auth/logout` | 失效当前会话 |
 
-新端点必须先登记本表再写代码；拨测（M15）与快照（M16）端点随实现同提交补充。
+新端点必须先登记本表再写代码；快照（M16）端点随实现同提交补充。
 
 ### 7.3 参数与错误
 
 - 源配置：`type=github`；`repo=owner/name`；`metrics ⊆ {pages, downloads}`；重复 → 400 + `40900`；不存在 → 400 + `40400`；校验失败 → 400 + `40000`。
+- 拨测目标：`name` 1..40 字符且不含 `/` 与控制字符；`url` 仅接受 http / https；重名或同 URL → 400 + `40900`；不存在 id → 400 + `40400`；校验失败 → 400 + `40000`。
 - 查询：`range` / `metric` / `step` / `by` 非法 → 400 + `40000`；`ts` 为分钟级 epoch 毫秒；错误判定 = status ≥ 400；`rps` = count / 区间秒数。
 - 映射：业务异常 → 400 + 语义码；未知路由 → 404；方法不支持 → 405 + `40500`；校验 / 缺参 → 400 + `40000`；未认证 → 401 + `40100`；未知异常 → 500 + `50000`，不泄漏堆栈与类名。
 

@@ -14,8 +14,10 @@ import com.imhgl.workbench.monitor.collector.GithubCollector;
 import com.imhgl.workbench.monitor.collector.GithubTokenProvider;
 import com.imhgl.workbench.monitor.collector.SourceConfigStore;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
+import com.imhgl.workbench.monitor.dto.ProbeTargetRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
+import com.imhgl.workbench.monitor.model.ProbeTargetView;
 import com.imhgl.workbench.monitor.model.SourceCollectResult;
 import com.imhgl.workbench.monitor.model.SourceConfigView;
 import com.imhgl.workbench.monitor.model.TimeRange;
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Set;
 import java.io.IOException;
+import java.net.URI;
 
 /**
  * MonitorApi 实现：字符串边界 → 值对象校验（TimeRange / step / by）→ 服务编排。
@@ -163,6 +166,58 @@ public class MonitorApiImpl implements MonitorApi {
             // 细节不对前端暴露（网络/权限语义复杂），统一给可操作的失败提示
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "拉取仓库列表失败——请检查令牌有效性后重试");
         }
+    }
+
+    /* ---------------- 主动拨测目标（M15） ---------------- */
+
+    @Override
+    public List<ProbeTargetView> probeTargets() {
+        return sourceConfigStore.probes().stream()
+                .map(target -> new ProbeTargetView(target.id(), target.name(), target.url(),
+                        target.enabled(), target.createdAt()))
+                .toList();
+    }
+
+    @Override
+    public String createProbeTarget(ProbeTargetRequest request) {
+        ProbeTargetRequest normalized = normalizeProbe(request);
+        return sourceConfigStore.createProbe(normalized.name(), normalized.url(),
+                Boolean.TRUE.equals(normalized.enabled())).id();
+    }
+
+    @Override
+    public void updateProbeTarget(String id, ProbeTargetRequest request) {
+        ProbeTargetRequest normalized = normalizeProbe(request);
+        sourceConfigStore.updateProbe(id, normalized.name(), normalized.url(),
+                Boolean.TRUE.equals(normalized.enabled()));
+    }
+
+    @Override
+    public void deleteProbeTarget(String id) {
+        sourceConfigStore.deleteProbe(id);
+    }
+
+    /** 名称与 URL 的语义校验：形状（长度/非空）由 DTO 注解负责，这里拦协议与字符 */
+    private static ProbeTargetRequest normalizeProbe(ProbeTargetRequest request) {
+        String name = request.name() == null ? "" : request.name().trim();
+        if (name.isEmpty() || name.length() > 40 || name.contains("/")
+                || name.chars().anyMatch(Character::isISOControl)) {
+            throw new BusinessException(ErrorCode.PARAM_INVALID,
+                    "拨测目标名称需为 1..40 字符且不含 / 与控制字符");
+        }
+        String url = request.url() == null ? "" : request.url().trim();
+        URI uri;
+        try {
+            uri = URI.create(url);
+        } catch (IllegalArgumentException e) {
+            throw new BusinessException(ErrorCode.PARAM_INVALID, "拨测 URL 格式不正确");
+        }
+        String scheme = uri.getScheme();
+        if (scheme == null || !(scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https"))
+                || uri.getHost() == null) {
+            throw new BusinessException(ErrorCode.PARAM_INVALID, "拨测 URL 仅支持 http / https");
+        }
+        return new ProbeTargetRequest(name, url, Boolean.TRUE.equals(request.enabled()));
     }
 
     private static void validate(SourceConfigRequest request) {

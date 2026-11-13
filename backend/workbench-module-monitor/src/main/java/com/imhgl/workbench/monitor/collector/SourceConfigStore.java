@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * 源配置的 JSON 文件存储（data/sources.json）：进程内独占读写，外部没人改。
@@ -28,7 +29,19 @@ import java.util.Optional;
 @Component
 public class SourceConfigStore {
 
-    private record StoreDoc(String githubToken, List<SourceConfig> sources) {
+    private record StoreDoc(String githubToken, List<SourceConfig> sources, List<ProbeTarget> probes) {
+
+        StoreDoc withGithubToken(String token) {
+            return new StoreDoc(token, sources, probes);
+        }
+
+        StoreDoc withSources(List<SourceConfig> next) {
+            return new StoreDoc(githubToken, next, probes);
+        }
+
+        StoreDoc withProbes(List<ProbeTarget> next) {
+            return new StoreDoc(githubToken, sources, next);
+        }
     }
 
     private final Path file;
@@ -56,8 +69,7 @@ public class SourceConfigStore {
     /** 保存/清除页面级 token：null 即清除。立即持久化，采集器下次取值即生效 */
     public void setGithubToken(String token) {
         synchronized (lock) {
-            StoreDoc doc = readDoc();
-            writeDoc(new StoreDoc(token, doc.sources()));
+            writeDoc(readDoc().withGithubToken(token));
         }
     }
 
@@ -69,7 +81,7 @@ public class SourceConfigStore {
             ensureRepoFree(all, id);
             SourceConfig config = new SourceConfig(id, type, repo, enabled, metrics, System.currentTimeMillis(), null, null, null);
             all.add(config);
-            writeDoc(new StoreDoc(readDoc().githubToken(), all));
+            writeDoc(readDoc().withSources(all));
             return config;
         }
     }
@@ -89,7 +101,7 @@ public class SourceConfigStore {
                                 c.lastOkAt(), c.lastError(), sameRepo ? c.lastDay() : null)
                         : c);
             }
-            writeDoc(new StoreDoc(doc.githubToken(), next));
+            writeDoc(doc.withSources(next));
             return findIn(next, id).orElseThrow();
         }
     }
@@ -99,7 +111,7 @@ public class SourceConfigStore {
         synchronized (lock) {
             StoreDoc doc = readDoc();
             ensureExists(doc.sources(), id);
-            writeDoc(new StoreDoc(doc.githubToken(), doc.sources().stream().filter(c -> !c.id().equals(id)).toList()));
+            writeDoc(doc.withSources(doc.sources().stream().filter(c -> !c.id().equals(id)).toList()));
         }
     }
 
@@ -124,13 +136,65 @@ public class SourceConfigStore {
                                 ok ? null : error, lastDay)
                         : c);
             }
-            writeDoc(new StoreDoc(doc.githubToken(), next));
+            writeDoc(doc.withSources(next));
+        }
+    }
+
+    /* ---------------- 拨测目标（M15） ---------------- */
+
+    /** 全部拨测目标（按创建顺序）；文件不存在视为空列表 */
+    public List<ProbeTarget> probes() {
+        synchronized (lock) {
+            return List.copyOf(readDoc().probes());
+        }
+    }
+
+    /** 新增拨测目标：名称与 URL 均唯一（忽略大小写）；id 随机生成，与名称解耦 */
+    public ProbeTarget createProbe(String name, String url, boolean enabled) {
+        synchronized (lock) {
+            StoreDoc doc = readDoc();
+            ensureProbeFree(doc.probes(), name, url, null);
+            List<ProbeTarget> next = new ArrayList<>(doc.probes());
+            ProbeTarget target = new ProbeTarget(nextProbeId(next), name, url, enabled, System.currentTimeMillis());
+            next.add(target);
+            writeDoc(doc.withProbes(next));
+            return target;
+        }
+    }
+
+    /** 修改拨测目标：不存在抛 NOT_FOUND；重名 / 同 URL（排除自身）抛 CONFLICT */
+    public ProbeTarget updateProbe(String id, String name, String url, boolean enabled) {
+        synchronized (lock) {
+            StoreDoc doc = readDoc();
+            requireProbe(doc.probes(), id);
+            ensureProbeFree(doc.probes(), name, url, id);
+            List<ProbeTarget> next = new ArrayList<>();
+            ProbeTarget updated = null;
+            for (ProbeTarget target : doc.probes()) {
+                if (target.id().equals(id)) {
+                    updated = new ProbeTarget(target.id(), name, url, enabled, target.createdAt());
+                    next.add(updated);
+                } else {
+                    next.add(target);
+                }
+            }
+            writeDoc(doc.withProbes(next));
+            return updated;
+        }
+    }
+
+    /** 删除拨测目标（停拨测；历史数据按保留策略自然过期）；不存在抛 NOT_FOUND */
+    public void deleteProbe(String id) {
+        synchronized (lock) {
+            StoreDoc doc = readDoc();
+            requireProbe(doc.probes(), id);
+            writeDoc(doc.withProbes(doc.probes().stream().filter(target -> !target.id().equals(id)).toList()));
         }
     }
 
     private StoreDoc readDoc() {
         if (!Files.exists(file)) {
-            return new StoreDoc(null, new ArrayList<>());
+            return new StoreDoc(null, new ArrayList<>(), new ArrayList<>());
         }
         try {
             ObjectNode root = (ObjectNode) mapper.readTree(file.toFile());
@@ -153,7 +217,18 @@ public class SourceConfigStore {
             }
             // 注意：path() 是属性名查找（非指针），settings 是 withObject 指针写入的嵌套对象
             String token = root.path("settings").path("githubToken").asText(null);
-            return new StoreDoc(token, all);
+            ArrayNode probes = root.withArray("/probes");
+            List<ProbeTarget> probeTargets = new ArrayList<>();
+            for (int i = 0; i < probes.size(); i++) {
+                ObjectNode n = (ObjectNode) probes.get(i);
+                probeTargets.add(new ProbeTarget(
+                        n.path("id").asText(),
+                        n.path("name").asText(),
+                        n.path("url").asText(),
+                        n.path("enabled").asBoolean(true),
+                        n.path("createdAt").asLong(0)));
+            }
+            return new StoreDoc(token, all, probeTargets);
         } catch (IOException e) {
             throw new UncheckedIOException("源配置文件读取失败：" + file, e);
         }
@@ -161,7 +236,7 @@ public class SourceConfigStore {
 
     private void writeDoc(StoreDoc doc) {
         ObjectNode root = mapper.createObjectNode();
-        root.put("version", 1);
+        root.put("version", 2);
         if (doc.githubToken() != null) {
             root.withObject("/settings").put("githubToken", doc.githubToken());
         }
@@ -178,6 +253,15 @@ public class SourceConfigStore {
             if (c.lastOkAt() != null) n.put("lastOkAt", c.lastOkAt());
             if (c.lastError() != null) n.put("lastError", c.lastError());
             if (c.lastDay() != null) n.put("lastDay", c.lastDay());
+        }
+        ArrayNode probes = root.withArray("/probes");
+        for (ProbeTarget t : doc.probes()) {
+            ObjectNode n = probes.addObject();
+            n.put("id", t.id());
+            n.put("name", t.name());
+            n.put("url", t.url());
+            n.put("enabled", t.enabled());
+            n.put("createdAt", t.createdAt());
         }
         try {
             Files.createDirectories(file.getParent());
@@ -198,6 +282,38 @@ public class SourceConfigStore {
         for (SourceConfig c : all) {
             if (c.id().equals(candidateId)) {
                 throw new BusinessException(ErrorCode.CONFLICT, "仓库已接入（id：" + candidateId + "）");
+            }
+        }
+    }
+
+    private static ProbeTarget requireProbe(List<ProbeTarget> all, String id) {
+        return all.stream()
+                .filter(target -> target.id().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "拨测目标不存在：" + id));
+    }
+
+    /** 名称与 URL 唯一（忽略大小写）；excludeId 用于更新时不与自身冲突 */
+    private static void ensureProbeFree(List<ProbeTarget> all, String name, String url, String excludeId) {
+        for (ProbeTarget target : all) {
+            if (target.id().equals(excludeId)) {
+                continue;
+            }
+            if (target.name().equalsIgnoreCase(name)) {
+                throw new BusinessException(ErrorCode.CONFLICT, "拨测目标名称已存在：" + name);
+            }
+            if (target.url().equalsIgnoreCase(url)) {
+                throw new BusinessException(ErrorCode.CONFLICT, "拨测 URL 已存在：" + url);
+            }
+        }
+    }
+
+    /** 随机短 id：与名称解耦，改名不影响历史数据归属 */
+    private static String nextProbeId(List<ProbeTarget> all) {
+        while (true) {
+            String candidate = "probe-" + UUID.randomUUID().toString().substring(0, 8);
+            if (all.stream().noneMatch(target -> target.id().equals(candidate))) {
+                return candidate;
             }
         }
     }

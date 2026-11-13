@@ -5,8 +5,10 @@ import com.imhgl.workbench.common.exception.ErrorCode;
 import com.imhgl.workbench.framework.handler.GlobalExceptionHandler;
 import com.imhgl.workbench.monitor.api.MonitorApi;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
+import com.imhgl.workbench.monitor.dto.ProbeTargetRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
+import com.imhgl.workbench.monitor.model.ProbeTargetView;
 import com.imhgl.workbench.monitor.model.SourceCollectResult;
 import com.imhgl.workbench.monitor.model.SourceConfigView;
 import org.junit.jupiter.api.BeforeEach;
@@ -174,6 +176,24 @@ class MonitorSourceConfigApiTest {
 
         @Override
         public void clearGithubToken() {
+        }
+
+        @Override
+        public List<ProbeTargetView> probeTargets() {
+            return List.of(new ProbeTargetView("probe-1", "self", "https://example.com", true, 1L));
+        }
+
+        @Override
+        public String createProbeTarget(ProbeTargetRequest request) {
+            return "probe-1";
+        }
+
+        @Override
+        public void updateProbeTarget(String id, ProbeTargetRequest request) {
+        }
+
+        @Override
+        public void deleteProbeTarget(String id) {
         }
     }
 }

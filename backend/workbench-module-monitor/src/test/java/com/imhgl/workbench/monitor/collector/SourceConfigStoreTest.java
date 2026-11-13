@@ -10,8 +10,10 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** 源配置存储：JSON 往返、id 归一、重复 repo 冲突、状态回写持久化（重启可见） */
 class SourceConfigStoreTest {
@@ -90,5 +92,39 @@ class SourceConfigStoreTest {
         store.setGithubToken(null);
         assertNull(newStore().githubToken());
         assertEquals(1, newStore().list().size());
+    }
+
+    @Test
+    @DisplayName("拨测目标：创建/跨实例读取、名称与 URL 冲突、更新、删除")
+    void probeTargetsRoundTripAndConflicts() {
+        SourceConfigStore store = newStore();
+        ProbeTarget created = store.createProbe("主站", "https://example.com", true);
+        assertTrue(created.id().startsWith("probe-"));
+
+        List<ProbeTarget> persisted = newStore().probes();
+        assertEquals(1, persisted.size());
+        assertEquals("主站", persisted.get(0).name());
+        assertEquals("https://example.com", persisted.get(0).url());
+        assertTrue(persisted.get(0).enabled());
+
+        BusinessException duplicateName = assertThrows(BusinessException.class,
+                () -> store.createProbe("主站", "https://other.example", true));
+        assertEquals(ErrorCode.CONFLICT, duplicateName.getErrorCode());
+
+        BusinessException duplicateUrl = assertThrows(BusinessException.class,
+                () -> store.createProbe("备用", "https://EXAMPLE.com", false));
+        assertEquals(ErrorCode.CONFLICT, duplicateUrl.getErrorCode());
+
+        store.updateProbe(created.id(), "主站-新", "https://example.org", false);
+        ProbeTarget updated = newStore().probes().get(0);
+        assertEquals("主站-新", updated.name());
+        assertEquals("https://example.org", updated.url());
+        assertFalse(updated.enabled());
+
+        store.deleteProbe(created.id());
+        assertEquals(0, newStore().probes().size());
+        BusinessException missing = assertThrows(BusinessException.class,
+                () -> store.deleteProbe(created.id()));
+        assertEquals(ErrorCode.NOT_FOUND, missing.getErrorCode());
     }
 }

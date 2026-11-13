@@ -1,5 +1,6 @@
 package com.imhgl.workbench;
 
+import com.imhgl.workbench.monitor.probe.ProbeService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -38,11 +40,18 @@ class MonitorIntegrationTest {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) throws IOException {
         metricsDir = Files.createTempDirectory("workbench-metrics-test");
+        Path sourcesFile = Files.createTempDirectory("workbench-sources-test").resolve("sources.json");
         registry.add("workbench.metrics.data-dir", () -> metricsDir.toString());
+        registry.add("workbench.sources.file", sourcesFile::toString);
+        // 拨测调度在集成测试中关闭：目标由用例显式创建并手动触发，避免时序竞争
+        registry.add("workbench.probe.enabled", () -> "false");
     }
 
     @LocalServerPort
     int port;
+
+    @Autowired
+    ProbeService probeService;
 
     HttpClient client;
 
@@ -132,5 +141,54 @@ class MonitorIntegrationTest {
         assertTrue(body.contains("\"authEnabled\":false"), body);
         assertTrue(body.contains("\"memoryBuckets\":"), body);
         assertTrue(body.contains("\"droppedEvents\":0"), body);
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("拨测目标 CRUD + 手动探测：结果可按 probe/{name} 查询")
+    void probeTargetCrudAndExecution() throws Exception {
+        String probeUrl = "http://localhost:" + port + "/api/monitor/status";
+        String payload = "{\"name\":\"self\",\"url\":\"" + probeUrl + "\",\"enabled\":true}";
+
+        HttpResponse<String> created = send("POST", "/api/monitor/probe-targets", payload);
+        assertEquals(200, created.statusCode(), created.body());
+        String targetId = extractId(created.body());
+        assertTrue(get("/api/monitor/probe-targets").body().contains("\"name\":\"self\""));
+
+        // 非法协议 → 400；重名 → 40900
+        HttpResponse<String> badScheme = send("POST", "/api/monitor/probe-targets",
+                "{\"name\":\"bad\",\"url\":\"ftp://example.com\",\"enabled\":true}");
+        assertEquals(400, badScheme.statusCode());
+        HttpResponse<String> duplicate = send("POST", "/api/monitor/probe-targets", payload);
+        assertEquals(400, duplicate.statusCode());
+        assertTrue(duplicate.body().contains("\"code\":40900"), duplicate.body());
+
+        assertEquals(1, probeService.probeAll());
+        int count = -1;
+        long deadline = System.currentTimeMillis() + 5_000;
+        while (System.currentTimeMillis() < deadline) {
+            count = extractCount(get("/api/monitor/overview?source=probe/self&range=5m").body());
+            if (count >= 1) {
+                break;
+            }
+            Thread.sleep(50);
+        }
+        assertTrue(count >= 1, "拨测结果应进入时序存储，count=" + count);
+        assertTrue(get("/api/monitor/recent?source=probe/self&limit=10").body().contains(probeUrl),
+                "recent 应显示拨测端点");
+
+        assertEquals(200, send("PUT", "/api/monitor/probe-targets/" + targetId,
+                "{\"name\":\"self\",\"url\":\"" + probeUrl + "\",\"enabled\":false}").statusCode());
+        assertEquals(200, send("DELETE", "/api/monitor/probe-targets/" + targetId, null).statusCode());
+        assertTrue(get("/api/monitor/probe-targets").body().contains("\"data\":[]"));
+    }
+
+    /** 从 {"data":{"id":"..."}} 里抠 id（集成断言够用） */
+    private static String extractId(String body) {
+        java.util.regex.Matcher matcher = java.util.regex.Pattern.compile("\"id\":\"([^\"]+)\"").matcher(body);
+        if (!matcher.find()) {
+            throw new IllegalStateException("响应中没有 id：" + body);
+        }
+        return matcher.group(1);
     }
 }

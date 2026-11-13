@@ -242,5 +242,26 @@ class MonitorControllerTest {
         @Override
         public void clearGithubToken() {
         }
+
+        /* ---------------- 主动拨测目标（M15） ---------------- */
+
+        @Override
+        public List<com.imhgl.workbench.monitor.model.ProbeTargetView> probeTargets() {
+            return List.of(new com.imhgl.workbench.monitor.model.ProbeTargetView(
+                    "probe-1", "self", "https://example.com", true, 1L));
+        }
+
+        @Override
+        public String createProbeTarget(com.imhgl.workbench.monitor.dto.ProbeTargetRequest request) {
+            return "probe-1";
+        }
+
+        @Override
+        public void updateProbeTarget(String id, com.imhgl.workbench.monitor.dto.ProbeTargetRequest request) {
+        }
+
+        @Override
+        public void deleteProbeTarget(String id) {
+        }
     }
 }

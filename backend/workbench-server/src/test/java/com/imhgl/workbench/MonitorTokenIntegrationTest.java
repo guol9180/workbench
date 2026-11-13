@@ -34,8 +34,11 @@ class MonitorTokenIntegrationTest {
     @DynamicPropertySource
     static void props(DynamicPropertyRegistry registry) throws IOException {
         Path metricsDir = Files.createTempDirectory("workbench-metrics-t");
+        Path sourcesFile = Files.createTempDirectory("workbench-sources-t").resolve("sources.json");
         registry.add("workbench.auth.machine-token", () -> TOKEN);
         registry.add("workbench.metrics.data-dir", () -> metricsDir.toString());
+        registry.add("workbench.sources.file", sourcesFile::toString);
+        registry.add("workbench.probe.enabled", () -> "false");
     }
 
     @LocalServerPort

@@ -9,8 +9,10 @@ import com.imhgl.workbench.infrastructure.metrics.SourceStat;
 import com.imhgl.workbench.monitor.api.MonitorApi;
 import com.imhgl.workbench.monitor.dto.GithubTokenRequest;
 import com.imhgl.workbench.monitor.dto.IngestRequest;
+import com.imhgl.workbench.monitor.dto.ProbeTargetRequest;
 import com.imhgl.workbench.monitor.dto.SourceConfigRequest;
 import com.imhgl.workbench.monitor.model.MonitorStatus;
+import com.imhgl.workbench.monitor.model.ProbeTargetView;
 import com.imhgl.workbench.monitor.model.SourceCollectResult;
 import com.imhgl.workbench.monitor.model.SourceConfigView;
 import jakarta.validation.Valid;
@@ -150,5 +152,34 @@ public class MonitorController {
     @GetMapping("/github/repos")
     public ApiResult<List<String>> githubRepos() {
         return ApiResult.ok(monitorApi.githubRepos());
+    }
+
+    /* ---------------- 主动拨测目标（M15） ---------------- */
+
+    /** 拨测目标列表（运行状态由 series / recent 按 source=probe/{name} 派生） */
+    @GetMapping("/probe-targets")
+    public ApiResult<List<ProbeTargetView>> probeTargets() {
+        return ApiResult.ok(monitorApi.probeTargets());
+    }
+
+    /** 新增拨测目标，返回生成的 id */
+    @PostMapping("/probe-targets")
+    public ApiResult<Map<String, String>> createProbeTarget(@Valid @RequestBody ProbeTargetRequest request) {
+        return ApiResult.ok(Map.of("id", monitorApi.createProbeTarget(request)));
+    }
+
+    /** 修改拨测目标（名称 / URL / 启停） */
+    @PutMapping("/probe-targets/{id}")
+    public ApiResult<Void> updateProbeTarget(@PathVariable String id,
+                                             @Valid @RequestBody ProbeTargetRequest request) {
+        monitorApi.updateProbeTarget(id, request);
+        return ApiResult.ok();
+    }
+
+    /** 删除拨测目标（停拨测，历史数据按保留策略自然过期） */
+    @DeleteMapping("/probe-targets/{id}")
+    public ApiResult<Void> deleteProbeTarget(@PathVariable String id) {
+        monitorApi.deleteProbeTarget(id);
+        return ApiResult.ok();
     }
 }

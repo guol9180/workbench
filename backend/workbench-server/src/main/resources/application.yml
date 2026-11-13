@@ -33,6 +33,12 @@ workbench:
     file: ${WORKBENCH_SOURCES_FILE:./data/sources.json}
     github-token: ${GITHUB_TOKEN:}
     cron: ${SOURCES_CRON:0 5 8,20 * * *}
+  probe:
+    # 主动拨测调度：false 时关闭定时探测（测试 / 排障用）
+    enabled: true
+    # 调度间隔与单目标超时（毫秒）
+    interval-seconds: 60
+    timeout-ms: 5000
 
 logging:
   level:
