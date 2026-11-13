@@ -149,6 +149,17 @@ class JsonlTimeSeriesStoreTest {
     }
 
     @Test
+    @DisplayName("status=0（连接失败）计入 errCount")
+    void zeroStatusCountsAsError(@TempDir Path dir) {
+        try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {
+            store.append(rec(M0, "probe/site", "https://example.com", "GET", 0, 1, 80, 80, null));
+            Overview overview = store.overview("probe/site", M0, M0);
+            assertEquals(1, overview.count());
+            assertEquals(1, overview.errCount());
+        }
+    }
+
+    @Test
     @DisplayName("topEndpoints：按 count / err / avgMs 排序并受 limit 约束")
     void topEndpointsRanking(@TempDir Path dir) {
         try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {

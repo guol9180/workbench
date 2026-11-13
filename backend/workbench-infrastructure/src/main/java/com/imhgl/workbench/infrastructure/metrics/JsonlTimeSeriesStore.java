@@ -81,7 +81,8 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
 
         void merge(TrafficRecord r) {
             count += r.count();
-            if (r.status() >= 400) {
+            // status=0 表示连接失败/超时（拨测），同样计入错误；1xx 也视为非成功
+            if (r.status() < 200 || r.status() >= 400) {
                 errCount += r.count();
             }
             totalMs += r.totalMs();
@@ -99,7 +100,7 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
         /** 覆盖语义：绝对值快照不累计，同日重复采集以最后一次为准 */
         void replaceWith(TrafficRecord r) {
             count = r.count();
-            errCount = r.status() >= 400 ? r.count() : 0;
+            errCount = (r.status() < 200 || r.status() >= 400) ? r.count() : 0;
             totalMs = r.totalMs();
             maxMs = r.maxMs();
             samplesSeen = r.latencySamples().size();

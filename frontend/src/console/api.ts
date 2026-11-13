@@ -79,6 +79,44 @@ export interface MonitorStatus {
   githubTokenSource: string | null
 }
 
+export interface SourceConfigView {
+  id: string
+  type: string
+  repo: string
+  enabled: boolean
+  metrics: string[]
+  createdAt: number
+  lastOkAt: number | null
+  lastError: string | null
+  lastDay: string | null
+}
+
+export interface SourceConfigRequest {
+  type: 'github'
+  repo: string
+  enabled: boolean
+  metrics: string[]
+}
+
+export interface ProbeTargetView {
+  id: string
+  name: string
+  url: string
+  enabled: boolean
+  createdAt: number
+}
+
+export interface ProbeTargetRequest {
+  name: string
+  url: string
+  enabled: boolean
+}
+
+export interface CollectResult {
+  ok: boolean
+  error: string | null
+}
+
 // ---------------- 会话令牌：只存内存，刷新即重登（AGENTS §8.6） ----------------
 
 let sessionToken = ''
@@ -169,10 +207,68 @@ export function fetchOverview(source: string, range: string): Promise<Overview> 
   return request(`/api/monitor/overview${queryString({ source, range })}`)
 }
 
-export function fetchSeries(source: string, metric: 'count' | 'avgMs' | 'errCount' | 'last', range: string, step: 'm' | 'h' = 'h'): Promise<SeriesPoint[]> {
-  return request(`/api/monitor/series${queryString({ source, metric, range, step })}`)
+export function fetchSeries(
+  source: string,
+  metric: 'count' | 'avgMs' | 'errCount' | 'last',
+  range: string,
+  step: 'm' | 'h' = 'h',
+  endpoint?: string,
+): Promise<SeriesPoint[]> {
+  return request(`/api/monitor/series${queryString({ source, metric, range, step, endpoint })}`)
 }
 
 export function fetchRecent(source?: string, limit = 100): Promise<RecentRecord[]> {
   return request(`/api/monitor/recent${queryString({ source, limit })}`)
+}
+
+// ---------------- 数据源配置（GitHub） ----------------
+
+export function fetchSourceConfigs(): Promise<SourceConfigView[]> {
+  return request('/api/monitor/source-configs')
+}
+
+export function createSourceConfig(body: SourceConfigRequest): Promise<{ id: string }> {
+  return request('/api/monitor/source-configs', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function updateSourceConfig(id: string, body: SourceConfigRequest): Promise<void> {
+  return request(`/api/monitor/source-configs/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) })
+}
+
+export function deleteSourceConfig(id: string): Promise<void> {
+  return request(`/api/monitor/source-configs/${encodeURIComponent(id)}`, { method: 'DELETE' })
+}
+
+export function collectSourceConfig(id: string): Promise<CollectResult> {
+  return request(`/api/monitor/source-configs/${encodeURIComponent(id)}/collect`, { method: 'POST' })
+}
+
+export function fetchGithubRepos(): Promise<string[]> {
+  return request('/api/monitor/github/repos')
+}
+
+export function setGithubToken(token: string): Promise<void> {
+  return request('/api/monitor/settings/github-token', { method: 'PUT', body: JSON.stringify({ token }) })
+}
+
+export function clearGithubToken(): Promise<void> {
+  return request('/api/monitor/settings/github-token', { method: 'DELETE' })
+}
+
+// ---------------- 拨测目标 ----------------
+
+export function fetchProbeTargets(): Promise<ProbeTargetView[]> {
+  return request('/api/monitor/probe-targets')
+}
+
+export function createProbeTarget(body: ProbeTargetRequest): Promise<{ id: string }> {
+  return request('/api/monitor/probe-targets', { method: 'POST', body: JSON.stringify(body) })
+}
+
+export function updateProbeTarget(id: string, body: ProbeTargetRequest): Promise<void> {
+  return request(`/api/monitor/probe-targets/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(body) })
+}
+
+export function deleteProbeTarget(id: string): Promise<void> {
+  return request(`/api/monitor/probe-targets/${encodeURIComponent(id)}`, { method: 'DELETE' })
 }
