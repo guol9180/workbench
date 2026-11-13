@@ -17,8 +17,8 @@ const LOCKED_KEY = 'devconsole.locked.v1'
 
 const ROUTE_META: Record<RouteKey, { title: string; sub: string; accent: string; icon: ConsoleIconName }> = {
   overview: { title: '总览', sub: '服务、站点与开源项目的健康快照', accent: '', icon: 'dashboard' },
-  services: { title: '服务与站点', sub: '拨测状态与自部署服务流量', accent: 'monitor', icon: 'projects' },
-  projects: { title: '开源项目', sub: 'GitHub 流量与互动快照', accent: 'docs', icon: 'tool' },
+  services: { title: '服务与站点', sub: '拨测状态与自部署服务流量', accent: '', icon: 'projects' },
+  projects: { title: '开源项目', sub: 'GitHub 流量与互动快照', accent: '', icon: 'tool' },
   settings: { title: '设置', sub: '凭据、系统状态与外观', accent: '', icon: 'settings' },
 }
 
@@ -200,7 +200,7 @@ export default function ConsoleApp() {
               <strong className="top-title">{routeMeta.title}</strong>
               <span className="top-sub">{routeMeta.sub}</span>
             </div>
-            <button className="icon-btn" type="button" aria-label="切换明暗主题" aria-pressed={theme === 'dark'} onClick={toggleTheme}>
+            <button className="icon-btn theme-toggle" type="button" aria-label="切换明暗主题" aria-pressed={theme === 'dark'} onClick={toggleTheme}>
               <Icon name={theme === 'dark' ? 'sun' : 'moon'} />
             </button>
           </header>

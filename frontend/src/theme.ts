@@ -1,6 +1,6 @@
 /**
  * 主题状态：明暗双主题，默认跟随系统（无系统偏好表达时取暗色），手动切换后记忆。
- * 只负责 data-theme；域主题（data-domain）由 AppShell 按路由挂载，两者正交。
+ * 只负责 data-theme，同时写入 html 与 body（滚动条与表单控件跟随系统色）。
  */
 export type Theme = 'light' | 'dark'
 
@@ -19,7 +19,7 @@ function apply(theme: Theme): void {
   document.documentElement.dataset.theme = theme
   // 新版控制台 CSS 的变量挂在 body 上；两处同步，旧主题揭示与参考稿共用一套令牌
   document.body.dataset.theme = theme
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0e1a1c' : '#f3f7f7')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0c0f10' : '#eef1f0')
 }
 
 /** 应用启动时调用一次：把记忆/系统偏好落到 <html data-theme>（不做过渡，避免首屏闪一下） */
@@ -47,10 +47,11 @@ export function setTheme(theme: Theme, origin?: ThemeOrigin): void {
       const viewportHeight = window.innerHeight
       const originX = origin?.x ?? viewportWidth / 2
       const originY = origin?.y ?? viewportHeight / 2
+      // 留 48px 余量：圆与视口角相切时，抗锯齿可能留下一条旧主题边缘
       const revealRadius = Math.hypot(
         Math.max(originX, viewportWidth - originX),
         Math.max(originY, viewportHeight - originY),
-      )
+      ) + 48
       root.style.setProperty('--theme-origin-x', `${originX}px`)
       root.style.setProperty('--theme-origin-y', `${originY}px`)
       root.style.setProperty('--theme-reveal-radius', `${revealRadius}px`)

@@ -201,7 +201,7 @@ export default function ServicesPage({ notify }: { notify: (message: string) => 
                     <span>审计：{latest ? `错误 ${latest.errCount} / 请求 ${latest.count}` : '暂无记录'}</span>
                     <span className="project-actions">
                       <button className="btn-text" type="button" onClick={() => void toggleProbe(target)}>{target.enabled ? '停用' : '启用'}</button>
-                      <button className="btn-text" type="button" onClick={() => void removeProbe(target)}>删除</button>
+                      <button className="btn-text is-danger" type="button" onClick={() => void removeProbe(target)}>删除</button>
                     </span>
                   </div>
                 </article>

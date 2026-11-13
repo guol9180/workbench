@@ -140,7 +140,7 @@ function RepoCard({
           <span>Downloads</span>
           <b>{loading ? '…' : fmtWan(downloadsTotal)}</b>
         </div>
-        <Sparkline values={downloads.map((point) => point.value)} color="#b4632e" ariaLabel={`${config.repo} 下载量走势`} />
+        <Sparkline values={downloads.map((point) => point.value)} color="var(--chart-secondary)" ariaLabel={`${config.repo} 下载量走势`} />
       </div>
 
       {config.lastError && <p className="field-error">{config.lastError}</p>}
@@ -151,7 +151,7 @@ function RepoCard({
           <button className="btn-text" type="button" onClick={() => void collect()} disabled={collecting}>
             {collecting ? '采集中…' : '立即采集'}
           </button>
-          <button className="btn-text" type="button" onClick={() => void remove()}>删除</button>
+          <button className="btn-text is-danger" type="button" onClick={() => void remove()}>删除</button>
         </span>
       </div>
     </article>
