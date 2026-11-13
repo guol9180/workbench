@@ -54,6 +54,15 @@ public class MonitorService {
         }
     }
 
+    /**
+     * 快照写入（绝对值指标）：覆盖同键桶而非累加——同一天重复采集以最后一次为准。
+     * GitHub stars 这类值没有「增量」语义，走 ingest 会叠加虚高。
+     */
+    public void snapshot(String source, String endpoint, long value, long tsMs) {
+        store.replace(new TrafficRecord(tsMs / 60_000L, source, endpoint, "GET", 200,
+                (int) Math.min(value, Integer.MAX_VALUE), 0, 0, null));
+    }
+
     public long currentMinute() {
         return System.currentTimeMillis() / 60_000L;
     }

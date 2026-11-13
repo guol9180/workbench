@@ -13,6 +13,13 @@ public interface TimeSeriesStore extends AutoCloseable {
     /** 追加一条聚合增量；线程安全，永不阻塞调用方 */
     void append(TrafficRecord record);
 
+    /**
+     * 覆盖写入同键桶（快照类指标用）：count / errCount / totalMs / maxMs / 样本全部替换，不累加。
+     * <p>为什么需要：GitHub stars 这类值是「当前绝对值」，同一天重复采集若走 append 会叠加虚高；
+     * 覆盖写让「日桶 = 当天最后一次快照」，重启重放后语义不变。
+     */
+    void replace(TrafficRecord record);
+
     /** 已知来源列表（含最近活跃分钟） */
     List<SourceStat> sources();
 
@@ -22,7 +29,8 @@ public interface TimeSeriesStore extends AutoCloseable {
     /**
      * 时间序列：按分钟或整小时步长聚合。
      *
-     * @param metric count | avgMs | errCount 之一，非法值抛 IllegalArgumentException
+     * @param metric count | avgMs | errCount | last 之一，非法值抛 IllegalArgumentException；
+     *               last = 每个桶取最后一条写入的值（快照类指标，不求和）
      * @param endpointFilter 端点过滤（中性维度；null/空白 = 不过滤）——同一来源不同端点的
      *                       序列需要分开看时使用（如拉取采集的 views 与 downloads）
      * @param hourly true = 小时步长（bucketEpoch 为整小时对齐的分钟值）

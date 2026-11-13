@@ -169,7 +169,7 @@ export function fetchOverview(source: string, range: string): Promise<Overview> 
   return request(`/api/monitor/overview${queryString({ source, range })}`)
 }
 
-export function fetchSeries(source: string, metric: 'count' | 'avgMs' | 'errCount', range: string, step: 'm' | 'h' = 'h'): Promise<SeriesPoint[]> {
+export function fetchSeries(source: string, metric: 'count' | 'avgMs' | 'errCount' | 'last', range: string, step: 'm' | 'h' = 'h'): Promise<SeriesPoint[]> {
   return request(`/api/monitor/series${queryString({ source, metric, range, step })}`)
 }
 

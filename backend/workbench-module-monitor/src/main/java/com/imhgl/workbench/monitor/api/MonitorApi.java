@@ -33,7 +33,7 @@ public interface MonitorApi {
     /** 区间总览；range = 5m|1h|6h|24h|7d */
     Overview overview(String source, String range);
 
-    /** 时间序列；metric = count|avgMs|errCount，step = m|h；endpointFilter 可空 = 不过滤（GitHub 源按 views/downloads 拆曲线用） */
+    /** 时间序列；metric = count|avgMs|errCount|last（快照取桶内最后值），step = m|h；endpointFilter 可空 = 不过滤 */
     List<SeriesPoint> series(String source, String metric, String range, String step, String endpointFilter);
 
     /** 端点排行；by = count|err|avgMs */

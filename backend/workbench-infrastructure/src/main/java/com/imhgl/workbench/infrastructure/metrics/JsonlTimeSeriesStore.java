@@ -95,6 +95,17 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
                 }
             }
         }
+
+        /** 覆盖语义：绝对值快照不累计，同日重复采集以最后一次为准 */
+        void replaceWith(TrafficRecord r) {
+            count = r.count();
+            errCount = r.status() >= 400 ? r.count() : 0;
+            totalMs = r.totalMs();
+            maxMs = r.maxMs();
+            samplesSeen = r.latencySamples().size();
+            samples.clear();
+            samples.addAll(r.latencySamples());
+        }
     }
 
     public JsonlTimeSeriesStore(MetricsProperties properties) {
@@ -123,6 +134,19 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
             MinuteBucket bucket = b == null ? new MinuteBucket() : b;
             synchronized (bucket) {
                 bucket.merge(record);
+            }
+            return bucket;
+        });
+        dirty.add(key);
+    }
+
+    @Override
+    public void replace(TrafficRecord record) {
+        BucketKey key = new BucketKey(record.minute(), record.source(), record.endpoint(), record.method());
+        buckets.compute(key, (k, b) -> {
+            MinuteBucket bucket = b == null ? new MinuteBucket() : b;
+            synchronized (bucket) {
+                bucket.replaceWith(record);
             }
             return bucket;
         });
@@ -168,14 +192,24 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
         requireMetric(metric);
         // TreeMap 保证序列按时间升序输出；值数组为 [count, errCount, totalMs]
         Map<Long, long[]> groups = new TreeMap<>();
+        // last 指标：每个时间桶记录「最后写入的分钟」，用于挑出桶内最新一条
+        Map<Long, Long> latestMinutes = metric.equals("last") ? new HashMap<>() : null;
         for (Map.Entry<BucketKey, MinuteBucket> e : inRange(source, fromMinute, toMinute, endpointFilter)) {
             long bucket = hourly ? e.getKey().minute() - e.getKey().minute() % 60 : e.getKey().minute();
-            long[] agg = groups.computeIfAbsent(bucket, k -> new long[3]);
             MinuteBucket b = e.getValue();
             synchronized (b) {
-                agg[0] += b.count;
-                agg[1] += b.errCount;
-                agg[2] += b.totalMs;
+                if (latestMinutes != null) {
+                    Long previousMinute = latestMinutes.get(bucket);
+                    if (previousMinute == null || e.getKey().minute() > previousMinute) {
+                        groups.computeIfAbsent(bucket, k -> new long[3])[0] = b.count;
+                        latestMinutes.put(bucket, e.getKey().minute());
+                    }
+                } else {
+                    long[] agg = groups.computeIfAbsent(bucket, k -> new long[3]);
+                    agg[0] += b.count;
+                    agg[1] += b.errCount;
+                    agg[2] += b.totalMs;
+                }
             }
         }
         List<SeriesPoint> points = new ArrayList<>(groups.size());
@@ -185,6 +219,7 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
                 case "count" -> agg[0];
                 case "errCount" -> agg[1];
                 case "avgMs" -> agg[0] == 0 ? 0 : agg[2] / agg[0];
+                case "last" -> agg[0];
                 default -> throw new IllegalArgumentException("非法指标：" + metric);
             };
             points.add(new SeriesPoint(e.getKey(), value));
@@ -325,7 +360,8 @@ public class JsonlTimeSeriesStore implements TimeSeriesStore {
     }
 
     private static void requireMetric(String metric) {
-        if (!metric.equals("count") && !metric.equals("errCount") && !metric.equals("avgMs")) {
+        if (!metric.equals("count") && !metric.equals("errCount") && !metric.equals("avgMs")
+                && !metric.equals("last")) {
             throw new IllegalArgumentException("非法指标：" + metric);
         }
     }

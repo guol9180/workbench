@@ -26,6 +26,13 @@ public class GithubClient {
     public record DailyCount(long ts, long count) {
     }
 
+    /**
+     * 仓库快照（绝对值，非增量）：stars / forks / watchers（订阅数）/ open issues。
+     * GitHub 的 open_issues_count 含 PR，这是上游口径，不在本地拆分。
+     */
+    public record RepoSnapshot(long stars, long forks, long watchers, long openIssues) {
+    }
+
     private final ObjectMapper mapper = new ObjectMapper();
     private final HttpClient http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
     private final GithubTokenProvider tokenProvider;
@@ -42,6 +49,11 @@ public class GithubClient {
     /** 全部 Release 资产下载次数的当前累计值（增量由采集器维护） */
     public long downloadsTotal(String repo) throws IOException, InterruptedException {
         return parseDownloadsTotal(get("/repos/" + repo + "/releases?per_page=100"));
+    }
+
+    /** 仓库互动快照（绝对值）：/repos/{owner}/{repo} 的四个计数字段 */
+    public RepoSnapshot repoSnapshot(String repo) throws IOException, InterruptedException {
+        return parseRepoSnapshot(get("/repos/" + repo));
     }
 
     /** 当前 token 可见的仓库列表（full_name，最近推送优先、上限 100）——「我的项目」页勾选式接入用 */
@@ -85,6 +97,15 @@ public class GithubClient {
             }
         }
         return total;
+    }
+
+    /** /repos/{owner}/{repo} → 快照（缺失字段按 0，保持可读） */
+    static RepoSnapshot parseRepoSnapshot(JsonNode root) {
+        return new RepoSnapshot(
+                root.path("stargazers_count").asLong(0),
+                root.path("forks_count").asLong(0),
+                root.path("subscribers_count").asLong(0),
+                root.path("open_issues_count").asLong(0));
     }
 
     /** /user/repos 响应 → full_name 列表（跳过异常条目，宁缺勿错） */

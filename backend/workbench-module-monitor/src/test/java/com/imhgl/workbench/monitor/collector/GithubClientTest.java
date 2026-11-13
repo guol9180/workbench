@@ -43,6 +43,19 @@ class GithubClientTest {
     }
 
     @Test
+    @DisplayName("仓库快照：stars / forks / watchers / open issues 四个绝对值")
+    void parseRepoSnapshot() throws Exception {
+        String json = """
+                {"stargazers_count":128,"forks_count":9,"subscribers_count":6,"open_issues_count":4}
+                """;
+        GithubClient.RepoSnapshot snapshot = GithubClient.parseRepoSnapshot(mapper.readTree(json));
+        assertEquals(128, snapshot.stars());
+        assertEquals(9, snapshot.forks());
+        assertEquals(6, snapshot.watchers());
+        assertEquals(4, snapshot.openIssues());
+    }
+
+    @Test
     @DisplayName("累计 → 增量：无基线记 0，正常相减，负差清零")
     void delta() {
         assertEquals(0, GithubCollector.delta(null, 100));

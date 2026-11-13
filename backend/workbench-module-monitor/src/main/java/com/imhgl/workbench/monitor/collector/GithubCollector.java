@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -102,6 +104,15 @@ public class GithubCollector {
             lastTotals.put(config.id(), total);
             points.add(point(config, "downloads", increment, alignedNow()));
         }
+        // 仓库快照（绝对值）总是采集：与 metrics 开关无关，作为项目的「当前体量」基线。
+        // 写 UTC 日桶并走覆盖语义——同日多次采集只保留最后一次，不求和。
+        GithubClient.RepoSnapshot snapshot = client.repoSnapshot(config.repo());
+        long dayStart = utcDayStartMs();
+        String source = "snapshot/github/" + config.repo();
+        service.snapshot(source, "stars", snapshot.stars(), dayStart);
+        service.snapshot(source, "forks", snapshot.forks(), dayStart);
+        service.snapshot(source, "watchers", snapshot.watchers(), dayStart);
+        service.snapshot(source, "openIssues", snapshot.openIssues(), dayStart);
         if (!points.isEmpty()) {
             service.ingest("github/" + config.repo(), points);
         }
@@ -125,6 +136,11 @@ public class GithubCollector {
 
     private static long alignedNow() {
         return (System.currentTimeMillis() / 60_000L) * 60_000L;
+    }
+
+    /** 快照桶：UTC 日零点（与 GitHub 日粒度、文件名时区保持一致） */
+    private static long utcDayStartMs() {
+        return LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli();
     }
 
     private static String readable(Exception e) {

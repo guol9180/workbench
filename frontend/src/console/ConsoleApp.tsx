@@ -54,7 +54,9 @@ function adaptSourceToProject(stat: SourceStat, overview: Overview | null): Proj
   return {
     id: stat.name,
     name: stat.name,
-    stack: stat.name.startsWith('github/') ? 'GitHub' : '本机服务',
+    stack: stat.name.startsWith('github/') || stat.name.startsWith('snapshot/github/')
+      ? 'GitHub'
+      : stat.name.startsWith('probe/') ? '拨测' : '本机服务',
     status: requestCount === 0 ? 'stopped' : errorRatio >= 0.01 ? 'error' : 'running',
     desc: requestCount > 0
       ? `24h ${fmtNum(requestCount)} 次调用 · 错误率 ${(errorRatio * 100).toFixed(2)}%`
@@ -263,13 +265,15 @@ export default function ConsoleApp() {
         fetchSeries('workbench', 'count', rangeLabel, 'h'),
         fetchSeries('workbench', 'errCount', rangeLabel, 'h'),
       ])
-      const overviews = await Promise.all(sourceStats.map((stat) =>
+      // 快照源（绝对值）由 M17 项目页单独消费；当前流量看板只展示流量源，避免把 stars 当请求数
+      const trafficSources = sourceStats.filter((stat) => !stat.name.startsWith('snapshot/'))
+      const overviews = await Promise.all(trafficSources.map((stat) =>
         fetchOverview(stat.name, '24h').catch((error: unknown) => {
           // 单源总览失败不拖垮整个看板；但 401 必须上抛触发回锁屏
           if (error instanceof ApiError && error.needRelogin) throw error
           return null
         })))
-      setProjects(sourceStats.map((stat, index) => adaptSourceToProject(stat, overviews[index])))
+      setProjects(trafficSources.map((stat, index) => adaptSourceToProject(stat, overviews[index])))
       setLogs(recentRecords.map(adaptRecentToLog))
       setTrendPoints(aggregateDailyTrend(countSeries, errSeries))
     } catch (error) {

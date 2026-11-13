@@ -136,7 +136,7 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 
 ### 6.3 workbench-infrastructure
 
-外部技术组件的中性封装：`TimeSeriesStore`（append / sources / overview / series / topEndpoints / recent / status / flush / close）、`JsonlTimeSeriesStore`（分钟聚合桶 + 蓄水池延迟采样 + 按天 JSONL 刷盘 + 启动重放 + 保留清理）、`TrafficRecord` 与查询模型（SourceStat / Overview / SeriesPoint / EndpointRank / RecentRecord / StoreStatus）、`MetricsProperties`。
+外部技术组件的中性封装：`TimeSeriesStore`（append / replace / sources / overview / series / topEndpoints / recent / status / flush / close）、`JsonlTimeSeriesStore`（分钟聚合桶 + 蓄水池延迟采样 + 按天 JSONL 刷盘 + 启动重放 + 保留清理）、`TrafficRecord` 与查询模型（SourceStat / Overview / SeriesPoint / EndpointRank / RecentRecord / StoreStatus）、`MetricsProperties`。`series` 的 metric 支持 `count / errCount / avgMs / last`——`last` 取桶内最后写入值，供快照类指标使用。
 
 只产出中性模型与中性配置，禁止业务语义与业务色彩命名。文件树存储随 docs 域删除；若恢复 md 笔记能力，从 git 历史取回。
 
@@ -150,7 +150,7 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 - **自监测**：`TrafficRecordFilter` 拦 `/api/**`（order 先于 Token 过滤器），`source="workbench"`；路径归一化（数字段 `{n}`、UUID 段 `{u}`）；异步有界队列，队列满丢弃并计数，绝不阻塞请求。
 - **上报**：外部系统按 ingest 结构 POST，`source` 自带标识，数据进同一时序存储。
 - **源配置**：`SourceConfigStore` 独占读写 JSON 配置（`workbench.sources.file`）；同 repo 重复接入 → `CONFLICT(40900)`；删除源只停采集，历史数据按保留策略自然过期。
-- **GitHub 采集**：cron 定时 + 手动触发，JDK `HttpClient` 只读调用，零新增依赖。映射：`source=github/{owner}/{repo}`、`endpoint=指标名`、`status=200`、`totalMs/maxMs=0`、`count=增量`（views/downloads 相对上次采集，重启重新起算）、`ts=数据所属日`（UTC 日零点对齐分钟）；快照类指标（M16）取日末值，不求和。
+- **GitHub 采集**：cron 定时 + 手动触发，JDK `HttpClient` 只读调用，零新增依赖。映射分两类：流量用 `source=github/{owner}/{repo}`、`endpoint=views/downloads`、`count=增量`（相对上次采集，重启重新起算）、`ts=数据所属日`（UTC 日零点对齐分钟）；快照用独立来源 `source=snapshot/github/{owner}/{repo}`、`endpoint=stars/forks/watchers/openIssues`、`count=绝对值`、`ts=UTC 日桶`，每次采集都写、同日覆盖（不累加），查询用 `metric=last` 取日末值。两类 source 分离是为了避免快照绝对值污染流量求和；openIssues 为 GitHub 口径（含 PR）。
 - **token**：设置页可运行期设置（`PUT|DELETE /api/monitor/settings/github-token`），持久化于 sources.json，优先级页面 > `GITHUB_TOKEN`；任何接口不回显 token。
 - **主动拨测（M15）**：目标列表持久化于 sources.json 的 `probes` 区，目标名与 URL 均唯一；调度默认 60 秒、单目标超时 5 秒。结果以合成流量记录入库：`source = probe/{name}`、`endpoint = url`、`method = GET`、`status = HTTP 码（连接失败/超时记 0）`、`count = 1`、`totalMs/maxMs = 延迟`，延迟样本供 p95 使用。启用开关只影响调度，不删历史数据；改名等于换 source，历史留在旧 source、不迁移。
 
@@ -176,7 +176,7 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 | POST | `/api/monitor/ingest` | 外部流量上报 |
 | GET | `/api/monitor/sources` | 来源列表（含 `workbench`） |
 | GET | `/api/monitor/overview` | 区间总览（source / range） |
-| GET | `/api/monitor/series` | 时序（source / metric / range / step / endpoint） |
+| GET | `/api/monitor/series` | 时序（metric=count/errCount/avgMs/last；可带 endpoint 过滤） |
 | GET | `/api/monitor/top-endpoints` | 端点排行（source / range / limit / by） |
 | GET | `/api/monitor/recent` | 最近分钟桶（source / limit 1..500） |
 | GET | `/api/monitor/status` | 自检（不回显 token） |
@@ -198,7 +198,7 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 
 - 源配置：`type=github`；`repo=owner/name`；`metrics ⊆ {pages, downloads}`；重复 → 400 + `40900`；不存在 → 400 + `40400`；校验失败 → 400 + `40000`。
 - 拨测目标：`name` 1..40 字符且不含 `/` 与控制字符；`url` 仅接受 http / https；重名或同 URL → 400 + `40900`；不存在 id → 400 + `40400`；校验失败 → 400 + `40000`。
-- 查询：`range` / `metric` / `step` / `by` 非法 → 400 + `40000`；`ts` 为分钟级 epoch 毫秒；错误判定 = status ≥ 400；`rps` = count / 区间秒数。
+- 查询：`range` / `metric` / `step` / `by` 非法 → 400 + `40000`；`metric ∈ {count, errCount, avgMs, last}`（last = 快照桶内最后值）；`ts` 为分钟级 epoch 毫秒；错误判定 = status ≥ 400；`rps` = count / 区间秒数。
 - 映射：业务异常 → 400 + 语义码；未知路由 → 404；方法不支持 → 405 + `40500`；校验 / 缺参 → 400 + `40000`；未认证 → 401 + `40100`；未知异常 → 500 + `50000`，不泄漏堆栈与类名。
 
 ## 8 前端约定

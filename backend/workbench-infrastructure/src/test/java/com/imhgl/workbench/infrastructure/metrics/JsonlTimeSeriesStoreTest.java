@@ -122,6 +122,33 @@ class JsonlTimeSeriesStoreTest {
     }
 
     @Test
+    @DisplayName("replace + last：同日快照覆盖不累加，跨日保留，重启后语义不变")
+    void replaceSnapshotAndLastMetric(@TempDir Path dir) {
+        try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {
+            // 同一 UTC 日桶重复采集：覆盖，不叠加
+            store.replace(rec(M0, "github/o/r", "stars", "GET", 200, 10, 0, 0, null));
+            store.replace(rec(M0, "github/o/r", "stars", "GET", 200, 14, 0, 0, null));
+            // 次日快照
+            store.replace(rec(M0 + 24 * 60, "github/o/r", "stars", "GET", 200, 15, 0, 0, null));
+
+            List<SeriesPoint> last = store.series("github/o/r", "last", M0, M0 + 24 * 60, "stars", true);
+            assertEquals(2, last.size());
+            assertEquals(14, last.get(0).value(), "同日最后一次快照覆盖前值");
+            assertEquals(15, last.get(1).value());
+            assertEquals(14, store.series("github/o/r", "count", M0, M0, "stars", true)
+                    .get(0).value(), "覆盖写入后 count 也不应虚高");
+            store.flush();
+        }
+
+        // 重启重放：覆盖结果与最后值语义保持一致
+        try (JsonlTimeSeriesStore reopened = new JsonlTimeSeriesStore(props(dir))) {
+            List<SeriesPoint> last = reopened.series("github/o/r", "last", M0, M0 + 24 * 60, "stars", true);
+            assertEquals(2, last.size());
+            assertEquals(15, last.get(1).value());
+        }
+    }
+
+    @Test
     @DisplayName("topEndpoints：按 count / err / avgMs 排序并受 limit 约束")
     void topEndpointsRanking(@TempDir Path dir) {
         try (JsonlTimeSeriesStore store = new JsonlTimeSeriesStore(props(dir))) {

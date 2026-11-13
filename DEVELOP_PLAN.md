@@ -54,14 +54,19 @@
 - 目标：在现有 traffic 采集之上增加每日快照（stars / forks / watchers / open issues）与 releases 下载量。
 - 动机：项目定位要回答「有没有人看我的项目」，互动数据不能只有 views/downloads。
 - 验收标准：
-  - collector 每日快照入库，快照类指标取「日末值」语义（不求和），`source = github/{owner}/{repo}`、`endpoint = 指标名`，映射登记到 AGENTS §6.4。
+  - collector 每日快照入库，快照类指标取「日末值」语义（不求和），`source = snapshot/github/{owner}/{repo}`、`endpoint = stars/forks/watchers/openIssues`（与流量 source 分离，避免绝对值污染流量求和），映射登记到 AGENTS §6.4。
   - releases 下载量并入采集与查询。
   - 重启后快照连续，不重新起算基线；token 缺失时状态可见且不报 500。
   - `mvn test` 全绿，新增用例覆盖快照解析、日末值语义与重启连续性。
 - 边界：不接第三方 star 历史数据集；不新增约定之外的指标；不改前端（M17 统一消费）。
-- 状态：planned
+- 状态：in-progress
 - 进度（只追加新行，不修改旧行）：
   - 2026-11-12 计划 任务卡确认
+  - 2026-11-13 计划 开始执行：快照覆盖写与 metric=last 查询契约已登记到 AGENTS
+  - 2026-11-13 执行 快照覆盖写（TimeSeriesStore.replace）、metric=last、GitHub stars/forks/watchers/openIssues 解析与每日采集
+  - 2026-11-13 验证 mvn test 86/86 通过；pnpm build 通过；同日覆盖与重启重放由存储用例覆盖
+  - 2026-11-13 验证 待补：接入真实仓库确认快照落盘与跨日连续（需要有效 GitHub token）
+  - 2026-11-13 执行 快照改用独立 source=snapshot/github/{repo}，避免绝对值污染流量聚合；过渡看板暂时过滤该来源
 
 ### T4 M17 前端四页（P0）
 
@@ -115,7 +120,7 @@
 |---|---|---|
 | M14 | 减法与部署合并：删 docs 域 / 演示模式 / 死代码，单域名部署 | in-progress |
 | M15 | 主动拨测：目标配置 + 定时探测 + 合成流量入库 | in-progress |
-| M16 | GitHub 每日快照与 releases 下载量 | planned |
+| M16 | GitHub 每日快照与 releases 下载量 | in-progress |
 | M17 | 前端四页：总览 / 服务与站点 / 开源项目 / 设置 | planned |
 | M18 | 收尾：全量验收 + 三文档按分频规则同步 | planned |
 

@@ -118,6 +118,11 @@ class TrafficRecordFilterTest {
         }
 
         @Override
+        public void replace(TrafficRecord record) {
+            delegate.replace(record);
+        }
+
+        @Override
         public List<SourceStat> sources() {
             return delegate.sources();
         }

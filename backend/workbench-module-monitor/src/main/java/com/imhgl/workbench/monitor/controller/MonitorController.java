@@ -65,7 +65,7 @@ public class MonitorController {
         return ApiResult.ok(monitorApi.overview(source, range));
     }
 
-    /** 时间序列（metric：count|avgMs|errCount；step：m|h，默认 m；endpoint 可选过滤——GitHub 源拆 views/downloads 曲线用） */
+    /** 时间序列（metric：count|avgMs|errCount|last；step：m|h，默认 m；endpoint 可选过滤） */
     @GetMapping("/series")
     public ApiResult<List<SeriesPoint>> series(@RequestParam("source") String source,
                                                @RequestParam("metric") String metric,
