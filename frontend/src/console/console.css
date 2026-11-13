@@ -762,6 +762,73 @@ html.theme-switching, html.theme-switching *, html.theme-switching *::before, ht
   gap: 16px;
 }
 
+/* 空状态：冷启动时说明「为什么空 + 下一步」，四页共用同一套观感 */
+.empty-state { gap: 9px; padding: 34px 20px; }
+.empty-state.is-compact { padding: 20px 16px; }
+
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-bottom: 3px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-muted);
+  color: var(--primary);
+}
+
+.empty-state.is-compact .empty-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+}
+
+.empty-title { font-size: 15.5px; }
+.empty-desc { max-width: 520px; line-height: 1.65; }
+
+.empty-steps {
+  counter-reset: empty-step;
+  display: grid;
+  gap: 10px;
+  width: min(560px, 100%);
+  margin: 10px 0 4px;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.empty-steps li {
+  position: relative;
+  padding: 10px 14px 10px 46px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+}
+
+.empty-steps li::before {
+  counter-increment: empty-step;
+  content: counter(empty-step);
+  position: absolute;
+  left: 14px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.empty-steps b { display: block; font-size: 13.5px; color: var(--ink); }
+.empty-steps span { display: block; margin-top: 1px; color: var(--ink-3); font-size: 12.5px; line-height: 1.5; }
+
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 6px; }
+.empty-hint { margin: 2px 0 0; color: var(--ink-3); font-size: 12px; }
+
 .category-card {
   display: flex;
   flex-direction: column;

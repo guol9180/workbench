@@ -1,5 +1,5 @@
 /** 服务与站点：拨测目标管理 + 自部署服务的流量记录。 */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   createProbeTarget,
   deleteProbeTarget,
@@ -12,17 +12,27 @@ import {
 } from './api'
 import type { Overview, ProbeTargetView, RecentRecord, SourceStat } from './api'
 import { STATUS_META, errorRate, fmtAgo, fmtNum } from './data'
-import type { StatusKey } from './data'
+import type { RouteKey, StatusKey } from './data'
 import Sparkline from './Sparkline'
 import Icon from './Icon'
+import EmptyState from './EmptyState'
 
 const TRAFFIC_PREFIXES = ['probe/', 'github/', 'snapshot/']
+/** 本机自监测来源：控制台自身流量，始终存在，不作为「外部接入」展示 */
+const SELF_SOURCE = 'workbench'
 
 function isTrafficSource(name: string): boolean {
   return !TRAFFIC_PREFIXES.some((prefix) => name.startsWith(prefix))
 }
 
-export default function ServicesPage({ notify }: { notify: (message: string) => void }) {
+export default function ServicesPage({
+  notify,
+  onNavigate,
+}: {
+  notify: (message: string) => void
+  onNavigate: (route: RouteKey) => void
+}) {
+  const nameInputRef = useRef<HTMLInputElement>(null)
   const [probes, setProbes] = useState<ProbeTargetView[]>([])
   const [sources, setSources] = useState<SourceStat[]>([])
   const [overviews, setOverviews] = useState<Record<string, Overview | null>>({})
@@ -114,7 +124,15 @@ export default function ServicesPage({ notify }: { notify: (message: string) => 
   const latestProbeRecord = (source: string): RecentRecord | undefined =>
     recents.filter((record) => record.source === source).sort((first, second) => second.minute - first.minute)[0]
 
-  const trafficSources = sources.filter((source) => isTrafficSource(source.name))
+  const selfSource = sources.find((source) => source.name === SELF_SOURCE)
+  const externalTrafficSources = sources.filter((source) => isTrafficSource(source.name) && source.name !== SELF_SOURCE)
+
+  function focusProbeForm() {
+    const input = nameInputRef.current
+    if (!input) return
+    input.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    input.focus({ preventScroll: true })
+  }
 
   return (
     <section className="page" aria-labelledby="services-title">
@@ -142,7 +160,7 @@ export default function ServicesPage({ notify }: { notify: (message: string) => 
         <div className="form-inline">
           <label className="field-compact">
             <span className="field-label">名称</span>
-            <input className="input" value={name} maxLength={40} placeholder="例如：主站" onChange={(event) => setName(event.target.value)} />
+            <input ref={nameInputRef} className="input" value={name} maxLength={40} placeholder="例如：主站" onChange={(event) => setName(event.target.value)} />
           </label>
           <label className="field-compact">
             <span className="field-label">URL</span>
@@ -163,10 +181,13 @@ export default function ServicesPage({ notify }: { notify: (message: string) => 
           </div>
         </div>
         {probes.length === 0 ? (
-          <div className="empty-state">
-            <p className="empty-title">还没有拨测目标</p>
-            <p className="empty-desc">在上方填写名称与 URL，第一条探测会在一个调度周期内入库。</p>
-          </div>
+          <EmptyState
+            icon="projects"
+            title="还没有拨测目标"
+            description="添加后每 60 秒探测一次，可用率与延迟在这里累计；连接失败或超时记为异常。"
+            actions={[{ label: '填写第一个目标', onClick: focusProbeForm }]}
+            hint="名称是数据源标识：改名等于换一个新数据源，历史记录留在旧名称下。"
+          />
         ) : (
           <div className="project-grid">
             {probes.map((target) => {
@@ -218,11 +239,16 @@ export default function ServicesPage({ notify }: { notify: (message: string) => 
             <p className="panel-sub">自有服务向 <code>/api/monitor/ingest</code> 上报后在这里出现</p>
           </div>
         </div>
-        {trafficSources.length === 0 ? (
-          <div className="empty-state">
-            <p className="empty-title">还没有流量来源</p>
-            <p className="empty-desc">外部系统按 ingest 结构上报，或访问本系统 API 产生自监测流量。</p>
-          </div>
+        {externalTrafficSources.length === 0 ? (
+          <EmptyState
+            icon="eye"
+            title="还没有外部流量来源"
+            description="外部服务按 ingest 结构上报后出现在这里，用于补充拨测看不到的访问量。"
+            actions={[{ label: '查看上报格式', variant: 'ghost', onClick: () => onNavigate('settings') }]}
+            hint={selfSource
+              ? `本机自监测已记录 ${fmtNum(overviews[SELF_SOURCE]?.count ?? 0)} 次请求，单独统计，不计入外部来源。`
+              : undefined}
+          />
         ) : (
           <div className="table-scroll">
             <table className="data-table">
@@ -230,7 +256,7 @@ export default function ServicesPage({ notify }: { notify: (message: string) => 
                 <tr><th>来源</th><th>24h 请求</th><th>错误率</th><th>平均响应</th><th>最近活跃</th></tr>
               </thead>
               <tbody>
-                {trafficSources.map((source) => {
+                {externalTrafficSources.map((source) => {
                   const overview = overviews[source.name]
                   return (
                     <tr key={source.name}>

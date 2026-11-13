@@ -11,6 +11,7 @@ import type { RouteKey } from './data'
 import { ApiError, fetchMonitorStatus, hasSessionToken, login, logout, onUnauthorized, setSessionToken } from './api'
 import type { ConsoleIconName } from './Icon'
 import Icon from './Icon'
+import EmptyState from './EmptyState'
 
 const SIDEBAR_KEY = 'devconsole.sidebar.v1'
 const LOCKED_KEY = 'devconsole.locked.v1'
@@ -206,20 +207,24 @@ export default function ConsoleApp() {
           </header>
           <main className="main" id="main-content" tabIndex={-1}>
             {mode === 'offline' && (
-              <div className="offline-banner" role="alert">
-                <span>后端不可用，控制台暂时没有数据。</span>
-                <button className="btn btn-ghost" type="button" onClick={() => void probeServer()}>重试连接</button>
-              </div>
+              <>
+                <div className="offline-banner" role="alert">
+                  <span>后端不可用，控制台暂时没有数据。</span>
+                  <button className="btn btn-ghost" type="button" onClick={() => void probeServer()}>重试连接</button>
+                </div>
+                <EmptyState
+                  icon="clock"
+                  title="控制台已离线"
+                  description="后端恢复后点上方「重试连接」即可恢复。这里不展示缓存或占位数据，避免把旧数字当成实时状态。"
+                />
+              </>
             )}
             {mode === 'probing' ? (
-              <div className="empty-state">
-                <p className="empty-title">正在连接后端…</p>
-                <p className="empty-desc">连不上时会显示离线提示，不会展示假数据。</p>
-              </div>
+              <EmptyState compact icon="clock" title="正在连接后端…" description="连不上时会显示离线提示，不会展示假数据。" />
             ) : mode === 'server' ? (
               <>
                 {route === 'overview' && <OverviewPage onNavigate={changeRoute} />}
-                {route === 'services' && <ServicesPage notify={notify} />}
+                {route === 'services' && <ServicesPage notify={notify} onNavigate={changeRoute} />}
                 {route === 'projects' && <OssProjectsPage notify={notify} onNavigate={changeRoute} />}
                 {route === 'settings' && <SettingsPage authRequired={authRequired} onLock={lockNow} notify={notify} />}
               </>

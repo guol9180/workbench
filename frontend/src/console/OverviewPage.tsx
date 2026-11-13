@@ -11,6 +11,7 @@ import {
 } from './api'
 import type { Overview, ProbeTargetView, RecentRecord, SourceConfigView, SourceStat } from './api'
 import Icon from './Icon'
+import EmptyState from './EmptyState'
 
 interface HealthRow {
   key: string
@@ -23,6 +24,8 @@ interface HealthRow {
 }
 
 const TRAFFIC_PREFIXES = ['probe/', 'github/', 'snapshot/']
+/** 本机自监测来源：只要控制台在用就一直存在，不算「已接入的观测对象」 */
+const SELF_SOURCE = 'workbench'
 
 function isTrafficSource(name: string): boolean {
   return !TRAFFIC_PREFIXES.some((prefix) => name.startsWith(prefix))
@@ -68,6 +71,9 @@ export default function OverviewPage({ onNavigate }: { onNavigate: (route: Route
   }, [])
 
   const trafficSources = sources.filter((source) => isTrafficSource(source.name))
+  const externalTrafficSources = trafficSources.filter((source) => source.name !== SELF_SOURCE)
+  /** 冷启动判定只看真正接入的对象；否则自监测流量会让空状态永远不出现 */
+  const hasObservedObjects = externalTrafficSources.length > 0 || probes.length > 0 || configs.length > 0
 
   const latestProbeRecord = useMemo(() => {
     const latest = new Map<string, RecentRecord>()
@@ -165,80 +171,100 @@ export default function OverviewPage({ onNavigate }: { onNavigate: (route: Route
 
       {error && <div className="notice-banner" role="alert">{error}</div>}
 
-      <div className="metric-grid">
-        <div className="metric-card">
-          <p className="metric-label">观测对象</p>
-          <strong className="metric-value">{rows.length}</strong>
-          <p className="metric-foot"><span>{trafficSources.length} 个服务 · {probes.length} 个拨测 · {configs.length} 个仓库</span></p>
-        </div>
-        <div className="metric-card">
-          <p className="metric-label">异常</p>
-          <strong className="metric-value">{abnormalCount}</strong>
-          <p className="metric-foot"><span>{abnormalCount > 0 ? '需要处理' : '全部正常'}</span></p>
-        </div>
-        <div className="metric-card">
-          <p className="metric-label">24h 请求</p>
-          <strong className="metric-value">{fmtWan(requestTotal)}</strong>
-          <p className="metric-foot"><span>不含快照读数</span></p>
-        </div>
-        <div className="metric-card">
-          <p className="metric-label">拨测目标</p>
-          <strong className="metric-value">{enabledProbeCount}</strong>
-          <p className="metric-foot"><span>共 {probes.length} 个 · 启用 {enabledProbeCount} 个</span></p>
-        </div>
-      </div>
+      {!hasObservedObjects ? (
+        loading ? (
+          <EmptyState compact icon="clock" title="正在读取观测数据…" description="连接后端并加载服务、拨测与仓库状态。" />
+        ) : error ? null : (
+          <section className="panel" aria-label="开始使用">
+            <EmptyState
+              icon="dashboard"
+              title="观测台还没有接入任何对象"
+              description="这里汇总你自己的服务、站点与开源项目。先接入一个，数据会在下一个采集周期出现。"
+              steps={[
+                { title: '拨测站点', description: '每 60 秒检查一次可用率与延迟，站点挂掉也能及时发现。' },
+                { title: '接入 GitHub 仓库', description: '每日采集 views / downloads 与 stars 等互动快照。' },
+                { title: '上报自有服务', description: '服务按 ingest 格式上报访问量，自动出现在流量来源。' },
+              ]}
+              actions={[
+                { label: '添加拨测目标', onClick: () => onNavigate('services') },
+                { label: '接入开源仓库', variant: 'ghost', onClick: () => onNavigate('projects') },
+                { label: '配置 GitHub token', variant: 'ghost', onClick: () => onNavigate('settings') },
+              ]}
+              hint="所有数字都来自真实探测与上报；没接入之前不显示占位数据。"
+            />
+          </section>
+        )
+      ) : (
+        <>
+          <div className="metric-grid">
+            <div className="metric-card">
+              <p className="metric-label">观测对象</p>
+              <strong className="metric-value">{externalTrafficSources.length + probes.length + configs.length}</strong>
+              <p className="metric-foot"><span>{externalTrafficSources.length} 个服务 · {probes.length} 个拨测 · {configs.length} 个仓库</span></p>
+            </div>
+            <div className="metric-card">
+              <p className="metric-label">异常</p>
+              <strong className="metric-value">{abnormalCount}</strong>
+              <p className="metric-foot"><span>{abnormalCount > 0 ? '需要处理' : '全部正常'}</span></p>
+            </div>
+            <div className="metric-card">
+              <p className="metric-label">24h 请求</p>
+              <strong className="metric-value">{fmtWan(requestTotal)}</strong>
+              <p className="metric-foot"><span>不含快照读数</span></p>
+            </div>
+            <div className="metric-card">
+              <p className="metric-label">拨测目标</p>
+              <strong className="metric-value">{enabledProbeCount}</strong>
+              <p className="metric-foot"><span>共 {probes.length} 个 · 启用 {enabledProbeCount} 个</span></p>
+            </div>
+          </div>
 
-      <section className="panel" aria-labelledby="health-title">
-        <div className="panel-head">
-          <div>
-            <h2 className="panel-title" id="health-title">健康明细</h2>
-            <p className="panel-sub">拨测优先展示最新状态；服务与仓库按 24h / 采集状态派生</p>
-          </div>
-        </div>
-        {rows.length === 0 && !loading ? (
-          <div className="empty-state">
-            <p className="empty-title">还没有观测对象</p>
-            <p className="empty-desc">先到「服务与站点」添加拨测目标，或到「开源项目」接入 GitHub 仓库。</p>
-          </div>
-        ) : (
-          <div className="table-scroll">
-            <table className="data-table">
-              <thead>
-                <tr><th>名称</th><th>类型</th><th>状态</th><th>摘要</th><th>最近活动</th><th>操作</th></tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => {
-                  const meta = STATUS_META[row.status]
-                  return (
-                    <tr key={row.key}>
-                      <td><div style={{ fontWeight: 600 }}>{row.name}</div></td>
-                      <td><span className="chip" style={{ pointerEvents: 'none' }}>{row.kind}</span></td>
-                      <td><span className={'status-tag ' + meta.cls}>{meta.label}</span></td>
-                      <td className="cell-clip">{row.summary}</td>
-                      <td>{row.lastSeen}</td>
-                      <td><button className="btn-text" type="button" onClick={() => onNavigate(row.route)}>查看</button></td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+          <section className="panel" aria-labelledby="health-title">
+            <div className="panel-head">
+              <div>
+                <h2 className="panel-title" id="health-title">健康明细</h2>
+                <p className="panel-sub">拨测优先展示最新状态；服务与仓库按 24h / 采集状态派生</p>
+              </div>
+            </div>
+            <div className="table-scroll">
+              <table className="data-table">
+                <thead>
+                  <tr><th>名称</th><th>类型</th><th>状态</th><th>摘要</th><th>最近活动</th><th>操作</th></tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => {
+                    const meta = STATUS_META[row.status]
+                    return (
+                      <tr key={row.key}>
+                        <td><div style={{ fontWeight: 600 }}>{row.name}</div></td>
+                        <td><span className="chip" style={{ pointerEvents: 'none' }}>{row.kind}</span></td>
+                        <td><span className={'status-tag ' + meta.cls}>{meta.label}</span></td>
+                        <td className="cell-clip">{row.summary}</td>
+                        <td>{row.lastSeen}</td>
+                        <td><button className="btn-text" type="button" onClick={() => onNavigate(row.route)}>查看</button></td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-      <div className="page-grid">
-        {([
-          ['services', '服务与站点', '拨测状态、可用率与自有服务访问记录'],
-          ['projects', '开源项目', 'GitHub 流量曲线与每日互动快照'],
-          ['settings', '设置', '数据源、GitHub token、主题与锁屏'],
-        ] as const).map(([route, title, desc]) => (
-          <button className="panel category-card" type="button" key={route} onClick={() => onNavigate(route)}>
-            <span className="panel-title">{title}</span>
-            <span className="panel-sub">{desc}</span>
-            <span className="category-arrow" aria-hidden="true"><Icon name="expand" size={16} /></span>
-          </button>
-        ))}
-      </div>
+          <div className="page-grid">
+            {([
+              ['services', '服务与站点', '拨测状态、可用率与自有服务访问记录'],
+              ['projects', '开源项目', 'GitHub 流量曲线与每日互动快照'],
+              ['settings', '设置', '数据源、GitHub token、主题与锁屏'],
+            ] as const).map(([route, title, desc]) => (
+              <button className="panel category-card" type="button" key={route} onClick={() => onNavigate(route)}>
+                <span className="panel-title">{title}</span>
+                <span className="panel-sub">{desc}</span>
+                <span className="category-arrow" aria-hidden="true"><Icon name="expand" size={16} /></span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
     </section>
   )
 }

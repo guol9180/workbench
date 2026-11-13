@@ -1,5 +1,5 @@
 /** 开源项目：GitHub 仓库接入、流量曲线与每日互动快照。 */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   collectSourceConfig,
   createSourceConfig,
@@ -14,6 +14,7 @@ import { STATUS_META, fmtAgo, fmtNum, fmtWan } from './data'
 import type { StatusKey } from './data'
 import Sparkline from './Sparkline'
 import Icon from './Icon'
+import EmptyState from './EmptyState'
 
 const RANGE_OPTIONS = [7, 14, 30] as const
 const RANGE_LABELS: Record<number, string> = { 7: '7d', 14: '14d', 30: '30d' }
@@ -165,6 +166,7 @@ export default function OssProjectsPage({
   notify: (message: string) => void
   onNavigate: (route: 'settings') => void
 }) {
+  const repoInputRef = useRef<HTMLInputElement>(null)
   const [configs, setConfigs] = useState<SourceConfigView[]>([])
   const [status, setStatus] = useState<MonitorStatus | null>(null)
   const [range, setRange] = useState(7)
@@ -245,6 +247,15 @@ export default function OssProjectsPage({
     })
   }
 
+  function focusRepoInput() {
+    const input = repoInputRef.current
+    if (!input) return
+    input.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    input.focus({ preventScroll: true })
+  }
+
+  const hasToken = status?.githubTokenConfigured === true
+
   return (
     <section className="page" aria-labelledby="projects-title">
       <div className="page-head">
@@ -253,13 +264,15 @@ export default function OssProjectsPage({
           <p className="page-desc">GitHub 流量与互动快照</p>
         </div>
         <div className="page-actions">
-          <div className="range-group" role="group" aria-label="时间范围">
-            {RANGE_OPTIONS.map((days) => (
-              <button key={days} className="range-btn" type="button" aria-pressed={range === days} onClick={() => setRange(days)}>
-                近{days}天
-              </button>
-            ))}
-          </div>
+          {configs.length > 0 && (
+            <div className="range-group" role="group" aria-label="时间范围">
+              {RANGE_OPTIONS.map((days) => (
+                <button key={days} className="range-btn" type="button" aria-pressed={range === days} onClick={() => setRange(days)}>
+                  近{days}天
+                </button>
+              ))}
+            </div>
+          )}
           <button className="btn btn-ghost" type="button" onClick={() => void load()} disabled={loading}>
             <Icon name="refresh" size={16} />{loading ? '加载中…' : '刷新'}
           </button>
@@ -267,11 +280,39 @@ export default function OssProjectsPage({
       </div>
 
       {error && <div className="notice-banner" role="alert">{error}</div>}
-      {status && !status.githubTokenConfigured && (
+      {status && !status.githubTokenConfigured && configs.length > 0 && (
         <div className="notice-banner" role="alert">
           <span>尚未配置 GitHub token，仓库采集与互动快照不可用。</span>
           <button className="btn btn-ghost" type="button" onClick={() => onNavigate('settings')}>去设置</button>
         </div>
+      )}
+
+      {loading && configs.length === 0 && (
+        <EmptyState compact icon="clock" title="正在读取已接入仓库…" description="同时检查 GitHub token 配置状态。" />
+      )}
+
+      {!loading && configs.length === 0 && !error && (
+        <section className="panel" aria-label="接入引导">
+          <EmptyState
+            icon="tool"
+            title={hasToken ? '还没有接入开源仓库' : '先配置 GitHub token'}
+            description={hasToken
+              ? 'token 已就绪。接入仓库后，这里会显示 views / downloads 走势与每日 stars、forks 等互动读数。'
+              : '仓库采集需要只读 token。配置后可以拉取你的仓库列表，或直接输入 owner/name。'}
+            steps={[
+              { title: '配置只读 token', description: '在「设置」保存，立即生效；任何接口都不会回显 token。' },
+              { title: '接入仓库', description: '选择 Pages 流量与 Release 下载指标，同一仓库不能重复接入。' },
+              { title: '等待采集', description: '流量为增量、快照为每日最后一次采集值，重启后继续累计。' },
+            ]}
+            actions={hasToken
+              ? [
+                  { label: '拉取我的仓库', onClick: () => void loadRepoOptions() },
+                  { label: '手动输入', variant: 'ghost', onClick: focusRepoInput },
+                ]
+              : [{ label: '去设置配置 token', onClick: () => onNavigate('settings') }]}
+            hint={hasToken ? '也可以先在下方输入 owner/name 直接接入。' : '没有 token 时仍可填写仓库，但采集会持续报错。'}
+          />
+        </section>
       )}
 
       <section className="panel" aria-labelledby="repo-add-title">
@@ -288,6 +329,7 @@ export default function OssProjectsPage({
           <label className="field-compact">
             <span className="field-label">仓库</span>
             <input
+              ref={repoInputRef}
               className="input"
               list="github-repos"
               value={repoInput}
@@ -314,19 +356,14 @@ export default function OssProjectsPage({
         </div>
       </section>
 
-      <section className="panel" aria-labelledby="repo-list-title">
-        <div className="panel-head">
-          <div>
-            <h2 className="panel-title" id="repo-list-title">已接入仓库</h2>
-            <p className="panel-sub">共 {configs.length} 个 · 快照为每日最后一次采集值</p>
+      {configs.length > 0 && (
+        <section className="panel" aria-labelledby="repo-list-title">
+          <div className="panel-head">
+            <div>
+              <h2 className="panel-title" id="repo-list-title">已接入仓库</h2>
+              <p className="panel-sub">共 {configs.length} 个 · 快照为每日最后一次采集值</p>
+            </div>
           </div>
-        </div>
-        {configs.length === 0 ? (
-          <div className="empty-state">
-            <p className="empty-title">还没有接入仓库</p>
-            <p className="empty-desc">在「设置」配置 token 后，可拉取仓库列表或手输 owner/name。</p>
-          </div>
-        ) : (
           <div className="project-grid">
             {configs.map((config) => (
               <RepoCard
@@ -338,8 +375,8 @@ export default function OssProjectsPage({
               />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </section>
   )
 }
