@@ -142,9 +142,9 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 
 ### 6.4 workbench-module-monitor
 
-观测域：自监测、ingest 上报枢纽、查询、主动拨测（M15 起）、GitHub 采集与快照（M16 起）、源配置管理。
+观测域：自监测、ingest 上报枢纽、查询、主动拨测、GitHub 采集与快照、源配置管理。
 
-内部结构：`api/`（`MonitorApi` + `impl/`）、`controller/`、`dto/`、`model/`（`TimeRange` 等）、`service/`、`collector/`、`probe/`（M15 起）。
+内部结构：`api/`（`MonitorApi` + `impl/`）、`controller/`、`dto/`、`model/`（`TimeRange` 等）、`service/`、`collector/`、`probe/`。
 
 - **TimeRange**：`5m|1h|6h|24h|7d|14d|30d` 的解析与校验收拢在 model，非法值 → 400。
 - **自监测**：`TrafficRecordFilter` 拦 `/api/**`（order 先于 Token 过滤器），`source="workbench"`；路径归一化（数字段 `{n}`、UUID 段 `{u}`）；异步有界队列，队列满丢弃并计数，绝不阻塞请求。
@@ -192,7 +192,7 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 | POST | `/api/auth/login` | 密码换会话令牌 |
 | POST | `/api/auth/logout` | 失效当前会话 |
 
-新端点必须先登记本表再写代码；快照（M16）端点随实现同提交补充。
+新端点必须先登记本表再写代码。
 
 ### 7.3 参数与错误
 
@@ -204,11 +204,11 @@ Web 通用能力：全局异常处理、参数校验、SpringDoc/OpenAPI、认�
 ## 8 前端约定
 
 1. **入口**：活动代码在 `frontend/src/console/`（`ConsoleApp` / `OverviewPage` / `ServicesPage` / `OssProjectsPage` / `SettingsPage` / `Sparkline` / `LockScreen` / `Icon` / `data.ts` / `api.ts` / `console.css`）；`App.tsx` 只渲染 `ConsoleApp`，`main.tsx` 只加载字体、`console.css` 与主题初始化。
-2. **页面**：总览 / 服务与站点 / 开源项目 / 设置四页（M17 完成后生效）。
+2. **页面**：总览 / 服务与站点 / 开源项目 / 设置四页。
 3. **视觉与交互**：`console.css` 是唯一视觉源；图标只来自 `Icon.tsx`，禁止内联手写 SVG（品牌 logo 除外）；常用 UI（按钮、表单、面板、空态、加载态）原语化复用；交互覆盖 hover / active / focus-visible / disabled / loading；动效走 `--dur-fast` / `--dur` / `--ease` 并尊重 `prefers-reduced-motion`。
 4. **模式**：只运行服务端模式，同源 `/api` 取真实数据；不保留演示模式与 mock；网络错误显示提示条并保留上次数据。
 5. **接口封装**：`api.ts` 统一处理同源基地址、`X-API-Token`（令牌只存内存）、`ApiResult` 解包、`code != 0` 抛错、401 回锁屏。
-6. **本地存储**：仅主题 / 侧栏 / 锁屏状态（`devconsole.theme.v1` / `devconsole.sidebar.v1` / `devconsole.locked.v1`）；文档与工具键随 M14 删除。
+6. **本地存储**：仅主题 / 侧栏 / 锁屏状态（`devconsole.theme.v1` / `devconsole.sidebar.v1` / `devconsole.locked.v1`）；会话令牌只存内存。
 7. **验收基准**：桌面 1440 / 移动 390 无横向溢出；`pnpm build` 零错。
 
 ## 9 流程要求
