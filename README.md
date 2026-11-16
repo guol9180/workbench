@@ -18,9 +18,9 @@ Workbench 是一个**单用户、自托管**的后台系统，同时是一个以
 
 - **总览**：所有观测对象的健康卡与异常汇总，一屏回答「现在有没有东西挂了」。
 - **服务与站点**：拨测目标管理、可用率与延迟历史；自有服务可经 ingest 上报结构化访问记录。
-- **开源项目**：GitHub 仓库接入；views/clones 流量曲线、每日快照（stars / forks / watchers / open issues）与 releases 下载量。
+- **开源项目**：GitHub 仓库接入；views / downloads 流量曲线、每日快照（stars / forks / watchers / open issues）与 releases 下载量。
 - **设置**：GitHub token、系统状态、主题与锁屏。
-- **认证**：密码登录换取会话令牌（服务端只存哈希，会话存内存）；外部上报可用机器令牌。两者皆空即关闭认证，适合本机开发。
+- **认证**：密码登录 + 机器令牌双凭据（凭据语义与开关规则见 [AGENTS.md · 认证](./AGENTS.md#71-认证双凭据)）。
 
 ## 技术栈
 
@@ -71,7 +71,7 @@ docker compose pull && docker compose up -d
 
 - 数据只存在你自己的机器上：时序 JSONL + `sources.json`，无遥测、无外部上报。
 - GitHub token 只用于只读 API；任何接口不回显 token 值。
-- 数据目录内只有真实探测、采集与用户操作产生的数据；测试一律使用临时目录。
+- 数据目录内只有真实探测、采集与用户操作产生的数据（数据边界细则见 [AGENTS.md · 通用规范](./AGENTS.md#1-通用规范)）。
 
 ## 许可证
 
