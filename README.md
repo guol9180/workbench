@@ -20,7 +20,7 @@ Workbench 是一个**单用户、自托管**的后台系统，同时是一个以
 - **服务与站点**：拨测目标管理、可用率与延迟历史；自有服务可经 ingest 上报结构化访问记录。
 - **开源项目**：GitHub 仓库接入；views / downloads 流量曲线、每日快照（stars / forks / watchers / open issues）与 releases 下载量。
 - **设置**：GitHub token、系统状态、主题与锁屏。
-- **认证**：密码登录 + 机器令牌双凭据（凭据语义与开关规则见 [AGENTS.md · 认证](./AGENTS.md#71-认证双凭据)）。
+- **认证**：密码登录 + 机器令牌双凭据（凭据语义与开关规则见 [api.md · 认证](./docs/agents/api.md#认证双凭据)）。
 
 ## 技术栈
 
@@ -34,7 +34,7 @@ Workbench 是一个**单用户、自托管**的后台系统，同时是一个以
 | 前端字体 | IBM Plex Sans / Mono（fontsource 自托管，latin 子集） | 正文与数据分字体 |
 | 测试 | JUnit 5（各模块 test） | `mvn test` |
 
-模块划分、依赖规则与内部结构见 [AGENTS.md · 架构与目录约定](./AGENTS.md#4-架构与目录约定)。
+模块划分、依赖规则与内部结构见 [architecture.md](./docs/agents/architecture.md) 与 [modules.md](./docs/agents/modules.md)。
 
 ## 快速开始
 

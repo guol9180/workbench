@@ -48,5 +48,5 @@
         </dependencies>
     </dependencyManagement>
 
-    <!-- 全局基础件（Lombok / Hutool）只管版本不默认注入：谁用谁在模块里声明（AGENTS.md 第 4 节规则 5） -->
+    <!-- 全局基础件（Lombok / Hutool）只管版本不默认注入：谁用谁在模块里声明（docs/agents/architecture.md · 依赖规则） -->
 </project>

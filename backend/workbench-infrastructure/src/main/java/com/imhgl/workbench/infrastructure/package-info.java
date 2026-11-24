@@ -1,5 +1,5 @@
 /**
- * 技术设施（规范见 AGENTS.md §6.3）：中性 JSONL 时序存储。
+ * 技术设施（规范见 docs/agents/modules.md · workbench-infrastructure）：中性 JSONL 时序存储。
  * 契约 {@link com.imhgl.workbench.infrastructure.metrics.TimeSeriesStore}，
  * 实现 {@link com.imhgl.workbench.infrastructure.metrics.JsonlTimeSeriesStore}：
  * 分钟聚合桶 + 按天刷盘 + 启动重放 + 保留清理。

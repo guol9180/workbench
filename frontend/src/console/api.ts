@@ -7,7 +7,7 @@
 
 /** 前端与后端同源部署，请求一律使用相对路径；开发态由 Vite 代理到 8080。 */
 
-/** 后端统一响应包装（AGENTS §7）：code=0 成功 */
+/** 后端统一响应包装（docs/agents/api.md）：code=0 成功 */
 interface ApiEnvelope<T> {
   message: string
   code: number
@@ -38,7 +38,7 @@ export class ApiError extends Error {
   }
 }
 
-// ---------------- 后端契约模型（与 AGENTS §7.2 表格一一对应） ----------------
+// ---------------- 后端契约模型（与 docs/agents/api.md · 端点表格一一对应） ----------------
 
 export interface SourceStat {
   name: string
@@ -117,7 +117,7 @@ export interface CollectResult {
   error: string | null
 }
 
-// ---------------- 会话令牌：只存内存，刷新即重登（AGENTS §8.6） ----------------
+// ---------------- 会话令牌：只存内存，刷新即重登（docs/agents/frontend.md 第 6 条） ----------------
 
 let sessionToken = ''
 
